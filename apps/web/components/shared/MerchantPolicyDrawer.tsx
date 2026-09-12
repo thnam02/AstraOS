@@ -90,6 +90,7 @@ export function MerchantPolicyDrawer({
       });
       setPolicy(updated);
       setStatus("saved");
+      window.dispatchEvent(new CustomEvent("astraos:policy-changed"));
     } catch {
       setStatus("error");
       setError("Policy update failed. Check the values and try again.");
@@ -124,7 +125,8 @@ export function MerchantPolicyDrawer({
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
           <p className="text-sm leading-6 text-muted">
-            Stored policy only. Saving does not recompute offers.
+            Changing these rules is applied on the next optimisation run.
+            The LLM does not override merchant policy.
           </p>
           {policy ? (
             <p className="text-xs text-muted">

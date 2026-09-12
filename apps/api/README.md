@@ -2,7 +2,7 @@
 
 FastAPI service for AstraOS.
 
-Stage 4 constructs a combinatorial offer space around Stage 3 matches.
+Stage 5 selects a Pareto-efficient merchant response from the Stage 4 offer space.
 
 - `POST /api/v1/intent/analyse` — structured deep intent
 - `POST /api/v1/intent/qualify` — Stage 2 qualification (preserved)
@@ -10,6 +10,8 @@ Stage 4 constructs a combinatorial offer space around Stage 3 matches.
 - `POST /api/v1/offers/generate` — enumerate commercial configurations
 - `GET /api/v1/offers/runs/{id}` — paginated / filtered offer space
 - `GET /api/v1/offers/{id}` — one offer + proof
+- `POST /api/v1/optimisation/run` — economics, policy, utility, Pareto
+- `POST /api/v1/decision/run` — full intent → recommendation trace
 
 ```bash
 make migrate

@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { ApiStatus } from "@/components/live/ApiStatus";
 import { OfferExplorer } from "@/components/live/OfferExplorer";
-import { generateOffers, matchIntent } from "@/lib/api";
+import { OptimisationPanel } from "@/components/live/OptimisationPanel";
+import { runDecision, runOptimisation } from "@/lib/api";
 import { HERO_INTENT, contextLabel, fieldLabel } from "@/lib/intent";
 import { formatAudCents } from "@/lib/money";
 import type {
+  BuyerProfile,
   GenerateOffersResponse,
   MatchResponse,
+  OptimisationResponse,
   RankedProductMatch,
   ShoppingIntent,
 } from "@/types";
@@ -17,12 +20,17 @@ import type {
 function processState(
   hasMatch: boolean,
   hasOffers: boolean,
+  hasOpt: boolean,
   id: string,
 ): string {
   if (!hasMatch) return "not started";
   if (id === "understand" || id === "qualify" || id === "match") return "complete";
   if (id === "construct") return hasOffers ? "complete" : "not started";
-  if (id === "optimise") return hasOffers ? "next" : "not started";
+  if (id === "optimise") {
+    if (hasOpt) return "complete";
+    return hasOffers ? "next" : "not started";
+  }
+  if (id === "negotiate") return hasOpt ? "next" : "locked";
   return "locked";
 }
 
@@ -39,8 +47,12 @@ function importanceLabel(value: number): string {
 export function LiveWorkbench() {
   const [text, setText] = useState(HERO_INTENT);
   const [parserMode, setParserMode] = useState<"rule_based" | "llm">("rule_based");
+  const [profile, setProfile] = useState<BuyerProfile>("INTENT_ADAPTED");
   const [result, setResult] = useState<MatchResponse | null>(null);
   const [offers, setOffers] = useState<GenerateOffersResponse | null>(null);
+  const [optimisation, setOptimisation] = useState<OptimisationResponse | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,21 +60,49 @@ export function LiveWorkbench() {
     setBusy(true);
     setError(null);
     try {
-      const matched = await matchIntent(text, parserMode, 8);
-      setResult(matched);
-      setOffers(
-        await generateOffers({
-          match_run_id: matched.run_id,
-          max_products: 8,
-          limit: 40,
-        }),
-      );
+      const decided = await runDecision({
+        intent: text,
+        parser_mode: parserMode,
+        buyer_profile: profile,
+        max_products: 8,
+      });
+      setResult(decided.match);
+      setOffers(decided.construction);
+      setOptimisation(decided.optimisation);
     } catch {
-      setError("Construction failed. Is the API running?");
+      setError("Decision failed. Is the API running?");
     } finally {
       setBusy(false);
     }
   }
+
+  async function rerunOptimisation(nextProfile: BuyerProfile) {
+    if (!offers) return;
+    setProfile(nextProfile);
+    setBusy(true);
+    setError(null);
+    try {
+      setOptimisation(
+        await runOptimisation({
+          offer_run_id: offers.offer_run_id,
+          buyer_profile: nextProfile,
+        }),
+      );
+    } catch {
+      setError("Optimisation failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    function onPolicy() {
+      if (!offers) return;
+      void rerunOptimisation(profile);
+    }
+    window.addEventListener("astraos:policy-changed", onPolicy);
+    return () => window.removeEventListener("astraos:policy-changed", onPolicy);
+  }, [offers, profile]);
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(260px,0.9fr)_minmax(380px,1.2fr)_minmax(280px,1fr)]">
@@ -76,8 +116,9 @@ export function LiveWorkbench() {
           </h1>
           <p className="text-sm leading-6 text-muted">
             Language is interpreted. Hard rules decide who may compete.
-            Semantic fit ranks eligible products. Construction then enumerates
-            commercial configurations around those products.
+            Semantic fit ranks eligible products. Construction enumerates
+            configurations. Optimisation then keeps only policy-safe Pareto
+            trade-offs.
           </p>
         </div>
         <textarea
@@ -114,7 +155,7 @@ export function LiveWorkbench() {
           disabled={busy || !text.trim()}
           className="rounded-[6px] bg-ink px-4 py-2 text-xs font-medium tracking-[0.12em] text-surface disabled:opacity-40"
         >
-          {busy ? "CONSTRUCTING…" : "UNDERSTAND → CONSTRUCT"}
+          {busy ? "OPTIMISING…" : "UNDERSTAND → OPTIMISE"}
         </button>
         {error ? <p className="text-sm text-danger">{error}</p> : null}
         <ApiStatus />
@@ -205,7 +246,12 @@ export function LiveWorkbench() {
             >
               <span className="tracking-[0.08em] uppercase text-ink">{id}</span>
               <span className="text-[11px] tracking-[0.08em] text-muted">
-                {processState(Boolean(result), Boolean(offers), id)}
+                {processState(
+                  Boolean(result),
+                  Boolean(offers),
+                  Boolean(optimisation),
+                  id,
+                )}
               </span>
             </li>
           ))}
@@ -217,6 +263,16 @@ export function LiveWorkbench() {
           <OfferExplorer
             construction={offers}
             heroProduct={result?.semantic_matching.matches[0]?.product_name}
+          />
+        </div>
+      ) : null}
+      {optimisation ? (
+        <div className="xl:col-span-3">
+          <OptimisationPanel
+            optimisation={optimisation}
+            profile={profile}
+            onProfile={(next) => void rerunOptimisation(next)}
+            busy={busy}
           />
         </div>
       ) : null}

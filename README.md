@@ -5,22 +5,22 @@ Merchant-side offer intelligence for AI commerce.
 **Product ≠ Offer.**
 
 AstraOS is a merchant-side decision engine for agentic commerce. It takes AI
-shopping intent, qualifies products against hard constraints, and (in later
-stages) will construct commercial offers, enforce merchant policies, optimise
-those offers, return proof-backed machine-readable responses, and learn from
-Intent → Offer → Outcome data.
+shopping intent, qualifies products against hard constraints, constructs
+commercial offers, enforces merchant policy, and selects a Pareto-efficient
+merchant response. Later stages add negotiation, transactions, and learning.
 
 This repository is the technical foundation for UAVS Hackathon 2026.
 
 ## Current status
 
-**Stage 4 — Offer Construction + Dynamic Bundling**
+**Stage 5 — Merchant Economics + Pareto Optimisation**
 
 - Stage 0 — Scaffold — COMPLETE
 - Stage 1 — Domain model and merchant data — COMPLETE
 - Stage 2 — Intent interpretation + deterministic eligibility — COMPLETE
 - Stage 3 — Deep intent intelligence + semantic matching — COMPLETE
 - Stage 4 — Offer construction + dynamic bundling — COMPLETE
+- Stage 5 — Merchant economics + Pareto optimisation — COMPLETE
 
 **Eligibility answers:** *Can this product satisfy the mandatory request?*
 
@@ -30,8 +30,15 @@ best solve the human buyer's actual problem?*
 **Offer construction answers:** *What valid commercial configurations can the
 merchant construct around those products?*
 
-A product is not an offer. Stage 4 enumerates the offer space. It does not
-choose a winner, compute buyer utility, or draw a Pareto frontier.
+**Optimisation answers:** *Among policy-safe configurations, which ones are
+efficient trade-offs between simulated buyer utility and merchant contribution?*
+
+A product is not an offer. Stage 5 selects on the frontier. It does not
+negotiate, accept, or check out.
+
+The buyer-side score is **Simulated Buyer Utility** — a transparent cold-start
+simulation. It is not P(win), purchase probability, or reverse-engineered
+external-agent behaviour.
 
 Semantic similarity never overrides a hard constraint. A semantic score is
 **Semantic Fit**, not a purchase, win, or agent probability.
@@ -201,6 +208,11 @@ coverage, then price, then SKU. Merchant economics are not mixed in.
 | POST | `/api/v1/offers/generate` | Construct the offer space |
 | GET | `/api/v1/offers/runs/{offer_run_id}` | Paginated / filtered candidates |
 | GET | `/api/v1/offers/{offer_id}` | One configuration + proof |
+| POST | `/api/v1/optimisation/run` | Economics, policy, utility, Pareto |
+| GET | `/api/v1/optimisation/runs/{id}` | Persisted optimisation run |
+| GET | `/api/v1/optimisation/runs/{id}/frontier` | Frontier view |
+| GET | `/api/v1/optimisation/runs/{id}/counterfactuals` | Counterfactual view |
+| POST | `/api/v1/decision/run` | Intent → match → construct → optimise |
 
 `POST /api/v1/match` body:
 
@@ -288,6 +300,58 @@ return depth are reduced in that order. `pruning_reason` is recorded.
 Offers expire after `OFFER_TTL_SECONDS` (default 300). Expiry supports later
 revalidation. Nothing is accepted or checked out here.
 
+## What Stage 5 adds
+
+```
+OfferCandidate[]
+  → contribution margin (integer cents)
+  → current MerchantPolicy guardrails
+  → simulated buyer utility (decomposable)
+  → Pareto frontier (utility × contribution)
+  → merchant selection among efficient offers
+  → single-lever counterfactuals from the baseline
+  → recommended merchant response
+```
+
+**Contribution** is customer revenue minus COGS, merchant delivery / warranty /
+bundle cost, and expected return cost. A discount lowers product revenue; it is
+not subtracted again as a cost. Incremental intervention cost is an explanatory
+metric relative to the conceptual baseline (list price, standard delivery,
+standard warranty, no bundle, standard returns).
+
+**Policy.** Unsafe offers never reach the frontier. Checks include margin floor,
+discount cap, optional subsidy caps, stock, delivery / warranty / bundle /
+return authority, and mandatory delivery timing.
+
+**Utility.**
+
+```
+U(O) = w_product·ProductFit + w_price·PriceFit + w_delivery·DeliveryFit
+     + w_warranty·WarrantyFit + w_bundle·BundleFit + w_returns·ReturnsFit
+```
+
+ProductFit is Stage 3 `overall_semantic_fit`. Weights come from a named
+simulation profile or `INTENT_ADAPTED` (`IntentWeightResolver` over context,
+preferences, and trade-offs). Weights always sum to 1. Every score ships a
+component trace.
+
+**Pareto.** Offer A dominates B when A is at least as good on every objective
+and strictly better on one. Hero objectives: maximize simulated utility and
+maximize contribution cents. Money is exact; utility uses a configurable
+epsilon (default `1e-9`). Dominated offers are kept for explanation.
+
+**Selection** is a separate rule, applied only on the frontier:
+
+```
+score = 0.5 · norm(utility) + 0.5 · norm(contribution)
+```
+
+**Counterfactuals** change one lever at a time from the baseline. Intervention
+efficiency is Δutility per intervention dollar, not ROI.
+
+If no offer is policy-safe, AstraOS returns `NO_POLICY_SAFE_OFFER` and will not
+invent a deal.
+
 ## Architecture
 
 ```
@@ -296,7 +360,9 @@ Routes → Services → Repositories / Decision modules → Database
 
 Decision logic lives under `apps/api/app/decision/intent/`,
 `apps/api/app/decision/eligibility/`, `apps/api/app/decision/retrieval/`,
-and `apps/api/app/decision/offers/`.
+`apps/api/app/decision/offers/`, `apps/api/app/decision/economics/`,
+`apps/api/app/decision/policies/`, `apps/api/app/decision/utility/`,
+`apps/api/app/decision/pareto/`, and `apps/api/app/decision/optimisation/`.
 
 Money remains integer cents. The MVP scans active variants in the selected
 category. That is acceptable for a few hundred SKUs.
@@ -373,12 +439,12 @@ Without those values the API stays on the rule-based parser.
 - **Stage 2 — Intent interpretation + deterministic eligibility** — COMPLETE
 - **Stage 3 — Deep intent intelligence + semantic matching** — COMPLETE
 - **Stage 4 — Offer construction + dynamic bundling** — COMPLETE
-- **Stage 5 — Merchant economics + Pareto optimisation**
-- **Stage 6 — B2A negotiation**
+- **Stage 5 — Merchant economics + Pareto optimisation** — COMPLETE
+- **Stage 6 — B2A Buyer-Agent ↔ Merchant-Agent Negotiation**
 - **Stage 7 — Transaction loop**
 - **Stage 8 — Agent Arena + benchmark**
 - **Stage 9 — Intent → Offer → Outcome learning**
 - **Stage 10 — Protocol adapter + demo hardening**
 
-Stage 4 does not implement buyer utility, P(win), Pareto frontiers,
-recommended offers, negotiation, checkout, orders, Arena, or learning.
+Stage 5 does not implement B2A negotiation, checkout, orders, Arena,
+Intent → Offer → Outcome learning, or MCP/UCP.

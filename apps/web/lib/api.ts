@@ -13,6 +13,9 @@ import type {
   GenerateOffersResponse,
   OfferDetailResponse,
   OfferRunResponse,
+  BuyerProfile,
+  DecisionResponse,
+  OptimisationResponse,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -171,4 +174,26 @@ export function getOfferRun(
 
 export function getOffer(offerId: string): Promise<OfferDetailResponse> {
   return request<OfferDetailResponse>(`/api/v1/offers/${offerId}`);
+}
+
+export function runDecision(payload: {
+  intent: string;
+  parser_mode?: "rule_based" | "llm";
+  buyer_profile?: BuyerProfile;
+  max_products?: number;
+}): Promise<DecisionResponse> {
+  return request<DecisionResponse>("/api/v1/decision/run", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function runOptimisation(payload: {
+  offer_run_id: string;
+  buyer_profile?: BuyerProfile;
+}): Promise<OptimisationResponse> {
+  return request<OptimisationResponse>("/api/v1/optimisation/run", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

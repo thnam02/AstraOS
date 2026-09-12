@@ -1,5 +1,5 @@
 """AstraOS decision engine package.
 
-Stage 2 implements intent interpretation and deterministic eligibility.
-Retrieval, offers, Pareto, utility, and economics remain later stages.
+Stage 5 adds merchant economics, simulated buyer utility, and Pareto
+selection on top of Stage 4 offer construction.
 """

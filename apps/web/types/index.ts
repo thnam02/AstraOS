@@ -469,3 +469,128 @@ export type OfferDetailResponse = {
   offer: Record<string, unknown>;
   public: PublicOffer;
 };
+
+export type BuyerProfile =
+  | "INTENT_ADAPTED"
+  | "BALANCED"
+  | "URGENT_TRAVELLER"
+  | "BUDGET_SHOPPER"
+  | "ASSURANCE_BUYER"
+  | "QUALITY_FIRST";
+
+export type PublicScoredOffer = {
+  offer_id: string;
+  product_name: string;
+  brand: string;
+  sku: string;
+  variant_id: string;
+  pricing: { product_price_cents: number; total_price_cents: number; currency: string };
+  delivery: { code: string; name: string; days: number };
+  warranty: { code: string; name: string; months: number };
+  bundle: { code: string; name: string | null } | null;
+  returns: { code: string; window_days: number | null } | null;
+  contribution_margin_cents: number;
+  contribution_margin_rate: number;
+  incremental_intervention_cost_cents: number;
+  buyer_utility: number;
+  utility_trace: {
+    components: { component: string; fit: number; weight: number; weighted: number }[];
+    total: number;
+  };
+  policy_safe: boolean;
+  policy_rejection_codes: string[];
+  is_pareto_efficient: boolean;
+  dominated_by_offer_id: string | null;
+  is_recommended: boolean;
+  is_baseline: boolean;
+  product_fit: number;
+};
+
+export type PlotPoint = {
+  offer_id: string;
+  product_name: string;
+  sku: string;
+  total_price_cents: number;
+  delivery_code: string;
+  warranty_code: string;
+  bundle_code: string | null;
+  return_policy_code: string | null;
+  buyer_utility: number;
+  contribution_margin_cents: number;
+  intervention_cost_cents: number;
+  is_pareto_efficient: boolean;
+  is_recommended: boolean;
+};
+
+export type CounterfactualRow = {
+  lever: string;
+  label: string;
+  offer_id: string | null;
+  policy_safe: boolean;
+  buyer_utility: number;
+  delta_utility: number;
+  contribution_margin_cents: number;
+  delta_contribution_cents: number;
+  incremental_intervention_cost_cents: number;
+  intervention_efficiency: number | null;
+  total_price_cents: number;
+  delivery_code: string;
+  warranty_code: string;
+  bundle_code: string | null;
+  return_policy_code: string | null;
+};
+
+export type OptimisationResponse = {
+  optimisation_run_id: string;
+  offer_run_id: string;
+  match_run_id: string | null;
+  summary: {
+    offers_considered: number;
+    policy_safe: number;
+    policy_rejected: number;
+    pareto_efficient: number;
+  };
+  buyer_model: {
+    type: string;
+    profile_id: string;
+    weights: Record<string, number>;
+    disclaimer: string;
+  };
+  timing: {
+    economics_ms: number;
+    policy_filter_ms: number;
+    utility_ms: number;
+    pareto_ms: number;
+    selection_ms: number;
+    counterfactual_ms: number;
+    persistence_ms: number;
+    total_optimisation_ms: number;
+  };
+  recommended_offer: PublicScoredOffer | null;
+  pareto_offers: PublicScoredOffer[];
+  alternative_pareto_offers: PublicScoredOffer[];
+  plot_points: PlotPoint[];
+  counterfactuals: CounterfactualRow[];
+  comparisons: {
+    role: string;
+    offer_id: string | null;
+    label: string;
+    buyer_utility: number | null;
+    contribution_margin_cents: number | null;
+    policy_safe: boolean;
+  }[];
+  explanation: string[];
+  failure: {
+    code: string;
+    message: string;
+    requested_max_price_cents: number | null;
+    lowest_constructed_price_cents: number | null;
+    rejection_distribution: Record<string, number>;
+  } | null;
+};
+
+export type DecisionResponse = {
+  match: MatchResponse;
+  construction: GenerateOffersResponse;
+  optimisation: OptimisationResponse;
+};

@@ -29,6 +29,12 @@ class OfferRepository:
         result = await self.session.scalars(stmt)
         return result.unique().one_or_none()
 
+    async def list_all(self, run_id: uuid.UUID) -> Sequence[OfferCandidateRow]:
+        result = await self.session.scalars(
+            select(OfferCandidateRow).where(OfferCandidateRow.run_id == run_id)
+        )
+        return result.all()
+
     async def get_offer(self, offer_id: uuid.UUID) -> OfferCandidateRow | None:
         result = await self.session.scalars(
             select(OfferCandidateRow).where(OfferCandidateRow.id == offer_id)

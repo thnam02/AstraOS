@@ -51,6 +51,17 @@ export function processRailState(
   return flags.txnComplete ? "complete" : "future";
 }
 
+const STAGE_COPY: Record<LiveStage, string> = {
+  understand: "Understand",
+  qualify: "Qualify",
+  match: "Match",
+  construct: "Construct",
+  optimise: "Optimise",
+  negotiate: "Negotiate",
+  transact: "Transact",
+  learn: "Learn",
+};
+
 export function ProcessRail({
   active,
   flags,
@@ -62,25 +73,32 @@ export function ProcessRail({
 }) {
   return (
     <ol
-      className="flex flex-wrap items-center gap-x-1 gap-y-1"
+      className="flex flex-wrap items-center gap-x-0.5 gap-y-1"
       aria-label="Decision pipeline"
     >
       {LIVE_STAGES.map((id, index) => {
         const state = processRailState(id, flags, active);
         const mark =
-          state === "complete" ? "✓" : state === "active" ? "●" : state === "failed" ? "!" : "○";
+          state === "complete"
+            ? "✓"
+            : state === "active"
+              ? "●"
+              : state === "failed"
+                ? "!"
+                : "○";
         return (
           <li key={id} className="flex items-center">
             {index > 0 ? (
-              <span className="mx-1 text-[10px] text-line" aria-hidden>
-                ─
+              <span className="mx-1.5 text-[10px] text-line" aria-hidden>
+                ──
               </span>
             ) : null}
             <button
               type="button"
               onClick={() => onSelect(id)}
               aria-current={state === "active" ? "step" : undefined}
-              className={`text-[11px] uppercase tracking-[0.08em] ${
+              aria-label={`${STAGE_COPY[id]}, ${state}`}
+              className={`cursor-pointer text-[11px] uppercase tracking-[0.08em] ${
                 state === "active"
                   ? "font-semibold text-ink"
                   : state === "complete"
@@ -93,7 +111,7 @@ export function ProcessRail({
               <span className="mr-1" aria-hidden>
                 {mark}
               </span>
-              {id}
+              {STAGE_COPY[id]}
             </button>
           </li>
         );

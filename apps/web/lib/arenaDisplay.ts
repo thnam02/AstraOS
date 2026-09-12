@@ -102,9 +102,10 @@ export function warrantyLabel(
   months: number | null = null,
 ): string {
   if (months != null) return `${months}-month warranty`;
-  if (code === "STANDARD_12") return "12-month warranty";
-  if (code === "EXTENDED_36") return "36-month warranty";
   if (!code) return "No warranty";
+  if (code === "STANDARD_12") return "12-month warranty";
+  const extended = /^EXTENDED_(\d+)$/.exec(code);
+  if (extended) return `${extended[1]}-month warranty`;
   return titleCaseCode(code);
 }
 
@@ -113,6 +114,25 @@ export function bundleLabel(code: string | null): string {
   if (code === "HARD_CASE") return "Hard case";
   if (code === "TRAVEL_ADAPTER") return "Travel adapter";
   return titleCaseCode(code);
+}
+
+export function returnsLabel(
+  code: string | null,
+  days: number | null = null,
+): string {
+  if (days != null) return `${days}-day returns`;
+  if (!code) return "No returns";
+  if (code === "STANDARD_30") return "30-day returns";
+  const flex = /^(?:FLEX|STANDARD)_(\d+)$/.exec(code);
+  if (flex) return `${flex[1]}-day returns`;
+  return titleCaseCode(code);
+}
+
+export function feasibilityLabel(status: string | null): string {
+  if (!status) return "Unknown";
+  if (status === "FEASIBLE") return "Feasible";
+  if (status === "REJECTED") return "Rejected";
+  return titleCaseCode(status);
 }
 
 export function policyReasons(failure: string | null): string[] {
@@ -237,6 +257,51 @@ export function componentDeltaLines(
     delta: row.delta,
     signed: signedDelta(row.delta, 2),
   }));
+}
+
+export function commercialDifference(
+  left: ArenaStrategyResponse,
+  right: ArenaStrategyResponse,
+): { label: string; from: string; to: string; changed: boolean }[] {
+  return [
+    {
+      label: "Product",
+      from: left.product_name ?? "—",
+      to: right.product_name ?? "—",
+      changed: left.sku !== right.sku,
+    },
+    {
+      label: "Price",
+      from:
+        left.total_customer_price_cents != null
+          ? formatAudCents(left.total_customer_price_cents)
+          : "—",
+      to:
+        right.total_customer_price_cents != null
+          ? formatAudCents(right.total_customer_price_cents)
+          : "—",
+      changed:
+        left.total_customer_price_cents !== right.total_customer_price_cents,
+    },
+    {
+      label: "Delivery",
+      from: deliveryLabel(left.delivery, left.delivery_days),
+      to: deliveryLabel(right.delivery, right.delivery_days),
+      changed: left.delivery !== right.delivery,
+    },
+    {
+      label: "Warranty",
+      from: warrantyLabel(left.warranty, left.warranty_months),
+      to: warrantyLabel(right.warranty, right.warranty_months),
+      changed: left.warranty !== right.warranty,
+    },
+    {
+      label: "Bundle",
+      from: bundleLabel(left.bundle),
+      to: bundleLabel(right.bundle),
+      changed: (left.bundle ?? "NONE") !== (right.bundle ?? "NONE"),
+    },
+  ];
 }
 
 export function merchantEconomicsLine(

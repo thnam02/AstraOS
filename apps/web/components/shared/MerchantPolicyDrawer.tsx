@@ -214,6 +214,7 @@ export function MerchantPolicyDrawer({
               max discount {formatRate(policy.maximum_discount_rate)}.
             </p>
           ) : null}
+          <p className="eyebrow">Economics</p>
           <label className="block space-y-1.5">
             <span className="text-xs font-medium text-muted">Minimum margin %</span>
             <input
@@ -236,8 +237,9 @@ export function MerchantPolicyDrawer({
               className="w-full rounded-[6px] border border-line bg-canvas px-3 py-2 text-sm text-ink"
             />
           </label>
+          <p className="eyebrow">Fulfilment & commercial options</p>
           <div className="divide-y divide-line border-y border-line">
-            <Toggle label="Delivery subsidy" checked={delivery} onChange={setDelivery} />
+            <Toggle label="Same-day / delivery subsidy" checked={delivery} onChange={setDelivery} />
             <Toggle label="Warranty upgrades" checked={warranty} onChange={setWarranty} />
             <Toggle label="Bundles" checked={bundles} onChange={setBundles} />
             <Toggle label="Flexible returns" checked={returns} onChange={setReturns} />

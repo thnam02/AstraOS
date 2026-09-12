@@ -48,6 +48,9 @@ export function commercialLevers(offer: PublicScoredOffer) {
     deliveryLabel(offer.delivery.code, offer.delivery.days),
     warrantyLabel(offer.warranty.code, offer.warranty.months),
     bundleLabel(offer.bundle?.code ?? null),
+    offer.returns?.window_days
+      ? `${offer.returns.window_days}-day returns`
+      : "Standard returns",
   ];
 }
 
@@ -91,6 +94,91 @@ export function constructStory(construction: GenerateOffersResponse) {
     feasible: construction.summary.feasible_candidates,
     estimated: construction.summary.estimated_candidates,
   };
+}
+
+export function expansionSteps(
+  construction: GenerateOffersResponse,
+  optimisation?: OptimisationResponse | null,
+): { label: string; value: string }[] {
+  const story = constructStory(construction);
+  const steps = [
+    { label: "Matched products", value: String(story.products) },
+    {
+      label: "Candidate offers",
+      value: story.generated.toLocaleString(),
+    },
+    {
+      label: "Feasible",
+      value: story.feasible.toLocaleString(),
+    },
+  ];
+  if (optimisation?.summary.policy_safe != null) {
+    steps.push({
+      label: "Policy-safe",
+      value: optimisation.summary.policy_safe.toLocaleString(),
+    });
+  }
+  if (optimisation?.summary.pareto_efficient != null) {
+    steps.push({
+      label: "Pareto-efficient",
+      value: String(optimisation.summary.pareto_efficient),
+    });
+  }
+  if (optimisation?.recommended_offer) {
+    steps.push({ label: "Selected response", value: "1" });
+  }
+  return steps;
+}
+
+export function dimensionLine(construction: GenerateOffersResponse): string {
+  const story = constructStory(construction);
+  return `${story.products} products × ${story.price} price × ${story.delivery} delivery × ${story.warranty} warranty × ${story.bundle} bundle × ${story.returns} returns`;
+}
+
+export const PIPELINE_LOADING = [
+  "Understanding buyer intent",
+  "Checking mandatory constraints",
+  "Matching merchant catalogue",
+  "Constructing commercial offers",
+  "Applying merchant policy",
+  "Computing efficient frontier",
+  "Creating merchant response",
+] as const;
+
+export const STAGE_LABELS: Record<string, string> = {
+  understand: "Understand",
+  qualify: "Qualify",
+  match: "Match",
+  construct: "Construct",
+  optimise: "Optimise",
+  negotiate: "Negotiate",
+  transact: "Transact",
+  learn: "Learn",
+};
+
+export function humanizeCheck(code: string): string {
+  const labels: Record<string, string> = {
+    PRICE: "Price",
+    INVENTORY: "Inventory",
+    DELIVERY: "Delivery",
+    MERCHANT_POLICY: "Merchant policy",
+    POLICY: "Merchant policy",
+    WARRANTY: "Warranty",
+    BUNDLE: "Bundle",
+    RETURNS: "Returns",
+    PROPOSAL_EXPIRED: "Proposal expired",
+    OUT_OF_STOCK: "Out of stock",
+    INSUFFICIENT_STOCK: "Insufficient stock",
+    DELIVERY_NO_LONGER_AVAILABLE: "Delivery capacity changed",
+    MARGIN_POLICY_VIOLATION: "Merchant policy",
+    MERCHANT_POLICY_CHANGED: "Merchant policy changed",
+    NO_POLICY_SAFE_OFFER: "No policy-safe offer",
+    NO_ELIGIBLE_PRODUCT: "No eligible product",
+    RESERVATION_FAILED: "Reservation conflict",
+    ALREADY_TRANSACTED: "Already transacted",
+    TRANSACTION_CONFLICT: "Transaction conflict",
+  };
+  return labels[code] ?? code.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function offerVsProductCopy(differ: boolean): string {
@@ -148,9 +236,20 @@ export function negotiationConstraint(
 }
 
 export const LEARN_STORY = [
-  { id: "observe", label: "Observe", body: "Intent → Offer → Outcome" },
-  { id: "learn", label: "Learn", body: "Response model" },
-  { id: "improve", label: "Improve", body: "Future offer decisions" },
+  { id: "intent", label: "Intent", body: "What the buyer asked" },
+  { id: "offer", label: "Offer", body: "Merchant response sent" },
+  { id: "outcome", label: "Outcome", body: "Selected, rejected, or no purchase" },
+  { id: "record", label: "Learning record", body: "Intent → Offer → Outcome" },
+  { id: "model", label: "Response model", body: "Experimental, synthetic only" },
+  { id: "future", label: "Future support", body: "After real B2A outcomes exist" },
+] as const;
+
+export const LEARN_STATUS = [
+  { label: "Rule-based / deterministic eligibility", state: "ACTIVE" },
+  { label: "Real semantic matching", state: "ACTIVE" },
+  { label: "Transparent buyer utility", state: "PRIMARY" },
+  { label: "Learned response model", state: "EXPERIMENTAL" },
+  { label: "Real observed response model", state: "FUTURE" },
 ] as const;
 
 export const SCENARIOS = [

@@ -16,7 +16,7 @@ import {
   getLearningOverview,
   trainLearningModels,
 } from "@/lib/api";
-import { LEARN_STORY } from "@/lib/decisionNarrative";
+import { LEARN_STATUS, LEARN_STORY } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
 import type {
   LearningOverview,
@@ -99,23 +99,41 @@ export function LearnWorkbench() {
       <div>
         <p className="eyebrow">Learn</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-          Observe → Learn → Improve
+          How AstraOS could improve after real outcomes exist
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Transaction outcomes feed a response model that can improve future
-          offer decisions. Current weights are trained only on synthetic Arena
-          selections.
+          LIVE uses transparent cold-start logic today. LEARN records Intent →
+          Offer → Outcome. The learned score is experimental and synthetic.
         </p>
       </div>
 
-      <ol className="grid gap-4 text-sm md:grid-cols-3">
-        {LEARN_STORY.map((item) => (
+      <ol className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+        {LEARN_STORY.map((item, index) => (
           <li key={item.id}>
-            <p className="eyebrow">{item.label}</p>
+            <p className="eyebrow">
+              {index + 1}. {item.label}
+            </p>
             <p className="mt-1">{item.body}</p>
           </li>
         ))}
       </ol>
+
+      <table className="w-full text-left text-xs">
+        <thead>
+          <tr className="border-b border-line text-muted">
+            <th className="py-2 font-medium">Capability</th>
+            <th className="py-2 font-medium">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {LEARN_STATUS.map((item) => (
+            <tr key={item.label} className="border-b border-line">
+              <td className="py-2">{item.label}</td>
+              <td className="py-2">{item.state}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <p className="text-xs text-warning" title={DISCLAIMER}>
         {DISCLAIMER}
@@ -130,18 +148,32 @@ export function LearnWorkbench() {
         ))}
       </ol>
 
-      <section className="grid gap-4 md:grid-cols-4">
-        <Stat
-          label="Synthetic interactions"
-          value={overview?.dataset?.interaction_count ?? 0}
-        />
-        <Stat label="Selected" value={overview?.dataset?.positive_count ?? 0} />
-        <Stat label="Not selected" value={overview?.dataset?.negative_count ?? 0} />
-        <Stat
-          label="Missions"
-          value={overview?.dataset?.metadata.mission_count ?? 0}
-        />
-      </section>
+      <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+        <div>
+          <dt className="text-xs text-muted">Synthetic interactions</dt>
+          <dd className="font-mono tabular-nums">
+            {(overview?.dataset?.interaction_count ?? 0).toLocaleString()}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted">Selected</dt>
+          <dd className="font-mono tabular-nums">
+            {(overview?.dataset?.positive_count ?? 0).toLocaleString()}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted">Not selected</dt>
+          <dd className="font-mono tabular-nums">
+            {(overview?.dataset?.negative_count ?? 0).toLocaleString()}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted">Missions</dt>
+          <dd className="font-mono tabular-nums">
+            {(overview?.dataset?.metadata.mission_count ?? 0).toLocaleString()}
+          </dd>
+        </div>
+      </dl>
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs text-muted">
@@ -367,15 +399,6 @@ export function LearnWorkbench() {
         </table>
       </section>
       {error ? <p className="text-sm text-danger">{error}</p> : null}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="border border-line bg-surface p-3">
-      <p className="text-[11px] tracking-[0.12em] text-muted">{label}</p>
-      <p className="mt-1 text-xl font-semibold">{value.toLocaleString()}</p>
     </div>
   );
 }

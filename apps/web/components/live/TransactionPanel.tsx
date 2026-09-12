@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeCheck } from "@/lib/decisionNarrative";
 import { formatAudCents, formatRate } from "@/lib/money";
 import type { AcceptProposalResponse, NegotiationResponse } from "@/types";
 
@@ -79,8 +80,8 @@ export function TransactionPanel({
           Execution pipeline
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Acceptance is not final until live merchant state is revalidated.
-          AstraOS does not take payment.
+          Proposal proof is issuance-time evidence. Revalidation is current
+          operational truth. AstraOS does not take payment.
         </p>
       </div>
 
@@ -117,7 +118,7 @@ export function TransactionPanel({
                 <ul className="mt-1 grid gap-1 pl-6 text-xs sm:grid-cols-2">
                   {transaction.revalidation.checks.map((item) => (
                     <li key={item.check} className="flex justify-between gap-3">
-                      <span>{item.check.replaceAll("_", " ")}</span>
+                      <span>{humanizeCheck(item.check)}</span>
                       <span
                         className={
                           item.status === "PASS" ? "text-success" : "text-danger"
@@ -149,7 +150,8 @@ export function TransactionPanel({
         <div>
           <p className="eyebrow text-danger">Proposal cannot be executed</p>
           <p className="mt-2 text-sm">
-            {transaction.failure_codes.join(" · ") || transaction.state}
+            {transaction.failure_codes.map(humanizeCheck).join(" · ") ||
+              humanizeCheck(transaction.state)}
           </p>
           <p className="mt-1 text-xs text-muted">
             The accepted proposal was not silently rewritten.

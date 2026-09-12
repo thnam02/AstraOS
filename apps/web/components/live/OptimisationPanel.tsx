@@ -101,9 +101,9 @@ export function OptimisationPanel({
         onSelect={onSelectOffer}
       />
       <p className="text-sm text-muted">
-        Frontier offers cannot improve buyer fit without sacrificing merchant
-        contribution, or the reverse. Changing the merchant objective moves the
-        selected point, not the frontier.
+        Each frontier offer is an efficient buyer/merchant trade-off: improving
+        one objective requires sacrificing the other. Changing the merchant
+        objective moves the selected point, not the frontier.
       </p>
 
       <div className="flex flex-wrap items-end gap-4">
@@ -274,37 +274,43 @@ function CounterfactualStory({
   if (!story) return null;
   return (
     <div className="bg-canvas px-4 py-3 text-sm">
-      <p className="eyebrow">Discount vs delivery</p>
+      <p className="eyebrow">What should the merchant change?</p>
       <div className="mt-2 grid gap-3 md:grid-cols-3">
         <div>
           <p className="text-xs text-muted">Baseline</p>
-          <p className="font-mono tabular-nums">
-            {formatAudCents(story.baseline.total_price_cents)} ·{" "}
-            {story.baseline.delivery_code.replaceAll("_", " ").toLowerCase()} ·
-            fit {story.baseline.buyer_utility.toFixed(2)} ·{" "}
-            {formatAudCents(story.baseline.contribution_margin_cents)}
+          <p>Fit {story.baseline.buyer_utility.toFixed(2)}</p>
+          <p>Contribution {formatAudCents(story.baseline.contribution_margin_cents)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted">Discount</p>
+          <p>
+            Fit {story.discount.buyer_utility.toFixed(2)}{" "}
+            <span className="text-muted">
+              ({story.discount.delta_utility >= 0 ? "+" : ""}
+              {story.discount.delta_utility.toFixed(2)})
+            </span>
+          </p>
+          <p>
+            Contribution {formatAudCents(story.discount.contribution_margin_cents)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-muted">Option A — discount</p>
-          <p className="font-mono tabular-nums">
-            Fit {story.discount.delta_utility >= 0 ? "+" : ""}
-            {story.discount.delta_utility.toFixed(2)} · cost{" "}
-            {formatAudCents(story.discount.incremental_intervention_cost_cents)}
+          <p className="text-xs text-muted">Same-day</p>
+          <p>
+            Fit {story.delivery.buyer_utility.toFixed(2)}{" "}
+            <span className="text-muted">
+              ({story.delivery.delta_utility >= 0 ? "+" : ""}
+              {story.delivery.delta_utility.toFixed(2)})
+            </span>
           </p>
-        </div>
-        <div>
-          <p className="text-xs text-muted">Option B — faster delivery</p>
-          <p className="font-mono tabular-nums">
-            Fit {story.delivery.delta_utility >= 0 ? "+" : ""}
-            {story.delivery.delta_utility.toFixed(2)} · cost{" "}
-            {formatAudCents(story.delivery.incremental_intervention_cost_cents)}
+          <p>
+            Contribution {formatAudCents(story.delivery.contribution_margin_cents)}
           </p>
         </div>
       </div>
       <p className="mt-3 text-sm">
-        AstraOS chooses {story.choosesDelivery ? "faster delivery" : "discount"}.
-        More buyer-fit gain per unit of merchant sacrifice.
+        More efficient intervention:{" "}
+        {story.choosesDelivery ? "same-day delivery" : "discount"}.
       </p>
     </div>
   );

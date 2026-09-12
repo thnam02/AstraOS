@@ -36,8 +36,8 @@ export function ApiStatus() {
   }, []);
 
   return (
-    <section className="panel max-w-xs p-4">
-      <p className="eyebrow mb-3">API status</p>
+    <section className="max-w-xs">
+      <p className="eyebrow mb-2">API</p>
       <StatusBadge status={status} />
       {degraded.length ? (
         <p className="mt-2 text-xs leading-5 text-muted">

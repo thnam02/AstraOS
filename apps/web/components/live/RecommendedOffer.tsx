@@ -82,17 +82,12 @@ export function RecommendedOffer({
         </ul>
       </div>
 
-      <div className="space-y-1 text-sm">
-        <p className="text-xs text-muted">Product</p>
-        <p>
-          {offer.product_name}{" "}
-          <span className="font-mono tabular-nums text-muted">
-            match {Math.round(offer.product_fit * 100)} / 100
-          </span>
-        </p>
-        <p className="pt-2 text-xs text-muted">Commercial enhancements</p>
-        <p>{commercialLevers(offer).join(" · ")}</p>
-      </div>
+      <p
+        className="text-xs text-muted"
+        title="How strongly the product itself aligns with buyer intent."
+      >
+        Product match {Math.round(offer.product_fit * 100)} / 100
+      </p>
 
       <dl className="space-y-2">
         <div>

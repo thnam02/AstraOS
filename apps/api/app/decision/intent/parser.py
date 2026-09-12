@@ -36,7 +36,7 @@ def _fallback_reason(exc: Exception) -> str:
         return "authentication"
     if "credentials" in message or "no client" in message:
         return "provider_unconfigured"
-    if "unavailable" in message:
+    if "unavailable" in message or "returned an error" in message:
         return "provider_unavailable"
     return "validation_failed"
 

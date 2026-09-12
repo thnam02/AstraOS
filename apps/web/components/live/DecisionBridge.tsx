@@ -2,6 +2,8 @@ import { formatAudCents } from "@/lib/money";
 import {
   bestPointForProduct,
   commercialLevers,
+  dimensionLine,
+  expansionSteps,
   offerVsProductCopy,
   productsDiffer,
 } from "@/lib/decisionNarrative";
@@ -26,95 +28,91 @@ export function DecisionBridge({
   if (!topMatch || !offer) return null;
   const differ = productsDiffer(topMatch, offer);
   const topOffer = bestPointForProduct(optimisation, topMatch);
+  const steps = construction ? expansionSteps(construction, optimisation) : [];
 
   return (
-    <section className="space-y-3">
-      <div className="grid items-center gap-3 text-sm md:grid-cols-[1fr_auto_1fr_auto_1fr]">
+    <section className="space-y-4">
+      <div>
+        <p className="eyebrow">Product → offer</p>
+        <p className="mt-1 text-xs text-muted">
+          Product ranking is not the merchant response. The offer is.
+        </p>
+      </div>
+
+      <div className="grid items-start gap-3 text-sm md:grid-cols-[1fr_auto_1fr]">
         <div>
-          <p className="eyebrow">Best product</p>
+          <p className="eyebrow">Best product match</p>
           <p className="mt-1 text-base font-semibold">{topMatch.product_name}</p>
-          <p className="font-mono text-sm tabular-nums">
-            {Math.round(topMatch.overall_semantic_fit * 100)} match
+          <p
+            className="font-mono text-sm tabular-nums"
+            title="How strongly the product itself aligns with buyer intent."
+          >
+            {Math.round(topMatch.overall_semantic_fit * 100)} / 100
           </p>
         </div>
-        <p className="font-mono text-lg text-muted" aria-label={differ ? "not equal" : "equals"}>
+        <p
+          className="self-center font-mono text-2xl text-muted"
+          aria-label={differ ? "not equal" : "same product"}
+        >
           {differ ? "≠" : "="}
         </p>
         <div>
-          <p className="eyebrow">Offer optimisation</p>
-          <p className="mt-1 font-mono text-sm tabular-nums">
-            {construction?.input.matched_products ?? "—"} products ·{" "}
-            {construction?.summary.generated_candidates.toLocaleString() ?? "—"} configs
-          </p>
-          <p className="text-xs text-muted">
-            {optimisation?.summary.policy_safe.toLocaleString() ?? "—"} policy-safe ·{" "}
-            {optimisation?.summary.pareto_efficient ?? "—"} Pareto
-          </p>
-        </div>
-        <p className="text-muted" aria-hidden>
-          →
-        </p>
-        <div>
-          <p className="eyebrow">Best offer</p>
+          <p className="eyebrow">Selected commercial offer</p>
           <p className="mt-1 text-base font-semibold">{offer.product_name}</p>
-          <p className="font-mono text-sm tabular-nums">
-            {offer.buyer_utility.toFixed(2)} buyer utility ·{" "}
+          <p
+            className="font-mono text-sm tabular-nums"
+            title="Transparent cold-start score for the complete offer."
+          >
+            {offer.buyer_utility.toFixed(2)} utility ·{" "}
             {formatAudCents(offer.contribution_margin_cents)}
           </p>
         </div>
       </div>
-      {differ ? (
-        <p className="text-sm">Commercial configuration changed the outcome.</p>
-      ) : null}
 
-      <p className="text-xs text-muted">{offerVsProductCopy(differ)}</p>
+      {construction ? (
+        <ol className="space-y-1 text-sm">
+          <li className="text-xs text-muted">{dimensionLine(construction)}</li>
+          {steps.map((step, index) => (
+            <li key={step.label} className="flex items-baseline justify-between gap-3">
+              <span className="text-muted">
+                {index > 0 ? "↓ " : ""}
+                {step.label}
+              </span>
+              <span className="font-mono tabular-nums">{step.value}</span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
 
       {differ ? (
         <div className="bg-canvas px-4 py-3">
-          <p className="eyebrow">Why a different product?</p>
-          <div className="mt-2 grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm font-medium">{topMatch.product_name}</p>
-              <p className="text-xs text-muted">Best standalone product match</p>
-              <p className="mt-1 font-mono text-sm tabular-nums">
-                Match {Math.round(topMatch.overall_semantic_fit * 100)} / 100
-              </p>
-              {topOffer ? (
-                <p className="font-mono text-sm tabular-nums">
-                  Best offer {topOffer.buyer_utility.toFixed(2)} ·{" "}
-                  {formatAudCents(topOffer.contribution_margin_cents)}
-                </p>
-              ) : null}
-            </div>
-            <div>
-              <p className="text-sm font-medium">{offer.product_name}</p>
-              <p className="text-xs text-muted">Strongest complete offer</p>
-              <p className="mt-1 font-mono text-sm tabular-nums">
-                Product match {Math.round(offer.product_fit * 100)} / 100
-              </p>
-              <p className="font-mono text-sm tabular-nums">
-                Offer fit {offer.buyer_utility.toFixed(2)} ·{" "}
-                {formatAudCents(offer.contribution_margin_cents)}
-              </p>
-              <p className="mt-2 text-xs text-muted">
-                {commercialLevers(offer).join(" · ")}
-              </p>
-            </div>
-          </div>
-          <p className="mt-3 text-sm">
-            {offer.product_name} is not the strongest standalone product match.
-            Offer optimisation selected this complete configuration as the
-            merchant response
-            {topOffer && topOffer.buyer_utility > offer.buyer_utility
-              ? ` — a small buyer-utility difference for ${formatAudCents(offer.contribution_margin_cents - topOffer.contribution_margin_cents)} more contribution.`
-              : " because its commercial configuration creates the stronger buyer/merchant trade-off."}
+          <p className="eyebrow">Why different?</p>
+          <p className="mt-1 text-sm">
+            {topMatch.product_name} had the stronger standalone product match.
+            {offer.product_name} won as a complete commercial response.
           </p>
+          <p className="mt-2 text-xs text-muted">
+            Commercial configuration: {commercialLevers(offer).join(" · ")}
+          </p>
+          {topOffer ? (
+            <p className="mt-2 font-mono text-xs tabular-nums text-muted">
+              Top-product best offer {topOffer.buyer_utility.toFixed(2)} ·{" "}
+              {formatAudCents(topOffer.contribution_margin_cents)} vs selected{" "}
+              {offer.buyer_utility.toFixed(2)} ·{" "}
+              {formatAudCents(offer.contribution_margin_cents)}
+            </p>
+          ) : null}
         </div>
       ) : (
-        <p className="text-sm text-muted">
-          Top product remained strongest after offer optimisation.
-        </p>
+        <div className="bg-canvas px-4 py-3">
+          <p className="eyebrow">Same product</p>
+          <p className="mt-1 text-sm">
+            Top product remained the best complete offer. AstraOS still changed
+            commercial terms: {commercialLevers(offer).join(" · ")}.
+          </p>
+        </div>
       )}
+      <p className="text-xs text-muted">{offerVsProductCopy(differ)}</p>
     </section>
   );
 }

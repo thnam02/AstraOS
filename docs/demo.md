@@ -89,12 +89,19 @@ Optional policy: **MARGIN 25%**, rerun, show frontier change.
 
 ## 2:35 — ARENA
 
-Open ARENA. Run a live duel or load the precomputed benchmark.
+Open ARENA. Run a live duel on the primary ablation:
+
+Default → Always Discount → Semantic Only → AstraOS.
+
+Same buyer, catalogue, inventory, policy, and buyer model. Only strategy
+changes. Point to Semantic Only vs AstraOS: product matching vs the
+complete commercial response.
 
 Say: “We evaluate against simpler merchant strategies using a transparent
 synthetic buyer model.”
 
 Point to: “Synthetic evaluation — not observed real-world sales uplift.”
+If Always Discount wins a mission, show it. Do not hide losses.
 
 ## 2:50 — Close
 

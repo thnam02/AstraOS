@@ -143,7 +143,11 @@ export function NegotiationPanel({
           Protocol exchange
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Language is interpreted. Deterministic services control commercial terms.
+          Machine-to-machine exchange. Language is interpreted. Deterministic
+          services control commercial terms.
+        </p>
+        <p className="mt-2 text-xs uppercase tracking-[0.08em] text-muted">
+          Request → Proposal → Counter → Response → Accept
         </p>
       </div>
 

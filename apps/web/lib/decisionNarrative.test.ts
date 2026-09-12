@@ -4,6 +4,9 @@ import { describe, it } from "node:test";
 import {
   conciseOfferReasons,
   constructStory,
+  expansionSteps,
+  humanizeCheck,
+  LEARN_STATUS,
   LEARN_STORY,
   matchScoreDisplay,
   negotiationConstraint,
@@ -50,6 +53,26 @@ describe("product-to-offer bridge", () => {
     } as never);
     assert.equal(story.products, 8);
     assert.equal(story.generated, 2416);
+    const steps = expansionSteps(
+      {
+        input: { matched_products: 8 },
+        dimensions: {
+          price_options: 5,
+          delivery_options: 3,
+          warranty_options: 3,
+          bundle_options: 4,
+          return_options: 2,
+        },
+        summary: {
+          generated_candidates: 2416,
+          feasible_candidates: 1584,
+          estimated_candidates: 2416,
+        },
+      } as never,
+      { summary: { policy_safe: 1102, pareto_efficient: 9 }, recommended_offer: { sku: "x" } } as never,
+    );
+    assert.equal(steps[0]?.value, "8");
+    assert.equal(steps.at(-1)?.label, "Selected response");
   });
 
   it("parses a buyer price constraint", () => {
@@ -64,8 +87,10 @@ describe("learn story", () => {
   it("leads with observe, learn, improve", () => {
     assert.deepEqual(
       LEARN_STORY.map((item) => item.label),
-      ["Observe", "Learn", "Improve"],
+      ["Intent", "Offer", "Outcome", "Learning record", "Response model", "Future support"],
     );
+    assert.equal(LEARN_STATUS[2]?.state, "PRIMARY");
+    assert.equal(LEARN_STATUS[3]?.state, "EXPERIMENTAL");
   });
 });
 
@@ -76,6 +101,11 @@ describe("score terminology", () => {
     const unique = matchScoreDisplay(0.82, [0.82, 0.78]);
     assert.equal(unique.value, "82");
     assert.equal(unique.suffix, "/ 100");
+  });
+
+  it("humanizes transaction failure codes", () => {
+    assert.equal(humanizeCheck("PROPOSAL_EXPIRED"), "Proposal expired");
+    assert.equal(humanizeCheck("OUT_OF_STOCK"), "Out of stock");
   });
 
   it("shortens offer rationale and drops probability disclaimers", () => {

@@ -6,11 +6,14 @@ import {
   bundleLabel,
   comparisonRows,
   deliveryLabel,
+  feasibilityLabel,
   headline,
   isSelectable,
   nearTie,
   policyReasons,
   primaryDecisionSentence,
+  returnsLabel,
+  commercialDifference,
   strategyTitle,
   strategyValidity,
   strongestBaseline,
@@ -157,6 +160,11 @@ describe("commercial labels", () => {
     assert.equal(bundleLabel(null), "No bundle");
     assert.equal(bundleLabel("HARD_CASE"), "Hard case");
   });
+
+  it("maps returns and feasibility enums", () => {
+    assert.equal(returnsLabel("STANDARD_30", 30), "30-day returns");
+    assert.equal(feasibilityLabel("FEASIBLE"), "Feasible");
+  });
 });
 
 describe("policy and validity", () => {
@@ -266,5 +274,15 @@ describe("strategy titles", () => {
     assert.equal(strategyTitle("CHEAPEST_ELIGIBLE"), "Cheapest Eligible");
     assert.equal(strategyTitle("SEMANTIC_ONLY"), "Semantic Only");
     assert.equal(strategyTitle("ASTRAOS"), "AstraOS");
+  });
+});
+
+describe("semantic vs astraos delta", () => {
+  it("lists only changed commercial fields", () => {
+    const left = hero.strategies[0].response;
+    const right = hero.strategies[3].response;
+    const rows = commercialDifference(left, right);
+    assert.ok(rows.some((row) => row.label === "Delivery" && row.changed));
+    assert.ok(rows.some((row) => row.label === "Warranty" && row.changed));
   });
 });

@@ -18,6 +18,7 @@ import {
 } from "@/lib/api";
 import {
   bundleLabel,
+  commercialDifference,
   deliveryLabel,
   findStrategy,
   headline,
@@ -203,8 +204,9 @@ export function ArenaWorkbench() {
         <div className="space-y-4">
           <section className="panel space-y-3">
             <p className="text-sm text-muted">
-              SAME BUYER · SAME MERCHANT · SAME RULES. Only strategy differs:
-              Default → Always Discount → Semantic Only → AstraOS.
+              Controlled experiment. Same buyer, catalogue, inventory, policy,
+              and buyer model. Only merchant strategy changes: Default → Discount
+              → Semantic Only → AstraOS.
             </p>
             <div className="flex flex-wrap items-end gap-3">
               <label className="text-xs text-muted">
@@ -509,6 +511,31 @@ function SemanticOfferDelta({ duel }: { duel: ArenaRunResponse }) {
         <OfferSnapshot title="Semantic Only" response={semantic} />
         <p className="self-center text-center text-xs text-muted">↓</p>
         <OfferSnapshot title="AstraOS" response={astraos} />
+      </div>
+      <div>
+        <p className="eyebrow">Commercial difference</p>
+        <ul className="mt-2 space-y-1 text-sm">
+          {commercialDifference(semantic, astraos)
+            .filter((row) => row.changed)
+            .map((row) => (
+              <li key={row.label} className="flex justify-between gap-3">
+                <span className="text-muted">{row.label}</span>
+                <span>
+                  {row.from} → {row.to}
+                </span>
+              </li>
+            ))}
+        </ul>
+        <p className="mt-2 font-mono text-xs tabular-nums text-muted">
+          Buyer utility{" "}
+          {signedDelta((astraos.buyer_utility ?? 0) - (semantic.buyer_utility ?? 0))}
+          {" · "}
+          Contribution{" "}
+          {moneyDelta(
+            (astraos.merchant_contribution_cents ?? 0) -
+              (semantic.merchant_contribution_cents ?? 0),
+          )}
+        </p>
       </div>
     </section>
   );

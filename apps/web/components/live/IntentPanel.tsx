@@ -45,13 +45,20 @@ function QuotedChip({
   );
 }
 
-export function IntentPanel({ intent }: { intent: ShoppingIntent }) {
+export function IntentPanel({
+  intent,
+  compact = false,
+}: {
+  intent: ShoppingIntent;
+  compact?: boolean;
+}) {
   const [quote, setQuote] = useState<string | null>(null);
   const meta = intent.parser_metadata;
   const parserName = meta?.parser_used ?? intent.parser_type;
 
   return (
     <div className="space-y-4">
+      {compact ? null : (
       <section className="flex flex-wrap gap-4 text-xs">
         <div>
           <p className="eyebrow">Parser</p>
@@ -64,6 +71,7 @@ export function IntentPanel({ intent }: { intent: ShoppingIntent }) {
           <p className="mt-1 font-medium">{meta?.fallback_used ? "Yes" : "No"}</p>
         </div>
       </section>
+      )}
 
       <section>
         <p className="eyebrow">Mandatory</p>
@@ -134,7 +142,7 @@ export function IntentPanel({ intent }: { intent: ShoppingIntent }) {
         </section>
       ) : null}
 
-      {intent.values.length ? (
+      {compact ? null : intent.values.length ? (
         <section>
           <p className="eyebrow">Values</p>
           <div className="mt-2 flex flex-wrap gap-1.5">

@@ -179,7 +179,7 @@ function ExpandedMatch({
       ) : null}
 
       <div className="mt-3">
-        <p className="eyebrow">Key strengths</p>
+        <p className="eyebrow">Match rationale</p>
         <ul className="mt-2 space-y-1.5 text-sm">
           {reasons.map((fact) => (
             <li key={`${fact.attribute}-${fact.display}`}>

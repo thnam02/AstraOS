@@ -4,6 +4,14 @@ import { useMemo, useState } from "react";
 
 import { StatStrip } from "@/components/shared/StatStrip";
 import { getOffer, getOfferRun } from "@/lib/api";
+import {
+  bundleLabel,
+  deliveryLabel,
+  feasibilityLabel,
+  returnsLabel,
+  warrantyLabel,
+} from "@/lib/arenaDisplay";
+import { constructStory, dimensionLine, expansionSteps } from "@/lib/decisionNarrative";
 import { contextLabel } from "@/lib/intent";
 import { formatAudCents } from "@/lib/money";
 import type {
@@ -36,13 +44,13 @@ export function OfferExplorer({
   const [busy, setBusy] = useState(false);
 
   const rows = run?.offers ?? construction.offers;
-  const dims = construction.dimensions;
-  const perSku =
-    dims.price_options *
-    dims.delivery_options *
-    dims.warranty_options *
-    dims.bundle_options *
-    dims.return_options;
+  const story = constructStory(construction);
+  const steps = expansionSteps(construction, {
+    summary: {
+      policy_safe: policySafe ?? 0,
+      pareto_efficient: pareto ?? 0,
+    },
+  } as never);
 
   async function applyFilters() {
     setBusy(true);
@@ -74,9 +82,23 @@ export function OfferExplorer({
     }
     return [...seen.entries()];
   }, [construction.offers]);
+  const deliveryOptions = useMemo(
+    () => uniqueCodes(construction.offers, (offer) => offer.delivery.code),
+    [construction.offers],
+  );
+  const warrantyOptions = useMemo(
+    () => uniqueCodes(construction.offers, (offer) => offer.warranty.code),
+    [construction.offers],
+  );
+  const bundleOptions = useMemo(
+    () => uniqueCodes(construction.offers, (offer) => offer.bundle?.code ?? "NONE"),
+    [construction.offers],
+  );
+  const returnsOptions = useMemo(
+    () => uniqueCodes(construction.offers, (offer) => offer.returns?.code ?? ""),
+    [construction.offers],
+  );
   const featured = heroProduct ?? products[0]?.[1] ?? "Matched product";
-
-  const matched = construction.input.matched_products || products.length;
 
   return (
     <section className="space-y-4">
@@ -92,26 +114,23 @@ export function OfferExplorer({
       </div>
 
       <div className="bg-canvas px-4 py-4 text-sm">
-        <p className="eyebrow">Product matching complete</p>
-        <p className="mt-2 font-mono text-2xl font-semibold tabular-nums">
-          {matched} products
+        <p className="eyebrow">Commercial expansion</p>
+        <p className="mt-2 font-mono text-xl font-semibold tabular-nums">
+          {story.products} products
         </p>
-        <p className="mt-3 text-muted">↓ constructing commercial options</p>
-        <p className="mt-3 font-mono text-sm tabular-nums">
-          {matched} × {dims.price_options} price × {dims.delivery_options} delivery ×{" "}
-          {dims.warranty_options} warranty × {dims.bundle_options} bundle ×{" "}
-          {dims.return_options} returns
-        </p>
-        <p className="mt-3 font-mono text-2xl font-semibold tabular-nums">
-          {construction.summary.generated_candidates.toLocaleString()}
-        </p>
-        <p className="text-xs text-muted">candidate offers · this is no longer a recommender</p>
-        <p className="mt-3 text-sm">
-          {construction.summary.feasible_candidates.toLocaleString()} feasible
-          {policySafe != null ? ` · ${policySafe.toLocaleString()} policy-safe` : ""}
-          {pareto != null ? ` · ${pareto} Pareto-efficient` : ""}
-        </p>
-        <p className="mt-1 text-xs text-muted">{featured}</p>
+        <p className="mt-2 text-xs text-muted">{dimensionLine(construction)}</p>
+        <ol className="mt-3 space-y-1">
+          {steps.map((step, index) => (
+            <li key={step.label} className="flex justify-between gap-3">
+              <span className="text-muted">
+                {index > 0 ? "↓ " : ""}
+                {step.label}
+              </span>
+              <span className="font-mono tabular-nums">{step.value}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-2 text-xs text-muted">{featured}</p>
       </div>
 
       <StatStrip
@@ -175,39 +194,63 @@ export function OfferExplorer({
         </label>
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">DELIVERY</span>
-          <input
+          <select
             value={delivery}
             onChange={(event) => setDelivery(event.target.value)}
-            placeholder="SAME_DAY"
             className="border border-line bg-surface px-2 py-1"
-          />
+          >
+            <option value="">All</option>
+            {deliveryOptions.map((code) => (
+              <option key={code} value={code}>
+                {deliveryLabel(code)}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">WARRANTY</span>
-          <input
+          <select
             value={warranty}
             onChange={(event) => setWarranty(event.target.value)}
-            placeholder="STANDARD_12"
             className="border border-line bg-surface px-2 py-1"
-          />
+          >
+            <option value="">All</option>
+            {warrantyOptions.map((code) => (
+              <option key={code} value={code}>
+                {warrantyLabel(code)}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">BUNDLE</span>
-          <input
+          <select
             value={bundle}
             onChange={(event) => setBundle(event.target.value)}
-            placeholder="NONE or TRAVEL_ADAPTER"
             className="border border-line bg-surface px-2 py-1"
-          />
+          >
+            <option value="">All</option>
+            {bundleOptions.map((code) => (
+              <option key={code} value={code}>
+                {bundleLabel(code)}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">RETURNS</span>
-          <input
+          <select
             value={returns}
             onChange={(event) => setReturns(event.target.value)}
-            placeholder="STANDARD_30"
             className="border border-line bg-surface px-2 py-1"
-          />
+          >
+            <option value="">All</option>
+            {returnsOptions.map((code) => (
+              <option key={code} value={code}>
+                {returnsLabel(code)}
+              </option>
+            ))}
+          </select>
         </label>
         <button
           type="button"
@@ -245,11 +288,18 @@ export function OfferExplorer({
                 <td className="py-2 tabular-nums">
                   {formatAudCents(offer.pricing.product_price_cents)}
                 </td>
-                <td className="py-2">{offer.delivery.code}</td>
-                <td className="py-2">{offer.warranty.months} mo</td>
-                <td className="py-2">{offer.bundle?.code ?? "NONE"}</td>
                 <td className="py-2">
-                  {offer.returns?.window_days ?? "—"}d
+                  {deliveryLabel(offer.delivery.code, offer.delivery.days)}
+                </td>
+                <td className="py-2">
+                  {warrantyLabel(offer.warranty.code, offer.warranty.months)}
+                </td>
+                <td className="py-2">{bundleLabel(offer.bundle?.code ?? null)}</td>
+                <td className="py-2">
+                  {returnsLabel(
+                    offer.returns?.code ?? null,
+                    offer.returns?.window_days ?? null,
+                  )}
                 </td>
                 <td className="py-2 tabular-nums">
                   {formatAudCents(offer.pricing.total_price_cents)}
@@ -257,7 +307,7 @@ export function OfferExplorer({
                 <td className="py-2 tabular-nums">
                   {formatAudCents(offer.direct_intervention_cost_cents)}
                 </td>
-                <td className="py-2">{offer.feasibility_status}</td>
+                <td className="py-2">{feasibilityLabel(offer.feasibility_status)}</td>
               </tr>
             ))}
           </tbody>
@@ -271,6 +321,13 @@ export function OfferExplorer({
       {detail ? <OfferDetail detail={detail} onClose={() => setDetail(null)} /> : null}
     </section>
   );
+}
+
+function uniqueCodes(
+  offers: PublicOffer[],
+  pick: (offer: PublicOffer) => string,
+): string[] {
+  return [...new Set(offers.map(pick).filter(Boolean))].sort();
 }
 
 async function openDetail(

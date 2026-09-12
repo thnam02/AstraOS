@@ -35,6 +35,13 @@ commercial state has not changed.
 Discount is one lever. Same-day, warranty, bundle, and returns can be
 cheaper for the merchant and better for the intent. Policy still binds.
 
+**Why can the selected offer be a different product than #1?**
+Product match ranks standalone products. Offer optimisation scores
+complete commercial configurations. A slightly weaker product with
+same-day, warranty, or a better contribution trade-off can win. When
+the same product wins both stages, AstraOS still shows the commercial
+enhancements. This is Product ≠ Offer.
+
 **Does the LLM set prices?**
 No. The LLM only interprets buyer language into a typed ShoppingIntent.
 Pricing, policy, economics and offer selection are deterministic AstraOS

@@ -28,7 +28,11 @@ import {
   setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
-import { productsDiffer, SCENARIOS } from "@/lib/decisionNarrative";
+import {
+  PIPELINE_LOADING,
+  productsDiffer,
+  SCENARIOS,
+} from "@/lib/decisionNarrative";
 import { HERO_INTENT } from "@/lib/intent";
 import type {
   BuyerProfile,
@@ -184,12 +188,18 @@ export function LiveWorkbench() {
 
   if (!result && busy) {
     return (
-      <div className="mx-auto max-w-xl py-16 text-center">
+      <div className="mx-auto max-w-lg py-14">
         <p className="eyebrow">AstraOS Live</p>
-        <p className="mt-3 text-lg">Understanding buyer intent…</p>
-        <p className="mt-2 text-sm text-muted">
-          Then qualifying, matching, and constructing a merchant offer.
-        </p>
+        <h1 className="mt-2 text-xl font-semibold tracking-tight">
+          Creating a merchant response
+        </h1>
+        <ol className="mt-6 space-y-2 text-sm">
+          {PIPELINE_LOADING.map((line, index) => (
+            <li key={line} className={index === 0 ? "text-ink" : "text-muted"}>
+              {index === 0 ? "●" : "○"} {line}
+            </li>
+          ))}
+        </ol>
       </div>
     );
   }
@@ -199,44 +209,47 @@ export function LiveWorkbench() {
       <div className="mx-auto max-w-2xl space-y-5 py-10">
         <p className="eyebrow">AstraOS Live</p>
         <h1 className="text-3xl font-semibold tracking-tight">
-          Merchant-side intelligence for autonomous buyers
+          Merchant-side offer intelligence for autonomous buyers
         </h1>
         <p className="text-sm text-muted">
-          Select a scenario to see AstraOS transform buyer intent into a
-          merchant offer. Product ranking and offer optimisation are different
-          decisions.
+          The unit of competition is the complete offer, not only the product
+          or the price.
         </p>
-        <div className="flex flex-wrap gap-2">
-          {SCENARIOS.map((item) => (
+        <div>
+          <p className="eyebrow">Hero scenarios</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {SCENARIOS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="btn-ghost"
+                onClick={() => {
+                  setText(item.intent);
+                  setProfile(item.profile);
+                  void run(item.intent, item.profile);
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
             <button
-              key={item.id}
               type="button"
-              className="btn-ghost"
-              onClick={() => {
-                setText(item.intent);
-                setProfile(item.profile);
-                void run(item.intent, item.profile);
-              }}
+              className="btn-quiet"
+              onClick={() => setText(HERO_INTENT)}
             >
-              {item.label}
+              Custom request
             </button>
-          ))}
-          <button
-            type="button"
-            className="btn-quiet"
-            onClick={() => {
-              setText(HERO_INTENT);
-            }}
-          >
-            Custom intent
-          </button>
+          </div>
         </div>
-        <textarea
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          rows={4}
-          className="control w-full px-3 py-2 text-sm leading-6"
-        />
+        <label className="block">
+          <span className="eyebrow">Buyer agent request</span>
+          <textarea
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            rows={4}
+            className="control mt-2 w-full px-3 py-2 text-sm leading-6"
+          />
+        </label>
         <div className="flex flex-wrap items-center gap-3">
           <select
             value={parserMode}
@@ -269,7 +282,7 @@ export function LiveWorkbench() {
       <section className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="eyebrow">Buyer mission</p>
+            <p className="eyebrow">Buyer agent request</p>
             <p className="mt-1 max-w-3xl text-sm leading-6">“{text}”</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <select
@@ -306,11 +319,16 @@ export function LiveWorkbench() {
         }`}
       >
         <aside>
-          <p className="eyebrow">Buyer intent</p>
-          {result ? (
+          <p className="eyebrow">What the buyer asked</p>
+          {result && stage !== "understand" ? (
             <div className="mt-3">
-              <IntentPanel intent={result.intent} />
+              <IntentPanel intent={result.intent} compact />
             </div>
+          ) : result ? (
+            <p className="mt-3 text-sm leading-6 text-muted">
+              Structured constraints, context, and priorities are shown in the
+              current stage.
+            </p>
           ) : (
             <p className="mt-3 text-sm text-muted">Extracting structured intent…</p>
           )}
@@ -604,16 +622,24 @@ function StageView({
   onDemoMargin: (rate: number) => void;
 }) {
   if (stage === "understand") {
+    if (!result) {
+      return (
+        <EmptyState
+          title="Understand"
+          body="Run AstraOS to extract constraints, context, and trade-offs."
+        />
+      );
+    }
     return (
-      <div>
+      <div className="space-y-3">
         <p className="eyebrow">Understand</p>
-        <h2 className="mt-2 text-xl font-semibold tracking-tight">
+        <h2 className="text-xl font-semibold tracking-tight">
           Structured intent
         </h2>
-        <p className="mt-2 text-sm text-muted">
-          Language is interpreted. Mandatory rules, context, and priorities
-          appear in the left column. No commercial terms are decided here.
+        <p className="text-sm text-muted">
+          Language is interpreted. No commercial terms are decided here.
         </p>
+        <IntentPanel intent={result.intent} />
       </div>
     );
   }

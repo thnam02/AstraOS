@@ -1,0 +1,398 @@
+{
+  "version": "astraos-hackathon-core-v1",
+  "git_sha": "96389215844268d63e5e9c0b8396369a20adf1d1",
+  "commit_date": "2026-09-13T05:32:13+10:00",
+  "captured_at": "2026-09-13",
+  "seed": 2026,
+  "environment": {
+    "app_env": "development",
+    "database": "astraos_baseline",
+    "api_url": "http://127.0.0.1:8001",
+    "intent_parser_mode": "rule_based",
+    "response_model_mode": "COLD_START",
+    "astraos_demo_mode": true,
+    "default_alpha": 0.5,
+    "selection_rule": "normalized_weighted_sum",
+    "alembic_head": "0010_learning"
+  },
+  "disclaimer": "BEFORE snapshot of the hackathon core. Synthetic Arena and learning outcomes. Not real-world conversion.",
+  "tests": {
+    "backend": {
+      "total": 325,
+      "passed": 325,
+      "failed": 0,
+      "skipped": 0,
+      "warnings": 2,
+      "ruff": "passed",
+      "mypy": "passed"
+    },
+    "frontend": {
+      "tests_total": 23,
+      "tests_passed": 23,
+      "tests_failed": 0,
+      "build": "success",
+      "lint_errors": 2,
+      "lint_warnings": 2
+    }
+  },
+  "health": {
+    "health": "ok",
+    "ready": "degraded",
+    "degraded_mode": ["learned_model_unavailable", "llm_unavailable"]
+  },
+  "catalogue": {
+    "merchant_code": "ASTRA_ELECTRONICS",
+    "merchant_name": "Astra Electronics",
+    "products": 156,
+    "active_products": 156,
+    "variants": 338,
+    "active_variants": 332,
+    "inventory_records": 338,
+    "in_stock": 289,
+    "out_of_stock": 49,
+    "same_day_capable_variants": 202,
+    "delivery_option_types": 3,
+    "warranty_option_types": 3,
+    "bundle_option_types": 3,
+    "return_policy_types": 2,
+    "attribute_evidence": 4169,
+    "stale_evidence": 125,
+    "missing_core_attribute_variants": 24,
+    "embeddings_cached": 332,
+    "embedding_provider": "hashing-vectorizer-384",
+    "embedding_dimension": 384,
+    "document_version": "product_semantic.v1"
+  },
+  "policy": {
+    "name": "Astra Electronics Default Policy",
+    "minimum_margin_rate": 0.15,
+    "maximum_discount_rate": 0.1,
+    "delivery_subsidy_enabled": true,
+    "warranty_upgrade_enabled": true,
+    "bundle_enabled": true,
+    "flexible_returns_enabled": true,
+    "loyalty_enabled": false,
+    "maximum_delivery_subsidy_cents": 1000,
+    "maximum_warranty_subsidy_cents": 1400,
+    "maximum_bundle_subsidy_cents": 900
+  },
+  "hero": {
+    "path": "POST /api/v1/negotiations",
+    "buyer_profile": "INTENT_ADAPTED",
+    "parser_mode": "rule_based",
+    "parser_version": "rule_based.v2",
+    "qualification": {
+      "variants_checked": 332,
+      "eligible": 62,
+      "violated": 259,
+      "uncertain": 11
+    },
+    "top_matches": [
+      {"rank": 1, "product_name": "Sonic Cabin 32", "sku": "SON-T32-SLV", "overall_semantic_fit": 0.8202, "evidence_coverage": 1.0},
+      {"rank": 2, "product_name": "Atlas Cabin 72", "sku": "ATL-T72-BLK", "overall_semantic_fit": 0.8195, "evidence_coverage": 1.0},
+      {"rank": 3, "product_name": "Nova Fold 19", "sku": "NOV-T19-WHT", "overall_semantic_fit": 0.7829, "evidence_coverage": 1.0},
+      {"rank": 4, "product_name": "Sonic Sport 38", "sku": "SON-S38-BLK", "overall_semantic_fit": 0.7818, "evidence_coverage": 1.0},
+      {"rank": 5, "product_name": "Nova Fold 19", "sku": "NOV-T19-SLV", "overall_semantic_fit": 0.7809, "evidence_coverage": 1.0}
+    ],
+    "construction": {
+      "matched_products": 8,
+      "estimated_candidates": 2880,
+      "generated_candidates": 2880,
+      "feasible_candidates": 770,
+      "rejected_candidates": 2110
+    },
+    "optimisation": {
+      "offers_considered": 2880,
+      "policy_safe": 955,
+      "policy_rejected": 1925,
+      "pareto_efficient": 25,
+      "alpha": 0.5,
+      "selection_rule": "normalized_weighted_sum"
+    },
+    "recommended_offer": {
+      "offer_id": "26459f3e-5f0d-4f7f-8b79-e18963934b2a",
+      "product_name": "Aurora Commute 06",
+      "sku": "AUR-T06-BLK",
+      "total_price_cents": 30185,
+      "delivery": "SAME_DAY",
+      "warranty_months": 36,
+      "bundle": "HARD_CASE",
+      "buyer_utility": 0.876066,
+      "contribution_margin_cents": 12415,
+      "incremental_intervention_cost_cents": 3600,
+      "is_pareto_efficient": true
+    },
+    "negotiation": {
+      "counter_message": "Can you get this below A$315?",
+      "outcome": "ACCEPT_BUYER_COUNTER",
+      "reason_codes": ["EXACT_COUNTER_SATISFIED", "ORIGINAL_CONSTRAINTS_RETAINED"],
+      "total_price_cents": 30185,
+      "total_turn_ms": 1628.63
+    },
+    "transaction": {
+      "accepted": true,
+      "revalidation": "PASSED",
+      "reservation_status": "CONSUMED",
+      "order_number": "AST-2026-000001",
+      "final_status": "CONFIRMED",
+      "payment_mode": "SIMULATED",
+      "total_transaction_ms": 25.46
+    }
+  },
+  "timings": {
+    "note": "10 timed LIVE creates after one warmup. Not production-scale.",
+    "intent_ms": {"n": 10, "median": 0.29, "p95": 0.46},
+    "qualification_ms": {"n": 10, "median": 232.77, "p95": 315.81},
+    "semantic_match_ms": {"n": 10, "median": 14.49, "p95": 15.56},
+    "offer_construction_ms": {"n": 10, "median": 852.44, "p95": 924.76},
+    "optimisation_ms": {"n": 10, "median": 743.55, "p95": 803.14},
+    "negotiation_turn_ms_create_path": {"n": 10, "median": 0.0, "p95": 0.0},
+    "negotiation_turn_ms_representative_counter": {"n": 1, "median": 1628.63},
+    "transaction_ms": {"n": 1, "median": 25.46},
+    "total_decision_ms": {"n": 10, "median": 1858.51, "p95": 1939.28},
+    "wall_ms": {"n": 10, "median": 1915.63, "p95": 2008.25}
+  },
+  "intent_evaluation": {
+    "dataset": "apps/api/app/eval/cases.py",
+    "cases": 77,
+    "parser": "rule_based",
+    "extraction_f1": {
+      "constraints": 0.9596,
+      "contexts": 0.9048,
+      "preferences": 0.8918,
+      "outcomes": 0.5349,
+      "tradeoffs": null
+    },
+    "tradeoff_note": "Computed by score_extraction but not reported by python -m app.eval"
+  },
+  "retrieval_evaluation": {
+    "ranked_cases": 32,
+    "k": 10,
+    "embedding_provider": "hashing-vectorizer-384",
+    "embedding_dimension": 384,
+    "document_version": "product_semantic.v1",
+    "recall_at_10": {
+      "astraos": 0.1042,
+      "price": 0.1045,
+      "similarity": 0.1051
+    },
+    "ndcg_at_10": {
+      "astraos": 0.9823,
+      "price": 0.9515,
+      "similarity": 0.9821
+    },
+    "hard_constraint_violations_in_matches": 0
+  },
+  "arena": {
+    "label": "SYNTHETIC BASELINE",
+    "not_real_world_conversion": true,
+    "seed": 2026,
+    "mission_count": 100,
+    "strategies": ["DEFAULT", "ALWAYS_DISCOUNT", "CHEAPEST_ELIGIBLE", "ASTRAOS"],
+    "benchmark_id": "6b49728c-4b64-4a0b-8c6d-3bd38e80bc4e",
+    "no_purchase_rate": 0.0,
+    "transaction_simulation": "disabled_for_bulk",
+    "timing_ms": {
+      "total_ms": 91328.64,
+      "average_mission_ms": 913.29
+    },
+    "strategy_metrics": [
+      {
+        "strategy_name": "DEFAULT",
+        "selection_rate": 0.0,
+        "contribution_per_opportunity_cents": 0.0,
+        "avg_contribution_when_selected": null,
+        "avg_intervention_cost_cents": 0.0,
+        "avg_buyer_utility": 0.563668,
+        "no_offer_rate": 0.0,
+        "no_purchase_rate": 0.0,
+        "hard_constraint_violation_rate": 0.33,
+        "policy_violation_rate": 0.0,
+        "transaction_completion_rate": 0.0
+      },
+      {
+        "strategy_name": "ALWAYS_DISCOUNT",
+        "selection_rate": 0.0,
+        "contribution_per_opportunity_cents": 0.0,
+        "avg_contribution_when_selected": null,
+        "avg_intervention_cost_cents": 3734.1,
+        "avg_buyer_utility": 0.578858,
+        "no_offer_rate": 0.0,
+        "no_purchase_rate": 0.0,
+        "hard_constraint_violation_rate": 0.33,
+        "policy_violation_rate": 0.0,
+        "transaction_completion_rate": 0.0
+      },
+      {
+        "strategy_name": "CHEAPEST_ELIGIBLE",
+        "selection_rate": 0.55,
+        "contribution_per_opportunity_cents": 2600.45,
+        "avg_contribution_when_selected": 4728.090909,
+        "avg_intervention_cost_cents": 2120.05,
+        "avg_buyer_utility": 0.705988,
+        "no_offer_rate": 0.0,
+        "no_purchase_rate": 0.0,
+        "hard_constraint_violation_rate": 0.0,
+        "policy_violation_rate": 0.0,
+        "transaction_completion_rate": 0.0
+      },
+      {
+        "strategy_name": "ASTRAOS",
+        "selection_rate": 0.45,
+        "contribution_per_opportunity_cents": 9279.55,
+        "avg_contribution_when_selected": 20621.222222,
+        "avg_intervention_cost_cents": 2721.0,
+        "avg_buyer_utility": 0.704789,
+        "no_offer_rate": 0.0,
+        "no_purchase_rate": 0.0,
+        "hard_constraint_violation_rate": 0.0,
+        "policy_violation_rate": 0.0,
+        "transaction_completion_rate": 0.0
+      }
+    ],
+    "segment_selection_rate": {
+      "budget": {"n": 20, "ASTRAOS": 0.2, "CHEAPEST_ELIGIBLE": 0.8},
+      "urgent": {"n": 20, "ASTRAOS": 0.0, "CHEAPEST_ELIGIBLE": 1.0},
+      "assurance": {"n": 15, "ASTRAOS": 1.0, "CHEAPEST_ELIGIBLE": 0.0},
+      "quality": {"n": 15, "ASTRAOS": 1.0, "CHEAPEST_ELIGIBLE": 0.0},
+      "balanced": {"n": 15, "ASTRAOS": 0.0, "CHEAPEST_ELIGIBLE": 1.0},
+      "gaming_studio": {"n": 10, "ASTRAOS": 0.6, "CHEAPEST_ELIGIBLE": 0.4},
+      "difficult": {"n": 5, "ASTRAOS": 1.0, "CHEAPEST_ELIGIBLE": 0.0}
+    },
+    "confirmatory_500": {
+      "benchmark_id": "5028b451-f536-4f6d-9a6f-5dc9d7d7ef7d",
+      "mission_count": 500,
+      "seed": 2026,
+      "no_purchase_rate": 0.0,
+      "timing_ms": {"total_ms": 451630.54, "average_mission_ms": 903.26},
+      "strategy_metrics": [
+        {
+          "strategy_name": "DEFAULT",
+          "selection_rate": 0.0,
+          "contribution_per_opportunity_cents": 0.0,
+          "avg_contribution_when_selected": null,
+          "avg_intervention_cost_cents": 0.0,
+          "avg_buyer_utility": 0.565976,
+          "hard_constraint_violation_rate": 0.328,
+          "policy_violation_rate": 0.0,
+          "transaction_completion_rate": 0.0
+        },
+        {
+          "strategy_name": "ALWAYS_DISCOUNT",
+          "selection_rate": 0.0,
+          "contribution_per_opportunity_cents": 0.0,
+          "avg_contribution_when_selected": null,
+          "avg_intervention_cost_cents": 3718.44,
+          "avg_buyer_utility": 0.58058,
+          "hard_constraint_violation_rate": 0.328,
+          "policy_violation_rate": 0.0,
+          "transaction_completion_rate": 0.0
+        },
+        {
+          "strategy_name": "CHEAPEST_ELIGIBLE",
+          "selection_rate": 0.594,
+          "contribution_per_opportunity_cents": 2652.94,
+          "avg_contribution_when_selected": 4466.228956,
+          "avg_intervention_cost_cents": 2139.37,
+          "avg_buyer_utility": 0.703844,
+          "hard_constraint_violation_rate": 0.0,
+          "policy_violation_rate": 0.0,
+          "transaction_completion_rate": 0.0
+        },
+        {
+          "strategy_name": "ASTRAOS",
+          "selection_rate": 0.406,
+          "contribution_per_opportunity_cents": 8444.476,
+          "avg_contribution_when_selected": 20799.20197,
+          "avg_intervention_cost_cents": 2688.0,
+          "avg_buyer_utility": 0.700164,
+          "hard_constraint_violation_rate": 0.0,
+          "policy_violation_rate": 0.0,
+          "transaction_completion_rate": 0.0
+        }
+      ],
+      "segment_selection_rate": {
+        "budget": {"n": 100, "ASTRAOS": 0.19, "CHEAPEST_ELIGIBLE": 0.81},
+        "urgent": {"n": 100, "ASTRAOS": 0.0, "CHEAPEST_ELIGIBLE": 1.0},
+        "assurance": {"n": 75, "ASTRAOS": 1.0, "CHEAPEST_ELIGIBLE": 0.0},
+        "quality": {"n": 75, "ASTRAOS": 1.0, "CHEAPEST_ELIGIBLE": 0.0},
+        "balanced": {"n": 75, "ASTRAOS": 0.0, "CHEAPEST_ELIGIBLE": 1.0},
+        "gaming_studio": {"n": 50, "ASTRAOS": 0.36, "CHEAPEST_ELIGIBLE": 0.64},
+        "difficult": {"n": 25, "ASTRAOS": 0.64, "CHEAPEST_ELIGIBLE": 0.36}
+      }
+    }
+  },
+  "learning": {
+    "synthetic": true,
+    "active_response_model_mode": "COLD_START",
+    "dataset_size": 2500,
+    "positive_count": 157,
+    "negative_count": 2343,
+    "positive_rate": 0.0628,
+    "feature_schema_version": "features.v1",
+    "dataset_version_name": "synthetic.arena.v1",
+    "mission_count": 157,
+    "split": {"train": 1736, "validation": 367, "test": 397},
+    "selected_training_algorithm": "GRADIENT_BOOSTING",
+    "metrics": {
+      "LOGISTIC_REGRESSION": {
+        "roc_auc": 0.9431182795698925,
+        "pr_auc": 0.3865716838384827,
+        "log_loss": 0.31032914417184204,
+        "brier": 0.0898753343178023,
+        "f1": 0.5,
+        "top1": 0.56,
+        "mrr": 0.713,
+        "ndcg": 0.7834955925781156
+      },
+      "GRADIENT_BOOSTING": {
+        "roc_auc": 0.9892473118279569,
+        "pr_auc": 0.8506599070805967,
+        "log_loss": 0.06100789402085363,
+        "brier": 0.019729561499020522,
+        "f1": 0.6956521739130435,
+        "top1": 0.72,
+        "mrr": 0.86,
+        "ndcg": 0.8966603310000082
+      },
+      "COLD_START_UTILITY": {
+        "roc_auc": 0.7748387096774194,
+        "pr_auc": 0.1485698080971151,
+        "log_loss": 1.039375022185104,
+        "brier": 0.4095775567032393,
+        "f1": 0.12562814070351758,
+        "top1": 0.12,
+        "mrr": 0.4493506493506494,
+        "ndcg": 0.5857712018797046
+      }
+    }
+  },
+  "agent_api_smoke": {
+    "capabilities_ok": true,
+    "request_status": "PROPOSED",
+    "inspect_status": "PROPOSED",
+    "counter_status": "COUNTERED",
+    "accept_status": "CONFIRMED",
+    "order_number": "AST-2026-000002",
+    "order_lookup_ok": true,
+    "transaction_lookup_ok": true,
+    "mcp_initialize_ok": true,
+    "mcp_tools": [
+      "astraos_request_offer",
+      "astraos_inspect_offer",
+      "astraos_counter_offer",
+      "astraos_accept_offer",
+      "astraos_get_order"
+    ]
+  },
+  "safety_tests": {
+    "A_stock_to_zero_after_proposal": "PASS",
+    "B_margin_policy_change_after_proposal": "PASS",
+    "C_expired_proposal": "PASS",
+    "D_duplicate_acceptance_idempotency": "PASS",
+    "E_last_unit_race": "PASS",
+    "F_prompt_injection_policy_authoritative": "PASS"
+  },
+  "bugs_fixed": [],
+  "behaviour_changed": false
+}

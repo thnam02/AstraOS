@@ -1,4 +1,4 @@
-.PHONY: up down logs test lint migrate migration seed reset-db reset-demo eval embeddings demo-hero
+.PHONY: up down logs test lint migrate migration seed reset-db reset-demo eval embeddings demo-hero baseline
 
 API_DIR := apps/api
 
@@ -58,3 +58,21 @@ embeddings:
 
 eval:
 	cd $(API_DIR) && $(API_PY) -m app.eval
+
+# Lightweight Phase 1 reproduction: identity + migration head + frozen eval.
+# Hero, Arena, learning, and full pytest are documented in
+# docs/realification-baseline.md and are not inlined here.
+baseline:
+	@echo "version=astraos-hackathon-core-v1"
+	@echo "git=$$(git rev-parse HEAD)"
+	@echo "seed=$(ASTRAOS_SEED)"
+	@echo "parser=$${INTENT_PARSER_MODE:-rule_based}"
+	@echo "response_model=$${RESPONSE_MODEL_MODE:-COLD_START}"
+	cd $(API_DIR) && $(API_PY) -m alembic heads
+	cd $(API_DIR) && $(API_PY) -m alembic current
+	cd $(API_DIR) && $(API_PY) -m app.eval --k 10
+	@echo "Next: make test && cd apps/web && npm test && npm run build"
+	@echo "Hero: ASTRAOS_BASELINE_API_URL=http://127.0.0.1:8000 cd $(API_DIR) && $(API_PY) scripts/collect_baseline.py"
+	@echo "Arena: POST /api/v1/arena/benchmarks {mission_count:100, seed:2026}"
+	@echo "Learning: LEARNING_TARGET=2500 ASTRAOS_LEARNING_SEED=2026 cd $(API_DIR) && $(API_PY) scripts/run_learning_report.py"
+	@echo "See docs/realification-baseline.md"

@@ -5,13 +5,15 @@ import { useMemo, useState } from "react";
 import { Drawer } from "@/components/shared/Drawer";
 import { EvidenceBadge } from "@/components/shared/EvidenceBadge";
 import { ScoreBar } from "@/components/shared/ScoreBar";
-import { contextLabel, fieldLabel } from "@/lib/intent";
+import { contextLabel } from "@/lib/intent";
 import { matchScoreDisplay, strengthHint } from "@/lib/decisionNarrative";
 import {
+  displayedCoverage,
   factValue,
   groupedRationale,
   prettyFactDisplay,
   primaryReasons,
+  proofItems,
   remainingSignalCount,
   sourceBadge,
   tradeOffLine,
@@ -182,7 +184,9 @@ function ExpandedMatch({
           {reasons.map((fact) => (
             <li key={`${fact.attribute}-${fact.display}`}>
               <span>{prettyFactDisplay(fact.attribute, fact.display)}</span>{" "}
-              <EvidenceBadge source={sourceBadge(fact.source_name)} />
+              <EvidenceBadge
+                source={sourceBadge(fact.source_type, fact.source_name)}
+              />
               {strengthHint(fact.attribute) ? (
                 <span className="ml-2 text-xs text-muted">
                   {strengthHint(fact.attribute)}
@@ -196,14 +200,20 @@ function ExpandedMatch({
         ) : null}
       </div>
 
-      <p className="mt-3 text-xs text-muted" title="How much of the rationale is backed by merchant facts.">
-        Evidence coverage {Math.round(match.evidence_coverage * 100)}%
+      <p
+        className="mt-3 text-xs text-muted"
+        title="Share of displayed match reasons with evidence or a documented derivation. Separate from Product / Context / Preference Fit."
+      >
+        Evidence coverage{" "}
+        {displayedCoverage(match) == null
+          ? "—"
+          : `${Math.round((displayedCoverage(match) ?? 0) * 100)}%`}
         {trade ? ` · ${trade}` : ""}
       </p>
 
       <div className="mt-2 flex flex-wrap gap-3">
         <button type="button" className="btn-quiet" onClick={onInspect}>
-          Evidence
+          Inspect evidence
         </button>
         <button type="button" className="btn-quiet" onClick={onCompare}>
           {compared ? "Selected" : "Compare"}
@@ -247,7 +257,9 @@ function CompactMatch({
         <p className="text-xs text-muted">
           Context {Math.round(match.context_fit * 100)} · Preference{" "}
           {Math.round(match.preference_fit * 100)} · Evidence{" "}
-          {Math.round(match.evidence_coverage * 100)}
+          {displayedCoverage(match) == null
+            ? "—"
+            : Math.round((displayedCoverage(match) ?? 0) * 100)}
         </p>
       </div>
       <div className="flex gap-3">
@@ -260,6 +272,11 @@ function CompactMatch({
       </div>
     </article>
   );
+}
+
+function titleCase(value: string | null | undefined): string {
+  if (!value) return "—";
+  return value.charAt(0) + value.slice(1).toLowerCase();
 }
 
 function EvidenceDrawer({
@@ -277,28 +294,47 @@ function EvidenceDrawer({
     >
       {match ? (
         <div className="space-y-5">
-          {match.reasons.map((reason) => (
-            <section key={`${reason.kind}-${reason.need}`}>
-              <p className="eyebrow">{contextLabel(reason.need)}</p>
-              <ul className="mt-2 space-y-3">
-                {reason.facts.map((fact) => {
-                  const badge = sourceBadge(fact.source_name);
-                  return (
-                    <li key={`${fact.attribute}-${fact.display}`}>
-                      <p className="text-sm font-medium">{fieldLabel(fact.attribute)}</p>
-                      <p className="text-sm">
-                        {prettyFactDisplay(fact.attribute, fact.display)}
-                      </p>
-                      <p className="mt-1 flex items-center gap-2 text-xs text-muted">
-                        <EvidenceBadge source={badge} />
-                        <span>{fact.source_name ?? "Unspecified source"}</span>
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ))}
+          {proofItems(match).map((item) => {
+            const badge = sourceBadge(item.source_type, item.source_name);
+            return (
+              <section key={`${item.claim_key}-${String(item.value)}`}>
+                <p className="eyebrow">Claim</p>
+                <p className="mt-1 text-sm font-medium">{item.display_claim}</p>
+                <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                  <dt className="text-muted">Canonical field</dt>
+                  <dd className="font-mono">{item.claim_key}</dd>
+                  <dt className="text-muted">Value</dt>
+                  <dd>
+                    {String(item.value)}
+                    {item.unit ? ` ${item.unit}` : ""}
+                  </dd>
+                  <dt className="text-muted">Source</dt>
+                  <dd>
+                    <EvidenceBadge source={badge} />{" "}
+                    {item.source_name ?? item.source_type}
+                  </dd>
+                  <dt className="text-muted">Source record</dt>
+                  <dd className="font-mono">
+                    {item.source_record_id ?? "—"}
+                  </dd>
+                  <dt className="text-muted">Verification</dt>
+                  <dd>{titleCase(item.verification_status)}</dd>
+                  <dt className="text-muted">Freshness</dt>
+                  <dd>{titleCase(item.freshness_status)}</dd>
+                  <dt className="text-muted">Observed</dt>
+                  <dd>{item.observed_at ?? "—"}</dd>
+                  <dt className="text-muted">Derived</dt>
+                  <dd>{item.derived ? "Yes" : "No"}</dd>
+                  {item.derived && item.derivation_rule ? (
+                    <>
+                      <dt className="text-muted">Derivation rule</dt>
+                      <dd className="font-mono">{item.derivation_rule}</dd>
+                    </>
+                  ) : null}
+                </dl>
+              </section>
+            );
+          })}
           {match.unsupported_needs.length ? (
             <p className="text-sm text-uncertain">
               Limited evidence: {match.unsupported_needs.map(contextLabel).join(", ")}
@@ -342,7 +378,10 @@ function CompareDrawer({
       },
       {
         label: "Evidence coverage",
-        values: matches.map((item) => `${Math.round(item.evidence_coverage * 100)}%`),
+        values: matches.map((item) => {
+          const rate = displayedCoverage(item);
+          return rate == null ? "—" : `${Math.round(rate * 100)}%`;
+        }),
       },
       {
         label: "Battery",

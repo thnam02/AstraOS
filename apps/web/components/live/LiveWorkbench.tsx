@@ -456,6 +456,7 @@ export function LiveWorkbench() {
               }
               objective={optimisation?.merchant_objective}
               selection={optimisation?.selection}
+              topMatch={topMatch}
             />
           ) : (
             <EmptyState

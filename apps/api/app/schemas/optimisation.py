@@ -16,6 +16,7 @@ from app.decision.optimisation.models import (
     SelectionScore,
 )
 from app.decision.pareto.models import ObjectiveSpec
+from app.decision.proof.compiler import compile_commercial_terms
 from app.decision.utility.models import UTILITY_DISCLAIMER
 
 BuyerProfile = Literal[
@@ -108,6 +109,7 @@ class PublicScoredOffer(BaseModel):
     product_fit: float
     learned_synthetic_score: float | None = None
     learned_score_label: str | None = None
+    proof_bundle: dict[str, Any] | None = None
 
 
 class OptimisationResponse(BaseModel):
@@ -181,7 +183,47 @@ def to_public_scored(item: ScoredOffer) -> PublicScoredOffer:
         is_recommended=item.is_recommended,
         is_baseline=item.is_baseline,
         product_fit=item.product_fit,
+        proof_bundle=_commercial_proof_bundle(item),
     )
+
+
+def _commercial_proof_bundle(item: ScoredOffer) -> dict[str, Any]:
+    offer = {
+        "sku": item.sku,
+        "pricing": {
+            "product_price_cents": item.product_price_cents,
+            "total_price_cents": item.total_customer_price_cents,
+        },
+        "delivery": {
+            "code": item.delivery_code,
+            "name": item.delivery_name,
+            "days": item.delivery_days,
+        },
+        "warranty": {
+            "code": item.warranty_code,
+            "name": item.warranty_name,
+            "months": item.warranty_months,
+        },
+        "bundle": (
+            None
+            if not item.bundle_code
+            else {"code": item.bundle_code, "name": item.bundle_name}
+        ),
+        "returns": (
+            None
+            if not item.return_policy_code
+            else {
+                "code": item.return_policy_code,
+                "name": getattr(item, "return_policy_name", None),
+                "window_days": item.return_window_days,
+            }
+        ),
+    }
+    items = compile_commercial_terms(offer, sku=item.sku)
+    return {
+        "items": [row.model_dump(mode="json") for row in items],
+        "issued_at": None,
+    }
 
 
 def to_plot_point(item: ScoredOffer) -> PlotPoint:

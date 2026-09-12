@@ -10,7 +10,12 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.errors import AgentErrorCode, AgentProtocolError
-from app.agent.proof import claims_from_match, claims_from_offer, merge_claims
+from app.agent.proof import (
+    claims_from_bundle,
+    claims_from_match,
+    claims_from_offer,
+    merge_claims,
+)
 from app.agent.schemas import (
     AgentAcceptRequest,
     AgentCapabilities,
@@ -20,7 +25,6 @@ from app.agent.schemas import (
     AgentOfferResponse,
     AgentProposalView,
     AgentTransactionResponse,
-    EvidenceClaim,
     StructuredConstraints,
 )
 from app.decision.intent.models import ConstraintField, ShoppingIntent
@@ -247,6 +251,9 @@ def _from_session(
             list(session.proposal.explanation) if session.proposal else []
         ),
         proof=merge_claims(
+            claims_from_bundle(
+                (offer_payload or {}).get("proof_bundle") if offer_payload else None
+            ),
             claims_from_match(match),
             claims_from_offer(rec or offer_payload),
         ),
@@ -311,36 +318,6 @@ def _public_reasoning(lines: list[str]) -> list[str]:
     return kept
 
 
-async def _variant_feature_claims(
-    db: AsyncSession, session: NegotiationResponse
-) -> list[EvidenceClaim]:
-    offer = session.proposal.offer if session.proposal else None
-    if not offer or not offer.get("variant_id"):
-        return []
-    from app.services.catalogue import CatalogueService
-
-    variant = await CatalogueService(db).get_variant(
-        UUID(str(offer["variant_id"]))
-    )
-    if variant is None:
-        return []
-    rows: list[EvidenceClaim] = []
-    attrs = variant.attributes or {}
-    for name in ("anc", "wireless", "foldable"):
-        if name not in attrs:
-            continue
-        rows.append(
-            EvidenceClaim(
-                claim=name,
-                value=attrs[name],
-                source_type="PRODUCT_SPECIFICATION",
-                source_reference=variant.sku,
-                freshness="CURRENT",
-            )
-        )
-    return rows
-
-
 async def _public_session(
     db: AsyncSession,
     session: NegotiationResponse,
@@ -349,16 +326,12 @@ async def _public_session(
     started: float,
     discrepancies: list[str] | None = None,
 ) -> AgentOfferResponse:
-    response = _from_session(
+    return _from_session(
         session,
         request_id=request_id,
         discrepancies=discrepancies,
         started=started,
     )
-    extra = await _variant_feature_claims(db, session)
-    if extra:
-        response.proof = merge_claims(list(response.proof), extra)
-    return response
 
 
 class AgentGatewayService:

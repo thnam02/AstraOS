@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.decision.proof.quality import catalogue_evidence_quality
 from app.models import (
     AttributeEvidence,
     Merchant,
@@ -145,6 +146,7 @@ class CatalogueService:
             categories=base["categories"],
             evidence_records=await self.catalogue.evidence_count(),
             data_mode=await self._data_mode(),
+            evidence_quality=catalogue_evidence_quality(list(items)),
         )
 
     def _to_product_summary(self, product: Product) -> ProductSummary:

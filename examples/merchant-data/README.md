@@ -3,8 +3,9 @@
 Versioned snapshot schema: `1.0`.
 
 This is a fictional **Harbor Sound Co.** catalogue. It is an
-`EXAMPLE_MERCHANT_IMPORT`, not a live retailer extract and not the
-Astra Electronics demo seed.
+example merchant feed, not a live retailer extract and not the
+Astra Electronics demo seed. Product facts carry explicit evidence
+rows. Synthetic seed provenance is never relabelled as a product feed.
 
 ```
 Merchant feed (JSON or CSV)

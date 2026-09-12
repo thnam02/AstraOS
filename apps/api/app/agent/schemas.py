@@ -59,6 +59,14 @@ class EvidenceClaim(BaseModel):
     source_reference: str | None = None
     observed_at: datetime | None = None
     freshness: Literal["CURRENT", "STALE", "UNKNOWN"] = "CURRENT"
+    verification_status: Literal["VERIFIED", "UNVERIFIED", "CONFLICTED", "UNKNOWN"] = (
+        "UNVERIFIED"
+    )
+    evidence_id: str | None = None
+    display_claim: str | None = None
+    derived: bool = False
+    derivation_rule: str | None = None
+    unit: str | None = None
 
 
 class AgentProposalView(BaseModel):

@@ -37,6 +37,22 @@ bundle, and returns — under merchant policy.
 ## Architecture
 
 ```
+Merchant Sources (JSON / CSV)
+      ↓
+Ingestion + Provenance
+      ↓
+Canonical Facts
+      ↓
+Eligibility / Matching / Offers
+      ↓
+Proof Compiler
+      ↓
+Machine-readable proposal
+      ↓
+External Buyer Agent
+```
+
+```
 Merchant Feed (JSON / CSV)
       ↓
 Ingestion Adapter → Validation → Canonical AstraOS Model

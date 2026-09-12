@@ -13,6 +13,7 @@ from app.decision.retrieval.embeddings import (
 )
 from app.decision.retrieval.models import RankedProductMatch
 from app.decision.retrieval.profile import build_intent_profile
+from app.decision.proof.enrich import enrich_match
 from app.decision.retrieval.rerank import rerank_variant, sort_matches
 
 
@@ -35,10 +36,13 @@ def rank_eligible(
             continue
         similarity = cosine_similarity(intent_vector, vector)
         matches.append(
-            rerank_variant(
-                snapshot=snapshot,
-                intent=intent,
-                semantic_similarity=similarity,
+            enrich_match(
+                snapshot,
+                rerank_variant(
+                    snapshot=snapshot,
+                    intent=intent,
+                    semantic_similarity=similarity,
+                ),
             )
         )
     return sort_matches(matches)

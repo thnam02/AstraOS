@@ -159,6 +159,16 @@ export type CatalogueStatsResponse = {
   categories: string[];
   evidence_records: number;
   data_mode?: string | null;
+  evidence_quality?: {
+    evidence_records: number;
+    product_facts_pct: number;
+    pricing_current_pct: number;
+    inventory_current_pct: number;
+    fulfilment_current_pct: number;
+    warranty_configured_pct: number;
+    synthetic_pct: number;
+    stale_pct: number;
+  } | null;
 };
 
 export type IngestionIssue = {
@@ -422,6 +432,13 @@ export type RankedProductMatch = {
       display: string;
       evidence_id: string | null;
       source_name: string | null;
+      source_type?: string | null;
+      source_record_id?: string | null;
+      verification_status?: string | null;
+      freshness?: string | null;
+      derived?: boolean;
+      derivation_rule?: string | null;
+      observed_at?: string | null;
     }[];
   }[];
   evidence: {
@@ -430,7 +447,52 @@ export type RankedProductMatch = {
     display: string;
     evidence_id: string | null;
     source_name: string | null;
+    source_type?: string | null;
+    source_record_id?: string | null;
+    verification_status?: string | null;
+    freshness?: string | null;
+    derived?: boolean;
+    derivation_rule?: string | null;
+    observed_at?: string | null;
   }[];
+  proof?: ProofItem[];
+  proof_coverage?: ProofCoverage;
+};
+
+export type ProofItem = {
+  claim_key: string;
+  display_claim: string;
+  value: unknown;
+  unit?: string | null;
+  evidence_id?: string | null;
+  source_type: string;
+  source_name?: string | null;
+  source_record_id?: string | null;
+  verification_status: string;
+  freshness_status: string;
+  observed_at?: string | null;
+  valid_until?: string | null;
+  derived?: boolean;
+  derivation_rule?: string | null;
+  group?: string;
+  incomplete?: boolean;
+};
+
+export type ProofCoverage = {
+  displayed_claim_count: number;
+  claims_with_evidence: number;
+  verified_count: number;
+  unverified_count: number;
+  stale_count: number;
+  conflicted_count: number;
+  unknown_count: number;
+  synthetic_count: number;
+  example_import_count: number;
+  unsupported_displayed_count: number;
+  unsupported_displayed_claim_rate: number;
+  hard_constraint_proof_rate: number;
+  commercial_term_proof_rate: number;
+  match_rationale_proof_rate: number;
 };
 
 export type MatchResponse = {
@@ -661,6 +723,7 @@ export type PublicScoredOffer = {
   product_fit: number;
   learned_synthetic_score?: number | null;
   learned_score_label?: string | null;
+  proof_bundle?: { items: ProofItem[]; issued_at?: string | null } | null;
 };
 
 export type PlotPoint = {

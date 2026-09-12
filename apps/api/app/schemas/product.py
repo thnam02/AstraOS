@@ -115,3 +115,4 @@ class CatalogueStatsResponse(BaseModel):
     categories: list[str]
     evidence_records: int
     data_mode: str | None = None
+    evidence_quality: dict[str, object] | None = None

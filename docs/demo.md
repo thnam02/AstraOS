@@ -24,10 +24,11 @@ Say: “We don’t reduce the request to keywords.”
 
 Point to checked / eligible counts and semantic matches with proof.
 Mandatory constraints already dropped ineligible SKUs before ranking.
-Match scores are Product / Context / Preference Fit and Evidence
-Coverage — not raw cosine similarity. If the inspector shows hashing
-fallback, say the local semantic model was unavailable and the pipeline
-stayed online.
+Match scores are Product / Context / Preference Fit — Evidence
+Coverage is support/trust, not relevance. Open **Inspect evidence**
+to show claim → source → record → verification → freshness.
+If the inspector shows hashing fallback, say the local semantic model
+was unavailable and the pipeline stayed online.
 
 ## 0:55 — Construct
 
@@ -61,6 +62,9 @@ Typical lever comparison from the same seed: same-day costs about **A$8**
 and lifts simulated utility far more than a **~A$24** discount (which is
 also usually not policy-safe on the baseline SKU). If the live run differs,
 use the live numbers.
+
+Open **Inspect proof** on the selected offer. Price, delivery,
+warranty, bundle, and returns each have a source badge.
 
 Say: “For this urgent traveller, spending on faster fulfilment may be
 more efficient than giving away price.”

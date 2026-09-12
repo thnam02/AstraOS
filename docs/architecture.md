@@ -69,6 +69,22 @@ Merchant systems / data sit below this stack: catalogue, inventory,
 delivery capacity, warranty/bundle/returns, evidence, and merchant policy.
 
 ```
+Merchant Sources
+      ↓
+Ingestion + Provenance
+      ↓
+Canonical Facts
+      ↓
+Eligibility / Matching / Offers
+      ↓
+Proof Compiler
+      ↓
+Machine-readable proposal
+      ↓
+External Buyer Agent
+```
+
+```
 PIM / ERP / OMS / CSV / JSON
           ↓
 Merchant Ingestion Layer

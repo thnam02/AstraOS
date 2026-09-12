@@ -70,8 +70,28 @@ Merchant policy (margin floor, max discount, subsidies). Prompt injection
 cannot change policy or invent stock.
 
 **Where does product evidence come from?**
-Seeded merchant specifications and provenance records. Semantic match
-reasons cite those facts. Unsupported claims are not invented.
+Merchant-imported or seeded specifications with provenance records.
+Semantic match reasons cite those facts. Unsupported claims are not
+invented.
+
+**How do you prevent the AI from hallucinating product claims?**
+The LLM does not create merchant facts. Product and commercial claims
+come from the merchant data layer and are linked to evidence or
+deterministic derivations.
+
+**What if evidence is missing?**
+Missing information remains unknown. Mandatory unknown requirements
+do not pass deterministic qualification.
+
+**What if stock changes after the offer is issued?**
+The proposal retains issuance-time proof, but acceptance revalidates
+current inventory, pricing, delivery and policy before execution.
+
+**Are these real retailer products?**
+The bundled/example merchant may be fictional for hackathon
+reproducibility. The important production mechanism is real: the
+products enter through the merchant ingestion and provenance layer
+rather than being hardcoded into the decision logic.
 
 **How does the transaction work?**
 Accept a proposal id. Revalidate live price, inventory, delivery, and

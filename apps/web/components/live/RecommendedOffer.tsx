@@ -1,11 +1,29 @@
-import { Disclosure } from "@/components/shared/Disclosure";
-import { conciseOfferReasons, commercialLevers } from "@/lib/decisionNarrative";
+"use client";
+
+import { useState } from "react";
+
+import { Drawer } from "@/components/shared/Drawer";
+import { EvidenceBadge } from "@/components/shared/EvidenceBadge";
+import { conciseOfferReasons, commercialLevers, offerVsProductCopy } from "@/lib/decisionNarrative";
+import { sourceBadge } from "@/lib/matchDisplay";
 import { formatAudCents } from "@/lib/money";
 import type {
   MerchantObjectiveSnapshot,
+  ProofItem,
   PublicScoredOffer,
+  RankedProductMatch,
   SelectionScore,
 } from "@/types";
+
+const GROUPS: { key: string; label: string }[] = [
+  { key: "PRODUCT", label: "Product proof" },
+  { key: "PRICE", label: "Price" },
+  { key: "DELIVERY", label: "Delivery" },
+  { key: "WARRANTY", label: "Warranty" },
+  { key: "BUNDLE", label: "Bundle" },
+  { key: "RETURNS", label: "Returns" },
+  { key: "INVENTORY", label: "Inventory" },
+];
 
 export function RecommendedOffer({
   offer,
@@ -13,14 +31,25 @@ export function RecommendedOffer({
   onWhyDifferent,
   objective,
   selection,
+  topMatch,
 }: {
   offer: PublicScoredOffer;
   explanation: string[];
   onWhyDifferent?: () => void;
   objective?: MerchantObjectiveSnapshot | null;
   selection?: SelectionScore | null;
+  topMatch?: RankedProductMatch | null;
 }) {
   const reasons = conciseOfferReasons(explanation);
+  const items = (offer.proof_bundle?.items ?? []).filter(
+    (item) => !item.incomplete,
+  );
+  const [proofOpen, setProofOpen] = useState(false);
+  const [whyOpen, setWhyOpen] = useState(false);
+  const differ = Boolean(
+    topMatch && topMatch.sku && offer.sku && topMatch.sku !== offer.sku,
+  );
+
   return (
     <article className="space-y-4">
       <div>
@@ -112,25 +141,127 @@ export function RecommendedOffer({
       ) : null}
 
       <div className="flex flex-wrap gap-3">
-        {onWhyDifferent ? (
-          <button type="button" className="btn-quiet" onClick={onWhyDifferent}>
+        {onWhyDifferent || differ ? (
+          <button
+            type="button"
+            className="btn-quiet"
+            onClick={() => {
+              setWhyOpen(true);
+              onWhyDifferent?.();
+            }}
+          >
             Why this product instead of #1?
           </button>
         ) : null}
-        {offer.utility_trace.components.length ? (
-          <Disclosure title="Inspect proof">
-            <ul className="space-y-1 text-xs text-muted">
-              {offer.utility_trace.components.map((item) => (
-                <li key={item.component}>
-                  {item.component}: {item.fit.toFixed(2)} × {item.weight.toFixed(2)} ={" "}
-                  {item.weighted.toFixed(4)}
-                </li>
-              ))}
-              <li>total {offer.utility_trace.total.toFixed(4)}</li>
-            </ul>
-          </Disclosure>
+        {items.length ? (
+          <button type="button" className="btn-quiet" onClick={() => setProofOpen(true)}>
+            Inspect proof
+          </button>
         ) : null}
       </div>
+
+      <OfferProofDrawer
+        open={proofOpen}
+        items={items}
+        onClose={() => setProofOpen(false)}
+      />
+      <WhyDifferentDrawer
+        open={whyOpen}
+        offer={offer}
+        topMatch={topMatch ?? null}
+        items={items}
+        onClose={() => setWhyOpen(false)}
+      />
     </article>
+  );
+}
+
+function OfferProofDrawer({
+  open,
+  items,
+  onClose,
+}: {
+  open: boolean;
+  items: ProofItem[];
+  onClose: () => void;
+}) {
+  return (
+    <Drawer open={open} title="Offer proof" onClose={onClose}>
+      <div className="space-y-5">
+        {GROUPS.map((group) => {
+          const rows = items.filter((item) => (item.group ?? "PRODUCT") === group.key);
+          if (!rows.length) return null;
+          return (
+            <section key={group.key}>
+              <p className="eyebrow">{group.label}</p>
+              <ul className="mt-2 space-y-2">
+                {rows.map((item) => (
+                  <ProofRow key={`${item.claim_key}-${String(item.value)}`} item={item} />
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+    </Drawer>
+  );
+}
+
+function WhyDifferentDrawer({
+  open,
+  offer,
+  topMatch,
+  items,
+  onClose,
+}: {
+  open: boolean;
+  offer: PublicScoredOffer;
+  topMatch: RankedProductMatch | null;
+  items: ProofItem[];
+  onClose: () => void;
+}) {
+  const commercial = items.filter((item) =>
+    ["PRICE", "DELIVERY", "WARRANTY", "BUNDLE", "RETURNS"].includes(
+      item.group ?? "",
+    ),
+  );
+  return (
+    <Drawer open={open} title="Product match vs selected offer" onClose={onClose}>
+      <div className="space-y-3 text-sm">
+        <p>{offerVsProductCopy(Boolean(topMatch && topMatch.sku !== offer.sku))}</p>
+        {topMatch ? (
+          <p>
+            <span className="text-muted">Top product match </span>
+            {topMatch.product_name}
+          </p>
+        ) : null}
+        <p>
+          <span className="text-muted">Selected commercial offer </span>
+          {offer.product_name}
+        </p>
+        {commercial.length ? (
+          <ul className="space-y-2">
+            {commercial.map((item) => (
+              <ProofRow key={`${item.claim_key}-${String(item.value)}`} item={item} />
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </Drawer>
+  );
+}
+
+function ProofRow({ item }: { item: ProofItem }) {
+  const badge = sourceBadge(item.source_type, item.source_name);
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2">
+      <span>
+        {item.display_claim}
+        {item.unit && !item.display_claim.includes(item.unit)
+          ? ` ${item.unit}`
+          : ""}
+      </span>
+      <EvidenceBadge source={badge} />
+    </li>
   );
 }

@@ -1,5 +1,6 @@
 """Semantic match result models. Scores are matching scores, not probabilities."""
 
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -12,6 +13,13 @@ class MatchFact(BaseModel):
     display: str
     evidence_id: str | None = None
     source_name: str | None = None
+    source_type: str | None = None
+    source_record_id: str | None = None
+    verification_status: str | None = None
+    freshness: str | None = None
+    derived: bool = False
+    derivation_rule: str | None = None
+    observed_at: datetime | None = None
 
 
 class MatchReason(BaseModel):
@@ -39,3 +47,5 @@ class RankedProductMatch(BaseModel):
     unsupported_needs: list[str]
     reasons: list[MatchReason]
     evidence: list[MatchFact]
+    proof: list[dict[str, Any]] = Field(default_factory=list)
+    proof_coverage: dict[str, Any] = Field(default_factory=dict)

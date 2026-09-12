@@ -61,6 +61,50 @@ export function CatalogueExplorer() {
     <div className="space-y-6">
       <IngestionPanel onImported={load} />
       {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {stats?.evidence_quality ? (
+        <section className="border border-line bg-surface px-4 py-3">
+          <p className="eyebrow">Evidence quality</p>
+          <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Product facts</dt>
+              <dd className="tabular-nums">
+                {stats.evidence_quality.product_facts_pct}% covered
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Pricing</dt>
+              <dd className="tabular-nums">
+                {stats.evidence_quality.pricing_current_pct}% current
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Inventory</dt>
+              <dd className="tabular-nums">
+                {stats.evidence_quality.inventory_current_pct}% current
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Fulfilment</dt>
+              <dd className="tabular-nums">
+                {stats.evidence_quality.fulfilment_current_pct}% current
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Warranty</dt>
+              <dd className="tabular-nums">
+                {stats.evidence_quality.warranty_configured_pct}% configured
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Synthetic claims</dt>
+              <dd className="tabular-nums">
+                {stats.evidence_quality.synthetic_pct}%
+              </dd>
+            </div>
+          </dl>
+        </section>
+      ) : null}
+
       <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
           ["Products", stats?.products],

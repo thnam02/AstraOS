@@ -12,6 +12,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.decision.proof.compiler import attach_proof_bundle
 from app.decision.intent.models import ConstraintField, ShoppingIntent
 from app.decision.negotiation.delta import (
     apply_working_intent,
@@ -165,7 +166,7 @@ class NegotiationService:
                 else MerchantOutcome.ACCEPT_BUYER_COUNTER
             ),
             offer_id=rec.offer_id if rec else None,
-            snapshot=rec.model_dump(mode="json") if rec else None,
+            snapshot=_snapshot_with_proof(rec, decided.match),
             codes=(
                 [ReasonCode.ORIGINAL_CONSTRAINTS_RETAINED.value]
                 if rec
@@ -270,7 +271,9 @@ class NegotiationService:
         now = datetime.now(UTC)
         expires = now + timedelta(seconds=settings.negotiation_ttl_seconds)
         version = max((item.version for item in row.proposals), default=0) + 1
-        snapshot = to_public_scored(found.offer).model_dump(mode="json")
+        snapshot = attach_proof_bundle(
+            to_public_scored(found.offer).model_dump(mode="json")
+        )
         codes = [item.value for item in found.reason_codes]
         codes.insert(0, "RECOVERY_AFTER_REVALIDATION_FAILURE")
         explanation = [
@@ -495,7 +498,7 @@ class NegotiationService:
         expires = now + timedelta(seconds=settings.negotiation_ttl_seconds)
         version = max((item.version for item in row.proposals), default=0) + 1
         snapshot = (
-            to_public_scored(found.offer).model_dump(mode="json")
+            attach_proof_bundle(to_public_scored(found.offer).model_dump(mode="json"))
             if found.offer
             else None
         )
@@ -868,6 +871,17 @@ class NegotiationService:
             expires_at=item.expires_at,
             created_at=item.created_at,
         )
+
+
+def _snapshot_with_proof(rec: Any, match: Any = None) -> dict[str, Any] | None:
+    if rec is None:
+        return None
+    payload = rec.model_dump(mode="json")
+    proof: list[dict[str, Any]] = []
+    block = getattr(match, "semantic_matching", None)
+    if block is not None and block.matches:
+        proof = list(block.matches[0].proof or [])
+    return attach_proof_bundle(payload, proof)
 
 
 def _intent_budget(intent: ShoppingIntent) -> int | None:

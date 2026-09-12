@@ -1,1 +1,5 @@
-"""Catalogue and merchant data seeding — implemented in Stage 1."""
+"""Deterministic merchant catalogue seeding."""
+
+from app.seed.runner import format_summary, run, seed_database
+
+__all__ = ["format_summary", "run", "seed_database"]

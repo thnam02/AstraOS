@@ -1,6 +1,12 @@
-.PHONY: up down logs test lint migrate migration seed
+.PHONY: up down logs test lint migrate migration seed reset-db
 
 API_DIR := apps/api
+
+export POSTGRES_HOST ?= localhost
+export POSTGRES_USER ?= astraos
+export POSTGRES_PASSWORD ?= astraos
+export POSTGRES_DB ?= astraos
+export ASTRAOS_SEED ?= 2026
 
 ifeq ($(wildcard $(API_DIR)/.venv/bin/python),)
 API_PY := python3
@@ -34,4 +40,8 @@ migration:
 	cd $(API_DIR) && $(API_PY) -m alembic revision --autogenerate -m "$(name)"
 
 seed:
-	@echo "Seeding will be implemented in Stage 1."
+	cd $(API_DIR) && $(API_PY) -m app.seed
+
+reset-db:
+	@echo "Destructive: remigrates $(POSTGRES_DB) from the Stage 0 baseline and reseeds."
+	cd $(API_DIR) && $(API_PY) -m app.seed --reset

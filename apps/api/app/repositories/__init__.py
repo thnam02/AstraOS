@@ -1,5 +1,12 @@
-"""Persistence repositories.
+"""Persistence repositories. Repositories retrieve and persist data only."""
 
-Repositories isolate SQLAlchemy access from services. Domain models
-and queries arrive in Stage 1.
-"""
+from app.repositories.catalogue import CatalogueRepository, MerchantCatalogueState
+from app.repositories.policy import MerchantPolicyRepository
+from app.repositories.product import ProductRepository
+
+__all__ = [
+    "CatalogueRepository",
+    "MerchantCatalogueState",
+    "MerchantPolicyRepository",
+    "ProductRepository",
+]

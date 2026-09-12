@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     database_url: str = ""
 
     frontend_url: str = "http://localhost:3000"
+    astraos_seed: int = 2026
 
     @property
     def sqlalchemy_database_uri(self) -> str:

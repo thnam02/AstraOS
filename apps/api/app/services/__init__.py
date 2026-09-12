@@ -1,5 +1,10 @@
-"""Application services.
+"""Application services. Routes call services; services do not decide offers."""
 
-Routes call services. Services orchestrate repositories and decision
-modules. No AstraOS decision logic is implemented in Stage 0.
-"""
+from app.services.catalogue import CatalogueService
+from app.services.policy import MerchantPolicyService, PolicyValidationError
+
+__all__ = [
+    "CatalogueService",
+    "MerchantPolicyService",
+    "PolicyValidationError",
+]

@@ -28,6 +28,25 @@ class Settings(BaseSettings):
     database_url: str = ""
 
     frontend_url: str = "http://localhost:3000"
+    astraos_seed: int = 2026
+    astraos_arena_seed: int = 2026
+    astraos_learning_seed: int = 2026
+    response_model_mode: str = "COLD_START"
+    learning_artifacts_dir: str = "artifacts/models"
+
+    intent_parser_mode: str = "rule_based"
+    llm_api_key: str = ""
+    openai_api_key: str = ""
+    llm_model: str = "gpt-4o-mini"
+    llm_base_url: str = "https://api.openai.com/v1"
+    offer_ttl_seconds: int = 300
+    max_negotiation_turns: int = 5
+    negotiation_ttl_seconds: int = 300
+    reservation_ttl_minutes: int = 10
+    honor_locked_proposal_price: bool = True
+    astraos_demo_mode: bool = False
+    llm_timeout_seconds: float = 8.0
+    protocol_adapter: str = "rest"
 
     @property
     def sqlalchemy_database_uri(self) -> str:

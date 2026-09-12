@@ -7,9 +7,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.db.session import engine, wait_for_database
+from app.db.session import AsyncSessionLocal, engine, wait_for_database
 from app.routes import api_v1_router
 from app.routes.health import router as health_router
+from app.services.readiness import evaluate_readiness
 
 
 @asynccontextmanager
@@ -17,6 +18,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Connect to PostgreSQL on startup when not running tests."""
     if settings.app_env != "test":
         await wait_for_database()
+        async with AsyncSessionLocal() as session:
+            ready = await evaluate_readiness(session)
+        if ready.status == "not_ready":
+            raise RuntimeError(
+                "AstraOS is not ready: "
+                + ", ".join(item.name for item in ready.checks if not item.ok)
+            )
     yield
     await engine.dispose()
 
@@ -26,7 +34,7 @@ def create_app() -> FastAPI:
     application = FastAPI(
         title="AstraOS API",
         description="Merchant-side decision engine for agentic commerce.",
-        version="0.0.1",
+        version="1.0.0",
         lifespan=lifespan,
     )
     application.add_middleware(

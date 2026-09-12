@@ -1,14 +1,18 @@
+import { ArenaWorkbench } from "@/components/arena/ArenaWorkbench";
 import { PageContainer } from "@/components/shared/PageContainer";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
 export default function ArenaPage() {
   return (
-    <PageContainer>
+    <PageContainer wide>
       <SectionHeader
         eyebrow="Arena"
-        title="Agent Arena — coming next"
-        description="Benchmarking and agent simulation will land in a later stage."
+        title="Merchant strategy comparison"
+        description="Same buyer, catalogue, inventory, and merchant policy. Only the merchant strategy changes."
       />
+      <div className="mt-6">
+        <ArenaWorkbench />
+      </div>
     </PageContainer>
   );
 }

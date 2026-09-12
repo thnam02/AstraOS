@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npx --yes tsx --test lib/arenaDisplay.test.ts"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

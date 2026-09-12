@@ -24,6 +24,10 @@ out/
 .DS_Store
 .idea/
 .vscode/
+.cursor/skills/
 
 # Docker
 postgres-data/
+
+# Trained model artifacts
+apps/api/artifacts/models/*.joblib

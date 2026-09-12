@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { AppHeader } from "@/components/shared/AppHeader";
 
 import "./globals.css";
 
-const geist = Geist({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-geist",
+  variable: "--font-sans-loaded",
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono-loaded",
 });
 
 export const metadata: Metadata = {
@@ -23,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geist.variable} min-h-screen bg-canvas font-sans text-ink antialiased`}
+        className={`${inter.className} ${jetbrains.variable} min-h-screen bg-canvas text-ink antialiased`}
       >
         <AppHeader />
         {children}

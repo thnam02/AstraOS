@@ -24,6 +24,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
     "httpx>=0.27.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
@@ -36,18 +37,24 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
 
 [tool.ruff]
 line-length = 88
 target-version = "py312"
 src = ["app", "tests"]
-exclude = [".venv", "alembic"]
+exclude = [".venv", "alembic", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/routes/*.py" = ["B008"]
+"tests/*.py" = ["B017"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -59,5 +66,5 @@ exclude = ["alembic", "tests"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["sklearn.*"]
+module = ["sklearn.*", "joblib"]
 ignore_missing_imports = true

@@ -1,5 +1,7 @@
 """AstraOS decision engine package.
 
-Future modules: intent, eligibility, retrieval, offers, policies,
-pareto, utility, economics. Implementation begins after Stage 0.
+Stage 7 adds proposal acceptance and a local transaction execution
+boundary. Acceptance is not final until live merchant state is
+revalidated. LLMs interpret language. Deterministic AstraOS services
+control all commercial terms.
 """

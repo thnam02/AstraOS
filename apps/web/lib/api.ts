@@ -10,6 +10,9 @@ import type {
   QualifyResponse,
   QualificationVariantDetail,
   MatchResponse,
+  GenerateOffersResponse,
+  OfferDetailResponse,
+  OfferRunResponse,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -121,4 +124,51 @@ export function matchIntent(
       limit,
     }),
   });
+}
+
+export function generateOffers(payload: {
+  intent?: string;
+  match_run_id?: string;
+  parser_mode?: "rule_based" | "llm";
+  max_products?: number;
+  status?: "FEASIBLE" | "REJECTED" | "ALL";
+  limit?: number;
+}): Promise<GenerateOffersResponse> {
+  return request<GenerateOffersResponse>("/api/v1/offers/generate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getOfferRun(
+  runId: string,
+  params?: {
+    product_id?: string;
+    delivery?: string;
+    warranty?: string;
+    bundle?: string;
+    returns?: string;
+    status?: string;
+    max_price_cents?: number;
+    limit?: number;
+    offset?: number;
+  },
+): Promise<OfferRunResponse> {
+  const search = new URLSearchParams();
+  if (params?.product_id) search.set("product_id", params.product_id);
+  if (params?.delivery) search.set("delivery", params.delivery);
+  if (params?.warranty) search.set("warranty", params.warranty);
+  if (params?.bundle) search.set("bundle", params.bundle);
+  if (params?.returns) search.set("returns", params.returns);
+  if (params?.status) search.set("status", params.status);
+  if (params?.max_price_cents != null) {
+    search.set("max_price_cents", String(params.max_price_cents));
+  }
+  search.set("limit", String(params?.limit ?? 40));
+  search.set("offset", String(params?.offset ?? 0));
+  return request<OfferRunResponse>(`/api/v1/offers/runs/${runId}?${search}`);
+}
+
+export function getOffer(offerId: string): Promise<OfferDetailResponse> {
+  return request<OfferDetailResponse>(`/api/v1/offers/${offerId}`);
 }

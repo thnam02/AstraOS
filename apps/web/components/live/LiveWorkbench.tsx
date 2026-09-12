@@ -3,21 +3,28 @@
 import { useState, type ReactNode } from "react";
 
 import { ApiStatus } from "@/components/live/ApiStatus";
-import { matchIntent } from "@/lib/api";
+import { OfferExplorer } from "@/components/live/OfferExplorer";
+import { generateOffers, matchIntent } from "@/lib/api";
 import { HERO_INTENT, contextLabel, fieldLabel } from "@/lib/intent";
 import { formatAudCents } from "@/lib/money";
-import type { MatchResponse, RankedProductMatch, ShoppingIntent } from "@/types";
+import type {
+  GenerateOffersResponse,
+  MatchResponse,
+  RankedProductMatch,
+  ShoppingIntent,
+} from "@/types";
 
-const PROCESS = [
-  { id: "understand", label: "Understand", after: "complete" },
-  { id: "qualify", label: "Qualify", after: "complete" },
-  { id: "match", label: "Match", after: "complete" },
-  { id: "construct", label: "Construct", after: "not_started" },
-  { id: "optimise", label: "Optimise", after: "not_started" },
-  { id: "negotiate", label: "Negotiate", after: "not_started" },
-  { id: "transact", label: "Transact", after: "not_started" },
-  { id: "learn", label: "Learn", after: "not_started" },
-] as const;
+function processState(
+  hasMatch: boolean,
+  hasOffers: boolean,
+  id: string,
+): string {
+  if (!hasMatch) return "not started";
+  if (id === "understand" || id === "qualify" || id === "match") return "complete";
+  if (id === "construct") return hasOffers ? "complete" : "not started";
+  if (id === "optimise") return hasOffers ? "next" : "not started";
+  return "locked";
+}
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -33,6 +40,7 @@ export function LiveWorkbench() {
   const [text, setText] = useState(HERO_INTENT);
   const [parserMode, setParserMode] = useState<"rule_based" | "llm">("rule_based");
   const [result, setResult] = useState<MatchResponse | null>(null);
+  const [offers, setOffers] = useState<GenerateOffersResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,9 +48,17 @@ export function LiveWorkbench() {
     setBusy(true);
     setError(null);
     try {
-      setResult(await matchIntent(text, parserMode, 8));
+      const matched = await matchIntent(text, parserMode, 8);
+      setResult(matched);
+      setOffers(
+        await generateOffers({
+          match_run_id: matched.run_id,
+          max_products: 8,
+          limit: 40,
+        }),
+      );
     } catch {
-      setError("Matching failed. Is the API running?");
+      setError("Construction failed. Is the API running?");
     } finally {
       setBusy(false);
     }
@@ -60,7 +76,8 @@ export function LiveWorkbench() {
           </h1>
           <p className="text-sm leading-6 text-muted">
             Language is interpreted. Hard rules decide who may compete.
-            Semantic fit then ranks only the products that already passed.
+            Semantic fit ranks eligible products. Construction then enumerates
+            commercial configurations around those products.
           </p>
         </div>
         <textarea
@@ -97,7 +114,7 @@ export function LiveWorkbench() {
           disabled={busy || !text.trim()}
           className="rounded-[6px] bg-ink px-4 py-2 text-xs font-medium tracking-[0.12em] text-surface disabled:opacity-40"
         >
-          {busy ? "MATCHING…" : "UNDERSTAND AND MATCH"}
+          {busy ? "CONSTRUCTING…" : "UNDERSTAND → CONSTRUCT"}
         </button>
         {error ? <p className="text-sm text-danger">{error}</p> : null}
         <ApiStatus />
@@ -109,7 +126,7 @@ export function LiveWorkbench() {
             ASTRAOS UNDERSTANDING
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-            Qualify then match
+            Qualify, match, construct
           </h2>
         </div>
         {!result ? (
@@ -170,24 +187,39 @@ export function LiveWorkbench() {
           <p className="text-sm text-muted">No run yet.</p>
         )}
         <ol className="space-y-2">
-          {PROCESS.map((step) => {
-            const state = result ? step.after : "not_started";
-            return (
-              <li
-                key={step.id}
-                className="flex items-center justify-between border-b border-line py-2 text-sm"
-              >
-                <span className="tracking-[0.08em] uppercase text-ink">
-                  {step.label}
-                </span>
-                <span className="text-[11px] tracking-[0.08em] text-muted">
-                  {state.replace(/_/g, " ")}
-                </span>
-              </li>
-            );
-          })}
+          {(
+            [
+              "understand",
+              "qualify",
+              "match",
+              "construct",
+              "optimise",
+              "negotiate",
+              "transact",
+              "learn",
+            ] as const
+          ).map((id) => (
+            <li
+              key={id}
+              className="flex items-center justify-between border-b border-line py-2 text-sm"
+            >
+              <span className="tracking-[0.08em] uppercase text-ink">{id}</span>
+              <span className="text-[11px] tracking-[0.08em] text-muted">
+                {processState(Boolean(result), Boolean(offers), id)}
+              </span>
+            </li>
+          ))}
         </ol>
       </aside>
+
+      {offers ? (
+        <div className="xl:col-span-3">
+          <OfferExplorer
+            construction={offers}
+            heroProduct={result?.semantic_matching.matches[0]?.product_name}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -103,6 +103,20 @@ class ProductRepository:
         result = await self.session.scalars(stmt)
         return result.unique().one_or_none()
 
+    async def list_variants_by_ids(
+        self, variant_ids: list[uuid.UUID]
+    ) -> Sequence[ProductVariant]:
+        if not variant_ids:
+            return []
+        stmt = (
+            select(ProductVariant)
+            .options(*_VARIANT_LOAD, selectinload(ProductVariant.product))
+            .where(ProductVariant.id.in_(variant_ids))
+        )
+        result = await self.session.scalars(stmt)
+        rows = {row.id: row for row in result.unique().all()}
+        return [rows[item] for item in variant_ids if item in rows]
+
     async def list_active_variants(
         self, *, category: str | None = None
     ) -> Sequence[ProductVariant]:

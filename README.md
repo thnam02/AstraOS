@@ -14,17 +14,24 @@ This repository is the technical foundation for UAVS Hackathon 2026.
 
 ## Current status
 
-**Stage 3 — Deep Intent Intelligence + Semantic Matching**
+**Stage 4 — Offer Construction + Dynamic Bundling**
 
 - Stage 0 — Scaffold — COMPLETE
 - Stage 1 — Domain model and merchant data — COMPLETE
 - Stage 2 — Intent interpretation + deterministic eligibility — COMPLETE
 - Stage 3 — Deep intent intelligence + semantic matching — COMPLETE
+- Stage 4 — Offer construction + dynamic bundling — COMPLETE
 
 **Eligibility answers:** *Can this product satisfy the mandatory request?*
 
 **Semantic matching answers:** *Among products that can satisfy it, which ones
 best solve the human buyer's actual problem?*
+
+**Offer construction answers:** *What valid commercial configurations can the
+merchant construct around those products?*
+
+A product is not an offer. Stage 4 enumerates the offer space. It does not
+choose a winner, compute buyer utility, or draw a Pareto frontier.
 
 Semantic similarity never overrides a hard constraint. A semantic score is
 **Semantic Fit**, not a purchase, win, or agent probability.
@@ -191,6 +198,9 @@ coverage, then price, then SKU. Merchant economics are not mixed in.
 | GET | `/api/v1/intent/qualification/{run_id}/variants/{variant_id}` | One condition trace |
 | POST | `/api/v1/match` | Qualify then semantically rank |
 | GET | `/api/v1/match/{run_id}` | Persisted match run |
+| POST | `/api/v1/offers/generate` | Construct the offer space |
+| GET | `/api/v1/offers/runs/{offer_run_id}` | Paginated / filtered candidates |
+| GET | `/api/v1/offers/{offer_id}` | One configuration + proof |
 
 `POST /api/v1/match` body:
 
@@ -204,20 +214,27 @@ Semantic Fit scores and grounded reasons, and
 `total_ms`.
 
 Match runs persist raw text, structured intent, parser version, eligible set,
-embedding model, scores, and rerank payload. Offers and outcomes are not stored.
+embedding model, scores, and rerank payload.
+
+`POST /api/v1/offers/generate` accepts `{ "intent": "..." }` or
+`{ "match_run_id": "..." }`. The response is a constructed offer space:
+estimated / generated / feasible / rejected counts, dimension sizes, and a
+machine-readable preview. No offer is labelled best or recommended.
 
 ## Frontend
 
-`/` is LIVE V2:
+`/` is LIVE V3:
 
 - Left: buyer-agent request
 - Center: AstraOS understanding — mandatory, context, outcomes, preferences,
   trade-offs — then qualification counts
-- Right: best product matches with Semantic Fit, context fit, preference fit,
-  evidence coverage, and why-it-fits facts
+- Right: matched products with Semantic Fit
+- Below: Offer Space explorer — Product ≠ Offer, filters, totals,
+  intervention cost, proof. Bundles are labelled context-relevant candidates,
+  not recommendations.
 
-Process rail: Understand / Qualify / Match complete after a run. Construct,
-Optimise, Negotiate, Transact, Learn remain not started.
+Process rail after a run: Understand / Qualify / Match / Construct complete.
+Optimise is next. Negotiate, Transact, Learn remain locked.
 
 Catalogue inspector remains at `/catalogue`.
 
@@ -240,6 +257,37 @@ Baselines:
 
 Hard-constraint violation among returned semantic matches must be `0`.
 
+## What Stage 4 adds
+
+```
+RankedProductMatch[]
+  → price options allowed by merchant policy
+  → variant delivery / warranty / bundle / return rows
+  → context-relevant bundle filter
+  → Cartesian expansion (capped)
+  → static feasibility
+  → OfferCandidate[]
+```
+
+`OfferCandidate` holds product, price adjustment, delivery, warranty, bundle,
+return policy, buyer total, descriptive intervention cost, proof, and expiry.
+It does not store buyer utility, P(win), Pareto status, or a recommended flag.
+
+Price states are BASE, −3%, −5%, −7%, −10%, never above
+`MerchantPolicy.maximum_discount_rate`. Money is integer cents.
+
+Bundles come only from `BundleOption` + `VariantBundleOption`. Relevance is an
+explicit mapping in `apps/api/app/decision/offers/bundles.py` (e.g. long-haul
+travel → travel adapter, airplane adapter, hard case). Gaming does not treat a
+travel adapter as relevant. No LLM invents a physical accessory.
+
+Default construction caps: 8 products, 5,000 candidates. If the estimate
+exceeds the cap, products, then price, bundle, warranty, delivery, and
+return depth are reduced in that order. `pruning_reason` is recorded.
+
+Offers expire after `OFFER_TTL_SECONDS` (default 300). Expiry supports later
+revalidation. Nothing is accepted or checked out here.
+
 ## Architecture
 
 ```
@@ -247,8 +295,8 @@ Routes → Services → Repositories / Decision modules → Database
 ```
 
 Decision logic lives under `apps/api/app/decision/intent/`,
-`apps/api/app/decision/eligibility/`, and
-`apps/api/app/decision/retrieval/`.
+`apps/api/app/decision/eligibility/`, `apps/api/app/decision/retrieval/`,
+and `apps/api/app/decision/offers/`.
 
 Money remains integer cents. The MVP scans active variants in the selected
 category. That is acceptable for a few hundred SKUs.
@@ -324,7 +372,7 @@ Without those values the API stays on the rule-based parser.
 - **Stage 1 — Domain model and merchant data** — COMPLETE
 - **Stage 2 — Intent interpretation + deterministic eligibility** — COMPLETE
 - **Stage 3 — Deep intent intelligence + semantic matching** — COMPLETE
-- **Stage 4 — Offer construction + dynamic bundling**
+- **Stage 4 — Offer construction + dynamic bundling** — COMPLETE
 - **Stage 5 — Merchant economics + Pareto optimisation**
 - **Stage 6 — B2A negotiation**
 - **Stage 7 — Transaction loop**
@@ -332,7 +380,5 @@ Without those values the API stays on the rule-based parser.
 - **Stage 9 — Intent → Offer → Outcome learning**
 - **Stage 10 — Protocol adapter + demo hardening**
 
-Stage 3 does not implement offer generation, discounts, delivery subsidies,
-warranty optimisation, bundles, returns optimisation, merchant contribution,
-Pareto frontiers, buyer utility, P(win), negotiation, checkout, orders, Arena,
-or learning.
+Stage 4 does not implement buyer utility, P(win), Pareto frontiers,
+recommended offers, negotiation, checkout, orders, Arena, or learning.

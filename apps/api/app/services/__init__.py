@@ -2,6 +2,7 @@
 
 from app.services.catalogue import CatalogueService
 from app.services.matching import SemanticMatchingService
+from app.services.offers import OfferConstructionService
 from app.services.policy import MerchantPolicyService, PolicyValidationError
 from app.services.qualification import IntentQualificationService
 
@@ -9,6 +10,7 @@ __all__ = [
     "CatalogueService",
     "IntentQualificationService",
     "MerchantPolicyService",
+    "OfferConstructionService",
     "PolicyValidationError",
     "SemanticMatchingService",
 ]

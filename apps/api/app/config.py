@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     llm_model: str = "gpt-4o-mini"
     llm_base_url: str = "https://api.openai.com/v1"
+    offer_ttl_seconds: int = 300
 
     @property
     def sqlalchemy_database_uri(self) -> str:

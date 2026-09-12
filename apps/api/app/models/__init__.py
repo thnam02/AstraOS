@@ -7,6 +7,7 @@ from app.models.embedding import VariantEmbedding
 from app.models.inventory import InventoryRecord
 from app.models.match import MatchResult, MatchRun
 from app.models.merchant import Merchant
+from app.models.offer import OfferCandidateRow, OfferConstructionRun
 from app.models.policy import MerchantPolicy
 from app.models.product import Product, ProductVariant
 from app.models.provenance import AttributeEvidence, DataSource
@@ -24,6 +25,8 @@ __all__ = [
     "MatchResult",
     "MatchRun",
     "Merchant",
+    "OfferCandidateRow",
+    "OfferConstructionRun",
     "MerchantPolicy",
     "Product",
     "ProductVariant",

@@ -370,3 +370,102 @@ export type QualificationVariantDetail = {
   run_id: string;
   variant: VariantQualificationCard;
 };
+
+export type PublicOffer = {
+  offer_id: string;
+  product: {
+    variant_id: string;
+    product_id: string;
+    sku: string;
+    name: string;
+    brand: string;
+    variant_name: string | null;
+  };
+  pricing: {
+    product_price_cents: number;
+    base_price_cents: number;
+    adjustment_cents: number;
+    adjustment_type: string;
+    delivery_charge_cents: number;
+    warranty_price_cents: number;
+    bundle_price_cents: number;
+    total_price_cents: number;
+    currency: string;
+  };
+  delivery: { code: string; name: string; days: number };
+  warranty: { code: string; name: string; months: number };
+  bundle: { code: string; name: string | null } | null;
+  returns: { code: string; name: string | null; window_days: number | null } | null;
+  proof: {
+    type: string;
+    value: unknown;
+    source: string;
+    source_name: string | null;
+    evidence_id: string | null;
+    updated_at: string | null;
+  }[];
+  expires_at: string | null;
+  feasibility_status: string;
+  construction_status: string;
+  rejection_reasons: { code: string; message: string }[];
+  direct_intervention_cost_cents: number;
+  bundle_relevance: {
+    code: string;
+    name: string;
+    triggered_by: string[];
+    variant_compatible: boolean;
+    merchant_available: boolean;
+  } | null;
+};
+
+export type GenerateOffersResponse = {
+  offer_run_id: string;
+  match_run_id: string | null;
+  intent: ShoppingIntent;
+  input: { matched_products: number };
+  summary: {
+    estimated_candidates: number;
+    generated_candidates: number;
+    feasible_candidates: number;
+    rejected_candidates: number;
+    pruning_reason: string | null;
+    rejection_distribution: Record<string, number>;
+  };
+  dimensions: {
+    price_options: number;
+    delivery_options: number;
+    warranty_options: number;
+    bundle_options: number;
+    return_options: number;
+  };
+  timing: {
+    matching_load_ms: number;
+    dimension_load_ms: number;
+    combination_generation_ms: number;
+    feasibility_filter_ms: number;
+    persistence_ms: number;
+    total_ms: number;
+  };
+  offers: PublicOffer[];
+  truncated: boolean;
+};
+
+export type OfferRunResponse = {
+  offer_run_id: string;
+  match_run_id: string | null;
+  intent: ShoppingIntent;
+  summary: GenerateOffersResponse["summary"];
+  dimensions: GenerateOffersResponse["dimensions"];
+  timing: Record<string, number>;
+  created_at: string;
+  completed_at: string | null;
+  offers: PublicOffer[];
+  total_offers: number;
+  limit: number;
+  offset: number;
+};
+
+export type OfferDetailResponse = {
+  offer: Record<string, unknown>;
+  public: PublicOffer;
+};

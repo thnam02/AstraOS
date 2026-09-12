@@ -115,6 +115,20 @@ def make_bundle(**overrides: object) -> BundleOption:
     return BundleOption(**values)  # type: ignore[arg-type]
 
 
+def make_return_policy(**overrides: object) -> ReturnPolicy:
+    code = unique("RET")
+    values: dict[str, object] = {
+        "id": uuid.uuid4(),
+        "code": code,
+        "name": code,
+        "return_window_days": 30,
+        "merchant_expected_cost_cents": 400,
+        "enabled": True,
+    }
+    values.update(overrides)
+    return ReturnPolicy(**values)  # type: ignore[arg-type]
+
+
 def make_source(**overrides: object) -> DataSource:
     values: dict[str, object] = {
         "id": uuid.uuid4(),
@@ -166,6 +180,7 @@ __all__ = [
     "make_merchant",
     "make_policy",
     "make_product",
+    "make_return_policy",
     "make_source",
     "make_variant",
     "make_warranty",

@@ -152,3 +152,25 @@ first-class.
 **Why is this different from a chatbot?**
 The merchant response is a machine-readable proposal with proof, expiry,
 and allowed actions — not a paragraph of sales copy.
+
+**Is your catalogue hardcoded?**
+No. AstraOS ships with a deterministic demo merchant for reproducibility,
+but the decision engine operates on a canonical merchant model populated
+through the ingestion layer. We support versioned JSON and CSV merchant
+feeds.
+
+**How would a retailer connect AstraOS?**
+Their PIM/ERP/OMS or commerce platform maps into the ingestion adapter.
+The downstream decision engine remains unchanged.
+
+**What happens when merchant data changes?**
+AstraOS upserts changed records and selectively refreshes semantic
+embeddings only when semantic product facts change.
+
+**Do you invent missing product attributes?**
+No. Missing data remains unknown and can block mandatory buyer
+requirements.
+
+**Can the buyer agent upload merchant data?**
+No. Merchant ingestion is a separate merchant-side administrative
+boundary.

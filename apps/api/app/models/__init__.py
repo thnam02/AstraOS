@@ -16,6 +16,7 @@ from app.models.commerce import (
 )
 from app.models.delivery import DeliveryOption, VariantDeliveryOption
 from app.models.embedding import VariantEmbedding
+from app.models.ingestion import MerchantIngestionRun
 from app.models.inventory import InventoryRecord
 from app.models.learning import (
     CommerceInteraction,
@@ -53,6 +54,7 @@ __all__ = [
     "DataSource",
     "DeliveryOption",
     "InventoryRecord",
+    "MerchantIngestionRun",
     "InventoryReservation",
     "LearningDatasetVersion",
     "MatchResult",

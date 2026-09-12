@@ -29,6 +29,7 @@ class VariantSummary(BaseModel):
     battery_hours: float | None
     is_active: bool
     has_missing_attributes: bool
+    source_system: str | None = None
 
 
 class ProductSummary(BaseModel):
@@ -40,6 +41,7 @@ class ProductSummary(BaseModel):
     category: str
     model_number: str | None
     is_active: bool
+    source_system: str | None = None
     variant_count: int
     variants: list[VariantSummary]
 
@@ -67,6 +69,7 @@ class ProductVariantDetail(BaseModel):
     cogs_cents: int
     attributes: dict[str, Any]
     is_active: bool
+    source_system: str | None = None
     inventory: InventoryResponse | None
     delivery_options: list[DeliveryOptionResponse]
     warranty_options: list[WarrantyOptionResponse]
@@ -88,6 +91,8 @@ class ProductRecord(BaseModel):
     model_number: str | None
     manufacturer: str | None
     is_active: bool
+    external_id: str | None = None
+    source_system: str | None = None
 
 
 class ProductDetail(BaseModel):
@@ -109,3 +114,4 @@ class CatalogueStatsResponse(BaseModel):
     brands: int
     categories: list[str]
     evidence_records: int
+    data_mode: str | None = None

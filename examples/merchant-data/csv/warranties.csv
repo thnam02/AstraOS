@@ -1,0 +1,3 @@
+code,name,term,merchant_cost,customer_price
+STANDARD_12,Standard 12-month warranty,12 months,0,0
+EXTENDED_24,Extended 24-month warranty,2 years,9,19

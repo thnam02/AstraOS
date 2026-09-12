@@ -115,3 +115,10 @@ copy-paste between them; both talk to the API.
 
 If the buyer LLM key is missing, the Buyer Agent falls back to its
 deterministic policy validator. That is still a real M2M session.
+
+## Optional — Merchant ingestion (Phase 6)
+
+Open Merchant Data. Upload `examples/merchant-data/harbor-sound.json`.
+Show the dry-run counts, then Apply import. Semantic documents refresh
+only when product facts change. Then send a Buyer Agent request: AstraOS
+decides over the canonical catalogue, not a hardcoded fixture.

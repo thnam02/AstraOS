@@ -1,0 +1,3 @@
+code,name,return_window_days,merchant_expected_cost,conditions,restocking_fee_rate
+STANDARD_30,30-day standard returns,30,4,Unopened or lightly used.,
+FLEX_60,60-day flexible returns,60,9,,0.05

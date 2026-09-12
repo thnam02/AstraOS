@@ -1,4 +1,4 @@
-.PHONY: up down logs test lint migrate migration seed reset-db reset-demo eval embeddings embeddings-model eval-retrieval demo-hero baseline buyer-demo buyer-demo-deterministic buyer-agent-test buyer-eval
+.PHONY: up down logs test lint migrate migration seed reset-db reset-demo eval embeddings embeddings-model eval-retrieval demo-hero baseline buyer-demo buyer-demo-deterministic buyer-agent-test buyer-eval ingest
 
 API_DIR := apps/api
 
@@ -71,6 +71,9 @@ demo-hero:
 embeddings-model:
 	cd $(API_DIR) && $(API_PY) -m pip install '.[semantic]'
 	cd $(API_DIR) && SEMANTIC_EMBEDDING_ALLOW_DOWNLOAD=1 $(API_PY) -c "from app.decision.retrieval.embeddings import load_sentence_transformer, DEFAULT_SEMANTIC_MODEL; from app.config import settings; load_sentence_transformer(settings.semantic_embedding_model or DEFAULT_SEMANTIC_MODEL); print('cached', settings.semantic_embedding_model)"
+
+ingest:
+	cd $(API_DIR) && $(API_PY) -m app.cli ingest --source json --file ../../examples/merchant-data/harbor-sound.json $(if $(APPLY),--apply,)
 
 embeddings:
 	cd $(API_DIR) && $(API_PY) -m app.eval.index

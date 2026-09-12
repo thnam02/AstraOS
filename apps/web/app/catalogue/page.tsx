@@ -9,7 +9,7 @@ export default function CataloguePage() {
         <SectionHeader
           eyebrow="Merchant data"
           title="Catalogue"
-          description="Inspect the seeded Astra Electronics headphone catalogue. No offers are generated here."
+          description="Inspect the canonical merchant model. Demo seed and imported feeds populate the same tables."
         />
         <CatalogueExplorer />
       </div>

@@ -16,7 +16,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 - `GET /health` — liveness
-- `GET /ready` — database, policy, seed, semantic retrieval, intent parser, adapter
+- `GET /ready` — database, policy, catalogue (seed or imported), economics, semantic retrieval, intent parser, adapter
 
 Demo default parser is `INTENT_PARSER_MODE=llm` with rule-based fallback.
 CI forces `rule_based` and `SEMANTIC_EMBEDDING_PROVIDER=hashing`.
@@ -33,6 +33,15 @@ Merchant configuration:
 - `POST /api/v1/optimisation/runs/{run_id}/reselect` — cheap frontier reselection
 
 Objective evaluation: `python -m app.eval.merchant_objective`.
+
+Merchant ingestion (canonical JSON/CSV feed):
+
+- `GET /api/v1/merchant/ingestion/status`
+- `POST /api/v1/merchant/ingestion/validate`
+- `POST /api/v1/merchant/ingestion/import`
+- `GET /api/v1/merchant/ingestion/runs`
+- `python -m app.cli ingest --file ../../examples/merchant-data/harbor-sound.json`
+- `python -m app.eval.merchant_ingestion`
 
 - `GET /api/v1/agent/capabilities`
 - `POST /api/v1/agent/offers/request`

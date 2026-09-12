@@ -106,7 +106,7 @@ class ProductRepository:
     async def get_variant(self, variant_id: uuid.UUID) -> ProductVariant | None:
         stmt = (
             select(ProductVariant)
-            .options(*_VARIANT_LOAD)
+            .options(*_VARIANT_LOAD, selectinload(ProductVariant.product))
             .where(ProductVariant.id == variant_id)
         )
         result = await self.session.scalars(stmt)

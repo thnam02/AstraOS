@@ -54,6 +54,15 @@ export function ProductInspector({ productId }: { productId: string }) {
         <p className="text-sm text-muted">
           {detail.product.brand} · {detail.product.model_number ?? "No model"}
         </p>
+        {detail.product.source_system ? (
+          <div className="mt-2">
+            <DataBadge tone="uncertain">
+              {detail.product.source_system === "merchant_json"
+                ? "PRODUCT FEED"
+                : detail.product.source_system.toUpperCase()}
+            </DataBadge>
+          </div>
+        ) : null}
       </div>
 
       <Section title="PRODUCT">

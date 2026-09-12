@@ -1,6 +1,9 @@
 import { API_BASE_URL } from "@/lib/config";
 import type {
   CatalogueStatsResponse,
+  IngestionResultResponse,
+  IngestionRunSummary,
+  MerchantDataStatusResponse,
   HealthResponse,
   MerchantObjectiveResponse,
   MerchantObjectiveUpdate,
@@ -70,6 +73,40 @@ export function getReady(): Promise<{
 
 export function getCatalogueStats(): Promise<CatalogueStatsResponse> {
   return request<CatalogueStatsResponse>("/api/v1/catalogue/stats");
+}
+
+export function getMerchantDataStatus(): Promise<MerchantDataStatusResponse> {
+  return request<MerchantDataStatusResponse>("/api/v1/merchant/ingestion/status");
+}
+
+export function validateMerchantFeed(payload: {
+  source_type: "json" | "csv";
+  source_name: string;
+  snapshot?: Record<string, unknown>;
+  content_base64?: string;
+}): Promise<IngestionResultResponse> {
+  return request<IngestionResultResponse>("/api/v1/merchant/ingestion/validate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function importMerchantFeed(payload: {
+  source_type: "json" | "csv";
+  source_name: string;
+  snapshot?: Record<string, unknown>;
+  content_base64?: string;
+}): Promise<IngestionResultResponse> {
+  return request<IngestionResultResponse>("/api/v1/merchant/ingestion/import", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listIngestionRuns(): Promise<{ items: IngestionRunSummary[] }> {
+  return request<{ items: IngestionRunSummary[] }>(
+    "/api/v1/merchant/ingestion/runs",
+  );
 }
 
 export function listProducts(params?: {

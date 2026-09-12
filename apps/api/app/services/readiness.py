@@ -15,7 +15,13 @@ from app.decision.retrieval.embeddings import (
     semantic_model_cached,
     sentence_transformers_importable,
 )
-from app.models import MerchantPolicy, ProductVariant, VariantEmbedding
+from app.models import (
+    Merchant,
+    MerchantPolicy,
+    Product,
+    ProductVariant,
+    VariantEmbedding,
+)
 from app.models.learning import ResponseModelVersion
 
 
@@ -43,6 +49,27 @@ async def evaluate_readiness(session: AsyncSession) -> ReadyResponse:
     )
 
     variants = await session.scalar(select(func.count()).select_from(ProductVariant))
+    active_products = await session.scalar(
+        select(func.count()).select_from(Product).where(Product.is_active.is_(True))
+    )
+    active_variants = await session.scalar(
+        select(func.count())
+        .select_from(ProductVariant)
+        .where(ProductVariant.is_active.is_(True))
+    )
+    merchant = (await session.scalars(select(Merchant).limit(1))).first()
+    catalogue_ok = bool(active_products and active_variants)
+    checks.append(
+        ReadinessCheck(
+            name="merchant_catalogue",
+            ok=catalogue_ok,
+            detail=(
+                f"{active_products or 0} active products, "
+                f"{active_variants or 0} active variants"
+                + (f"; mode={merchant.data_mode}" if merchant is not None else "")
+            ),
+        )
+    )
     checks.append(
         ReadinessCheck(
             name="seed_catalogue",
@@ -50,6 +77,21 @@ async def evaluate_readiness(session: AsyncSession) -> ReadyResponse:
             detail=f"{variants or 0} variants",
         )
     )
+    economics_ok = bool(active_variants and active_variants > 0)
+    checks.append(
+        ReadinessCheck(
+            name="economics_ready",
+            ok=economics_ok,
+            detail=(
+                "active variants have required price and COGS"
+                if economics_ok
+                else "no commercially usable variants"
+            ),
+            required=False,
+        )
+    )
+    if not economics_ok:
+        degraded.append("commercial_optimisation_not_ready")
 
     embeddings = await session.scalar(
         select(func.count()).select_from(VariantEmbedding)
@@ -113,6 +155,18 @@ async def evaluate_readiness(session: AsyncSession) -> ReadyResponse:
         degraded.append("embeddings_dimension_mismatch")
     if partial:
         degraded.append("embeddings_partial_index")
+    checks.append(
+        ReadinessCheck(
+            name="import_index",
+            ok=not partial,
+            detail=(
+                "semantic index matches active catalogue"
+                if not partial
+                else f"indexed {embeddings or 0} of {variant_count} variants"
+            ),
+            required=False,
+        )
+    )
     if resolution.requested == "sentence_transformer" and (
         resolution.fallback_used or not cached
     ):

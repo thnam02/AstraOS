@@ -1,0 +1,4 @@
+code,name,description,delivery_days,merchant_cost,customer_charge
+STANDARD,Standard Delivery,Two-business-day metro delivery.,2,0,0
+EXPRESS,Express Delivery,Next-business-day delivery.,1,4,6
+same-day,Same Day Delivery,Metro same-day when ordered before cutoff.,0,8,10

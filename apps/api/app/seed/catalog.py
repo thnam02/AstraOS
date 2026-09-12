@@ -24,6 +24,7 @@ def merchant() -> Merchant:
         name="Astra Electronics",
         code=MERCHANT_CODE,
         currency="AUD",
+        data_mode="DEMO_SEED",
     )
 
 

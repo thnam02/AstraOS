@@ -68,6 +68,21 @@ never overrides policy, and never rebuilds the frontier.
 Merchant systems / data sit below this stack: catalogue, inventory,
 delivery capacity, warranty/bundle/returns, evidence, and merchant policy.
 
+```
+PIM / ERP / OMS / CSV / JSON
+          ↓
+Merchant Ingestion Layer
+          ↓
+Canonical Commerce Model
+          ↓
+AstraOS Decision Engine
+```
+
+Phase 6 implements versioned JSON and CSV adapters. Shopify/SAP
+connectors are not implemented; they would plug into the same adapter
+boundary. Downstream services do not branch on whether a row came from
+the demo seed or an import.
+
 Demo default: `INTENT_PARSER_MODE=llm` (`intent-parser-v2`,
 `llm-extraction.v1`). The LLM never receives COGS, catalogue candidates,
 Pareto results, or merchant policy. Commercial authority stays in the

@@ -102,6 +102,7 @@ export type ProductSummary = {
   category: string;
   model_number: string | null;
   is_active: boolean;
+  source_system?: string | null;
   variant_count: number;
   variants: VariantSummary[];
 };
@@ -141,6 +142,8 @@ export type ProductDetail = {
     model_number: string | null;
     manufacturer: string | null;
     is_active: boolean;
+    external_id?: string | null;
+    source_system?: string | null;
   };
   variants: ProductVariantDetail[];
 };
@@ -155,6 +158,76 @@ export type CatalogueStatsResponse = {
   brands: number;
   categories: string[];
   evidence_records: number;
+  data_mode?: string | null;
+};
+
+export type IngestionIssue = {
+  severity: "ERROR" | "WARNING";
+  code: string;
+  message: string;
+  location: string | null;
+  record_id: string | null;
+};
+
+export type IngestionCounts = {
+  received: number;
+  created: number;
+  updated: number;
+  unchanged: number;
+  deactivated: number;
+  rejected: number;
+};
+
+export type IngestionResultResponse = {
+  status: string;
+  schema_version: string;
+  source_type: string;
+  source_name: string;
+  file_hash: string | null;
+  snapshot_mode: string;
+  dry_run: boolean;
+  merchant_data_mode: string | null;
+  run_id: string | null;
+  counts: Record<string, IngestionCounts>;
+  records_received: number;
+  records_created: number;
+  records_updated: number;
+  records_unchanged: number;
+  records_rejected: number;
+  records_deactivated: number;
+  warnings: IngestionIssue[];
+  errors: IngestionIssue[];
+  semantic_documents_changed: number;
+  embeddings_refreshed: number;
+  embeddings_reused: number;
+  timing_ms: Record<string, number>;
+  economics_ready: boolean;
+  economics_reason: string | null;
+};
+
+export type IngestionRunSummary = {
+  id: string;
+  source_type: string;
+  source_name: string;
+  status: string;
+  snapshot_mode: string;
+  file_hash: string | null;
+  records_created: number;
+  records_updated: number;
+  records_unchanged: number;
+  records_deactivated: number;
+  warning_count: number;
+  error_count: number;
+  index_status: string | null;
+  started_at: string;
+  completed_at: string | null;
+};
+
+export type MerchantDataStatusResponse = {
+  data_mode: string;
+  active_products: number;
+  active_variants: number;
+  last_run: IngestionRunSummary | null;
 };
 
 export type MerchantPolicyResponse = {

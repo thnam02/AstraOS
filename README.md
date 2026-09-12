@@ -37,6 +37,10 @@ bundle, and returns — under merchant policy.
 ## Architecture
 
 ```
+Merchant Feed (JSON / CSV)
+      ↓
+Ingestion Adapter → Validation → Canonical AstraOS Model
+      ↓
 Natural Language
       ↓
 LLM Interpretation        (structured JSON, validated)
@@ -48,6 +52,10 @@ Qualification → Semantic Matching → Offer Construction
   → Economics / Policy → Pareto Optimisation → Merchant Objective
   → Negotiation → Transaction
 ```
+
+AstraOS ships with a deterministic demo merchant for reproducibility.
+The decision engine is not coupled to that seed. JSON and CSV feeds
+upsert into the same canonical catalogue.
 
 AstraOS separates **merchant guardrails** from **merchant objective**.
 A guardrail such as a 15% minimum margin defines the safe offer space.
@@ -194,6 +202,7 @@ repository.
 | `make up` | Compose build + start |
 | `make migrate` | Alembic upgrade head |
 | `make seed` | Deterministic catalogue seed 2026 |
+| `make ingest` | Dry-run Harbor Sound example feed (`APPLY=1` to persist) |
 | `make embeddings-model` | Install `[semantic]` extra and cache the local embedding model |
 | `make embeddings` | Refresh cached product embeddings for the configured provider |
 | `make eval-retrieval` | Hashing vs semantic retrieval benchmark |

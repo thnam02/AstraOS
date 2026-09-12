@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { IngestionPanel } from "@/components/catalogue/IngestionPanel";
 import { DataBadge } from "@/components/shared/DataBadge";
 import { getCatalogueStats, listProducts } from "@/lib/api";
 import { formatAudCents } from "@/lib/money";
@@ -20,7 +21,7 @@ export function CatalogueExplorer() {
   const [brand, setBrand] = useState("all");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
     Promise.all([
       getCatalogueStats(),
       listProducts({ activeOnly: false, limit: 200 }),
@@ -32,6 +33,10 @@ export function CatalogueExplorer() {
       .catch(() => {
         setError("Unable to load merchant catalogue. Is the API running?");
       });
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
   const brands = useMemo(
@@ -54,6 +59,7 @@ export function CatalogueExplorer() {
 
   return (
     <div className="space-y-6">
+      <IngestionPanel onImported={load} />
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
@@ -151,6 +157,9 @@ export function CatalogueExplorer() {
                       ) : null}
                       {variant.has_missing_attributes ? (
                         <DataBadge tone="warning">Missing</DataBadge>
+                      ) : null}
+                      {product.source_system ? (
+                        <DataBadge tone="uncertain">Imported</DataBadge>
                       ) : null}
                     </div>
                   </td>

@@ -1,0 +1,62 @@
+{
+  "mode": "llm",
+  "model": "gpt-4o-mini",
+  "prompt_version": "buyer-agent-v1",
+  "missions": 5,
+  "structured_output_valid_rate": 1.0,
+  "buyer_policy_violation_rate": 0.0,
+  "fallback_rate": 0.0,
+  "mean_turns": 0.0,
+  "mean_buyer_decision_ms": 1633.9,
+  "mean_session_ms": 4373.56,
+  "mean_total_tokens": 1120.6,
+  "results": [
+    {
+      "scenario": "urgent-traveller",
+      "end_state": "ACCEPTED",
+      "product": "Aurora Commute 06",
+      "order_ref": "AST-2026-000001",
+      "buyer_decision_ms": 2913.22,
+      "session_ms": 4978.92,
+      "total_tokens": 1279
+    },
+    {
+      "scenario": "budget-buyer",
+      "end_state": "TRANSACTION_FAILED",
+      "product": "Orion Mini 106",
+      "order_ref": null,
+      "buyer_decision_ms": 1438.5,
+      "session_ms": 5138.14,
+      "total_tokens": 1028,
+      "notes": ["REVALIDATION_FAILED"]
+    },
+    {
+      "scenario": "assurance-buyer",
+      "end_state": "ACCEPTED",
+      "product": "Vanta Cabin 136",
+      "order_ref": "AST-2026-000002",
+      "buyer_decision_ms": 1275.89,
+      "session_ms": 3262.84,
+      "total_tokens": 1028
+    },
+    {
+      "scenario": "quality-buyer",
+      "end_state": "TRANSACTION_FAILED",
+      "product": "Nova Fold 19",
+      "order_ref": null,
+      "buyer_decision_ms": 1480.12,
+      "session_ms": 5431.92,
+      "total_tokens": 1164,
+      "notes": ["REVALIDATION_FAILED"]
+    },
+    {
+      "scenario": "balanced",
+      "end_state": "ACCEPTED",
+      "product": "Atlas Cabin 72",
+      "order_ref": "AST-2026-000003",
+      "buyer_decision_ms": 1061.77,
+      "session_ms": 3055.97,
+      "total_tokens": 1104
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "run_id": "c1908e33-8739-4d1d-8857-4334c52c77a3",
+  "buyer_agent_version": "0.4.0",
+  "prompt_version": "buyer-agent-v1",
+  "buyer_mode": "llm",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "mission": {
+    "mission_id": "assurance-buyer",
+    "request": "I need reliable wireless ANC headphones under A$400 with a long warranty. Delivery within two days is fine.",
+    "persona": "ASSURANCE_BUYER",
+    "profile": {
+      "urgency": "medium",
+      "comfort": "medium",
+      "reliability": "high",
+      "price_sensitivity": "low",
+      "quality": "high"
+    },
+    "hard": {
+      "max_total_cents": 40000,
+      "same_day_required": false,
+      "max_delivery_days": 2,
+      "require_anc": true,
+      "require_wireless": true,
+      "excluded_brands": []
+    },
+    "acceptance_threshold": 0.6,
+    "max_turns": 4,
+    "negotiation_style": "assurance"
+  },
+  "capabilities": {
+    "protocol_name": "astraos-agent",
+    "version": "1.0",
+    "operations": [
+      "capabilities",
+      "request_offer",
+      "inspect_offer",
+      "counter_offer",
+      "accept_offer",
+      "get_transaction",
+      "get_order"
+    ],
+    "protocol": [
+      "REST",
+      "MCP"
+    ]
+  },
+  "actions": [
+    "REQUEST",
+    "ACCEPT"
+  ],
+  "history": [
+    {
+      "buyer": "REQUEST",
+      "merchant": "PROPOSED"
+    }
+  ],
+  "proposal_id": "b0e56d90-4ac0-47fb-a78a-310f81e74e76",
+  "session_id": "d5beecc2-9c70-4c55-8ac9-0263b7c6d857",
+  "transaction_id": "7e8e210a-0280-4ab4-a755-b3711fc5a1cc",
+  "order_ref": "AST-2026-000002",
+  "end_state": "ACCEPTED",
+  "turns": 0,
+  "latencies_ms": {
+    "capabilities_ms": 2.36,
+    "request_offer_ms": 1909.46,
+    "buyer_decision_ms": 1275.89,
+    "accept_ms": 57.81,
+    "session_ms": 3262.84
+  },
+  "token_usage": {
+    "input_tokens": 998,
+    "output_tokens": 30,
+    "total_tokens": 1028
+  },
+  "policy_violations": []
+}

@@ -39,12 +39,13 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "../buyer-agent"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 markers = [
     "integration_llm: live LLM provider tests skipped without credentials",
     "semantic_model_integration: live sentence-transformer inference; skipped unless cached",
+    "buyer_agent_network: real HTTP buyer-agent loopback",
 ]
 
 [tool.ruff]

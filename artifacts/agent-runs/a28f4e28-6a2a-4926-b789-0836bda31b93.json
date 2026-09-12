@@ -1,0 +1,72 @@
+{
+  "run_id": "a28f4e28-6a2a-4926-b789-0836bda31b93",
+  "buyer_agent_version": "0.4.0",
+  "prompt_version": "buyer-agent-v1",
+  "buyer_mode": "deterministic",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "mission": {
+    "mission_id": "urgent-traveller",
+    "request": "I'm flying from Sydney to Singapore tomorrow and need wireless noise-cancelling headphones under A$350. I need them delivered today. I'll wear them for hours, so comfort and reliability matter more than getting the absolute cheapest option.",
+    "persona": "URGENT_TRAVELLER",
+    "profile": {
+      "urgency": "high",
+      "comfort": "high",
+      "reliability": "high",
+      "price_sensitivity": "medium",
+      "quality": "high"
+    },
+    "hard": {
+      "max_total_cents": 35000,
+      "same_day_required": true,
+      "max_delivery_days": null,
+      "require_anc": true,
+      "require_wireless": true,
+      "excluded_brands": []
+    },
+    "acceptance_threshold": 0.62,
+    "max_turns": 4,
+    "negotiation_style": "urgent"
+  },
+  "capabilities": {
+    "protocol_name": "astraos-agent",
+    "version": "1.0",
+    "operations": [
+      "capabilities",
+      "request_offer",
+      "inspect_offer",
+      "counter_offer",
+      "accept_offer",
+      "get_transaction",
+      "get_order"
+    ],
+    "protocol": [
+      "REST",
+      "MCP"
+    ]
+  },
+  "actions": [
+    "REQUEST",
+    "ACCEPT"
+  ],
+  "history": [
+    {
+      "buyer": "REQUEST",
+      "merchant": "PROPOSED"
+    }
+  ],
+  "proposal_id": "a986a266-e657-483f-9621-8d3ec18d7695",
+  "session_id": "1e135db5-3289-4022-862d-ed9520db4f0a",
+  "transaction_id": "cd9b737f-340e-4759-8e12-fac2e26f4d9b",
+  "order_ref": "AST-2026-000001",
+  "end_state": "ACCEPTED",
+  "turns": 0,
+  "latencies_ms": {
+    "capabilities_ms": 28.2,
+    "request_offer_ms": 2055.65,
+    "accept_ms": 34.2,
+    "session_ms": 2127.14
+  },
+  "token_usage": null,
+  "policy_violations": []
+}

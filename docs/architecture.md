@@ -1,7 +1,31 @@
 # AstraOS architecture
 
 ```
-Buyer Agent
+┌─────────────────────┐
+│ External Buyer Agent│  apps/buyer-agent  (independent process)
+│ deterministic | LLM │
+└──────────┬──────────┘
+           │ REST / MCP
+           ▼
+┌─────────────────────┐
+│ AstraOS Agent API   │  /api/v1/agent/*
+└──────────┬──────────┘
+           ▼
+┌─────────────────────┐
+│ Merchant Decision   │
+│ Engine              │
+└──────────┬──────────┘
+           ▼
+┌─────────────────────┐
+│ Transaction Boundary│
+└─────────────────────┘
+```
+
+The Buyer Agent is not AstraOS. It is an external evaluator/client.
+It must not import merchant services, repositories, models, or policy.
+
+```
+EXTERNAL BUYER AGENT
     ↓
 Agent Gateway   REST /api/v1/agent/*   optional MCP stdio
     ↓

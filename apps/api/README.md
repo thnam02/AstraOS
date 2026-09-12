@@ -26,5 +26,11 @@ The default Docker image does not install torch; without a cached
 sentence-transformer the API uses hashing and reports the fallback.
 - `GET /api/v1/agent/capabilities`
 - `POST /api/v1/agent/offers/request`
+- `GET /api/v1/agent/offers/{proposal_id}`
 - `POST /api/v1/agent/offers/counter`
 - `POST /api/v1/agent/offers/accept`
+- `GET /api/v1/agent/orders/{ref}`
+- `GET /api/v1/agent/transactions/{transaction_id}`
+
+The Buyer Agent is not this package. It lives in `apps/buyer-agent`
+and calls these endpoints over HTTP.

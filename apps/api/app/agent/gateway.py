@@ -20,6 +20,7 @@ from app.agent.schemas import (
     AgentOfferResponse,
     AgentProposalView,
     AgentTransactionResponse,
+    EvidenceClaim,
     StructuredConstraints,
 )
 from app.decision.intent.models import ConstraintField, ShoppingIntent
@@ -39,7 +40,7 @@ logger = logging.getLogger("astraos.agent")
 
 CAPABILITIES = AgentCapabilities(
     operations=[
-        "analyse_intent",
+        "capabilities",
         "request_offer",
         "inspect_offer",
         "counter_offer",
@@ -134,7 +135,7 @@ def _proposal_view(session: NegotiationResponse) -> AgentProposalView | None:
         }
         if offer
         else None,
-        pricing=pricing or None,
+        pricing=_public_pricing(pricing) or None,
         delivery=offer.get("delivery"),
         warranty=offer.get("warranty"),
         bundle=offer.get("bundle"),
@@ -195,6 +196,11 @@ def _from_session(
     match = session.match
     construction = session.construction
     optimisation = session.optimisation
+    understood = (
+        match.intent.model_dump(mode="json")
+        if match
+        else session.original_intent
+    )
     timing = {
         "total_ms": round((time.perf_counter() - started) * 1000, 2),
         "intent_ms": match.timing.intent_parse_ms if match else 0,
@@ -213,7 +219,7 @@ def _from_session(
         decision_id=optimisation.optimisation_run_id if optimisation else None,
         negotiation_session_id=session.session_id,
         status=status,
-        understood_intent=match.intent.model_dump(mode="json") if match else None,
+        understood_intent=understood,
         qualification_summary=match.qualification.model_dump() if match else None,
         semantic_match_summary=(
             {
@@ -237,9 +243,9 @@ def _from_session(
             else None
         ),
         proposal=_proposal_view(session),
-        merchant_reasoning=list(session.proposal.explanation)
-        if session.proposal
-        else [],
+        merchant_reasoning=_public_reasoning(
+            list(session.proposal.explanation) if session.proposal else []
+        ),
         proof=merge_claims(
             claims_from_match(match),
             claims_from_offer(rec or offer_payload),
@@ -263,6 +269,88 @@ def _from_session(
         timing=timing,
         error=error,
     )
+
+
+def _public_pricing(pricing: dict[str, Any] | None) -> dict[str, Any]:
+    """Customer-facing money only. Never COGS or margin."""
+    if not pricing:
+        return {}
+    return {
+        "product_price_cents": pricing.get("product_price_cents"),
+        "total_price_cents": pricing.get("total_price_cents"),
+        "currency": pricing.get("currency") or "AUD",
+    }
+
+
+_PRIVATE_REASON_MARKERS = (
+    "margin floor",
+    "contribution rate",
+    "contribution than",
+    "merchant contribution",
+    "cogs",
+    "pareto",
+)
+
+
+def _public_reasoning(lines: list[str]) -> list[str]:
+    """Buyer-visible reasons. Merchant economics stay private."""
+    kept: list[str] = []
+    for line in lines:
+        lowered = line.lower()
+        if any(marker in lowered for marker in _PRIVATE_REASON_MARKERS):
+            continue
+        kept.append(line)
+    return kept
+
+
+async def _variant_feature_claims(
+    db: AsyncSession, session: NegotiationResponse
+) -> list[EvidenceClaim]:
+    offer = session.proposal.offer if session.proposal else None
+    if not offer or not offer.get("variant_id"):
+        return []
+    from app.services.catalogue import CatalogueService
+
+    variant = await CatalogueService(db).get_variant(
+        UUID(str(offer["variant_id"]))
+    )
+    if variant is None:
+        return []
+    rows: list[EvidenceClaim] = []
+    attrs = variant.attributes or {}
+    for name in ("anc", "wireless", "foldable"):
+        if name not in attrs:
+            continue
+        rows.append(
+            EvidenceClaim(
+                claim=name,
+                value=attrs[name],
+                source_type="PRODUCT_SPECIFICATION",
+                source_reference=variant.sku,
+                freshness="CURRENT",
+            )
+        )
+    return rows
+
+
+async def _public_session(
+    db: AsyncSession,
+    session: NegotiationResponse,
+    *,
+    request_id: UUID,
+    started: float,
+    discrepancies: list[str] | None = None,
+) -> AgentOfferResponse:
+    response = _from_session(
+        session,
+        request_id=request_id,
+        discrepancies=discrepancies,
+        started=started,
+    )
+    extra = await _variant_feature_claims(db, session)
+    if extra:
+        response.proof = merge_claims(list(response.proof), extra)
+    return response
 
 
 class AgentGatewayService:
@@ -299,7 +387,8 @@ class AgentGatewayService:
                 buyer_agent_type="MANUAL",
             )
         )
-        return _from_session(
+        return await _public_session(
+            self.session,
             session,
             request_id=request_id,
             discrepancies=discrepancies,
@@ -312,7 +401,9 @@ class AgentGatewayService:
         started = time.perf_counter()
         rid = request_id or uuid4()
         session = await self._session_for_proposal(proposal_id)
-        return _from_session(session, request_id=rid, started=started)
+        return await _public_session(
+            self.session, session, request_id=rid, started=started
+        )
 
     async def counter_offer(self, payload: AgentCounterRequest) -> AgentOfferResponse:
         started = time.perf_counter()
@@ -338,7 +429,9 @@ class AgentGatewayService:
                 http_status=409,
                 allowed_next_actions=["INSPECT", "REQUEST"],
             ) from exc
-        return _from_session(session, request_id=request_id, started=started)
+        return await _public_session(
+            self.session, session, request_id=request_id, started=started
+        )
 
     async def accept_offer(
         self, payload: AgentAcceptRequest

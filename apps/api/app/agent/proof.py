@@ -7,6 +7,17 @@ from app.agent.schemas import EvidenceClaim
 from app.schemas.match import MatchResponse
 from app.schemas.optimisation import PublicScoredOffer
 
+_PRIORITY_CLAIMS = (
+    "anc",
+    "wireless",
+    "foldable",
+    "same_day_delivery",
+    "delivery_days",
+    "warranty_months",
+    "battery_hours",
+    "weight_g",
+)
+
 
 def claims_from_match(match: MatchResponse | None) -> list[EvidenceClaim]:
     if match is None or not match.semantic_matching.matches:
@@ -24,7 +35,7 @@ def claims_from_match(match: MatchResponse | None) -> list[EvidenceClaim]:
                     freshness="CURRENT",
                 )
             )
-    return rows[:12]
+    return _prioritize(rows)
 
 
 def claims_from_offer(
@@ -80,4 +91,9 @@ def merge_claims(*groups: list[EvidenceClaim]) -> list[EvidenceClaim]:
                 continue
             seen.add(key)
             merged.append(item)
-    return merged
+    return _prioritize(merged)[:16]
+
+
+def _prioritize(rows: list[EvidenceClaim]) -> list[EvidenceClaim]:
+    rank = {name: index for index, name in enumerate(_PRIORITY_CLAIMS)}
+    return sorted(rows, key=lambda item: rank.get(item.claim, len(rank)))

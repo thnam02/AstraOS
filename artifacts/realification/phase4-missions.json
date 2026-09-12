@@ -1,0 +1,242 @@
+{
+  "missions": 25,
+  "mode": "deterministic",
+  "protocol_completion_rate": 1.0,
+  "acceptance_rate": 0.48,
+  "reject_rate": 0.0,
+  "no_safe_offer_rate": 0.0,
+  "max_turns_rate": 0.0,
+  "transaction_completion_rate": 0.48,
+  "transaction_failed_rate": 0.52,
+  "public_api_error_rate": 0.0,
+  "average_turns": 0.0,
+  "counter_rate": 0.0,
+  "hard_constraint_violation_rate": 0.0,
+  "results": [
+    {
+      "mission_id": "urgent-traveller-1",
+      "persona": "URGENT_TRAVELLER",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Aurora Commute 06",
+      "order_ref": "AST-2026-000002",
+      "session_ms": 1998.4
+    },
+    {
+      "mission_id": "budget-buyer-1",
+      "persona": "BUDGET_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Orion Mini 106",
+      "order_ref": null,
+      "session_ms": 3768.42
+    },
+    {
+      "mission_id": "assurance-buyer-1",
+      "persona": "ASSURANCE_BUYER",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Vanta Cabin 136",
+      "order_ref": "AST-2026-000003",
+      "session_ms": 2211.39
+    },
+    {
+      "mission_id": "quality-buyer-1",
+      "persona": "QUALITY_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Nova Fold 19",
+      "order_ref": null,
+      "session_ms": 4110.54
+    },
+    {
+      "mission_id": "balanced-1",
+      "persona": "BALANCED",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Atlas Cabin 72",
+      "order_ref": "AST-2026-000004",
+      "session_ms": 2038.69
+    },
+    {
+      "mission_id": "urgent-traveller-2",
+      "persona": "URGENT_TRAVELLER",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Aurora Commute 06",
+      "order_ref": "AST-2026-000005",
+      "session_ms": 1983.04
+    },
+    {
+      "mission_id": "budget-buyer-2",
+      "persona": "BUDGET_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Orion Mini 106",
+      "order_ref": null,
+      "session_ms": 3912.51
+    },
+    {
+      "mission_id": "assurance-buyer-2",
+      "persona": "ASSURANCE_BUYER",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Vanta Cabin 136",
+      "order_ref": "AST-2026-000006",
+      "session_ms": 2197.79
+    },
+    {
+      "mission_id": "quality-buyer-2",
+      "persona": "QUALITY_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Nova Fold 19",
+      "order_ref": null,
+      "session_ms": 4282.47
+    },
+    {
+      "mission_id": "balanced-2",
+      "persona": "BALANCED",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Atlas Cabin 72",
+      "order_ref": "AST-2026-000007",
+      "session_ms": 2042.01
+    },
+    {
+      "mission_id": "urgent-traveller-3",
+      "persona": "URGENT_TRAVELLER",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Aurora Commute 06",
+      "order_ref": "AST-2026-000008",
+      "session_ms": 1971.57
+    },
+    {
+      "mission_id": "budget-buyer-3",
+      "persona": "BUDGET_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Orion Mini 106",
+      "order_ref": null,
+      "session_ms": 3690.81
+    },
+    {
+      "mission_id": "assurance-buyer-3",
+      "persona": "ASSURANCE_BUYER",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Vanta Cabin 136",
+      "order_ref": "AST-2026-000009",
+      "session_ms": 2090.9
+    },
+    {
+      "mission_id": "quality-buyer-3",
+      "persona": "QUALITY_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Nova Fold 19",
+      "order_ref": null,
+      "session_ms": 4042.96
+    },
+    {
+      "mission_id": "balanced-3",
+      "persona": "BALANCED",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Atlas Cabin 72",
+      "order_ref": "AST-2026-000010",
+      "session_ms": 1941.19
+    },
+    {
+      "mission_id": "urgent-traveller-4",
+      "persona": "URGENT_TRAVELLER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Zenith Plus 147",
+      "order_ref": null,
+      "session_ms": 3805.69
+    },
+    {
+      "mission_id": "budget-buyer-4",
+      "persona": "BUDGET_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Orion Mini 106",
+      "order_ref": null,
+      "session_ms": 3760.71
+    },
+    {
+      "mission_id": "assurance-buyer-4",
+      "persona": "ASSURANCE_BUYER",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Vanta Cabin 136",
+      "order_ref": "AST-2026-000011",
+      "session_ms": 2066.97
+    },
+    {
+      "mission_id": "quality-buyer-4",
+      "persona": "QUALITY_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Nova Fold 19",
+      "order_ref": null,
+      "session_ms": 3960.69
+    },
+    {
+      "mission_id": "balanced-4",
+      "persona": "BALANCED",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Atlas Cabin 72",
+      "order_ref": "AST-2026-000012",
+      "session_ms": 2022.45
+    },
+    {
+      "mission_id": "urgent-traveller-5",
+      "persona": "URGENT_TRAVELLER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Zenith Plus 147",
+      "order_ref": null,
+      "session_ms": 3700.71
+    },
+    {
+      "mission_id": "budget-buyer-5",
+      "persona": "BUDGET_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Orion Mini 106",
+      "order_ref": null,
+      "session_ms": 3689.42
+    },
+    {
+      "mission_id": "assurance-buyer-5",
+      "persona": "ASSURANCE_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Zenith Plus 147",
+      "order_ref": null,
+      "session_ms": 4364.81
+    },
+    {
+      "mission_id": "quality-buyer-5",
+      "persona": "QUALITY_BUYER",
+      "end_state": "TRANSACTION_FAILED",
+      "turns": 0,
+      "product": "Nova Fold 19",
+      "order_ref": null,
+      "session_ms": 3950.9
+    },
+    {
+      "mission_id": "balanced-5",
+      "persona": "BALANCED",
+      "end_state": "ACCEPTED",
+      "turns": 0,
+      "product": "Atlas Cabin 72",
+      "order_ref": "AST-2026-000013",
+      "session_ms": 1985.63
+    }
+  ]
+}

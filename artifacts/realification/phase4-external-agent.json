@@ -1,0 +1,95 @@
+{
+  "phase": 4,
+  "title": "real-external-buyer-agent",
+  "git_sha": "9c143959e26a9a73843d2355d4084ba2c0c63310",
+  "working_tree": "phase4-uncommitted",
+  "buyer_agent_version": "0.4.0",
+  "prompt_version": "buyer-agent-v1",
+  "buyer_modes": ["deterministic", "llm"],
+  "protocol_name": "astraos-agent",
+  "protocol_version": "1.0",
+  "rest_status": "guaranteed",
+  "mcp_status": "optional_stdio_rest_passthrough",
+  "package": "apps/buyer-agent",
+  "llm_provider": "openai_compatible",
+  "llm_model": "gpt-4o-mini",
+  "merchant_decision_logic_modified": false,
+  "phase2_intent_modified": false,
+  "phase3_matching_modified": false,
+  "integration_tests": {
+    "buyer_agent_unit": "13 passed, 1 skipped",
+    "api_pytest": "372 passed, 3 skipped",
+    "real_http_e2e": "passed",
+    "mcp_adapter": "passed",
+    "forbidden_imports": "passed",
+    "ruff": "passed",
+    "mypy": "passed",
+    "frontend_tests": "23 passed",
+    "frontend_build": "passed"
+  },
+  "hero": {
+    "run_id": "a28f4e28-6a2a-4926-b789-0836bda31b93",
+    "mode": "deterministic",
+    "end_state": "ACCEPTED",
+    "product": "Aurora Commute 06",
+    "total_cents": 30185,
+    "order_ref": "AST-2026-000001",
+    "turns": 0,
+    "actions": ["REQUEST", "ACCEPT"],
+    "latencies_ms": {
+      "capabilities_ms": 28.2,
+      "request_offer_ms": 2055.65,
+      "accept_ms": 34.2,
+      "session_ms": 2127.14
+    },
+    "transcript_json": "artifacts/agent-runs/a28f4e28-6a2a-4926-b789-0836bda31b93.json",
+    "transcript_md": "artifacts/agent-runs/a28f4e28-6a2a-4926-b789-0836bda31b93.md"
+  },
+  "deterministic_eval": {
+    "missions": 25,
+    "dataset": "apps/buyer-agent/buyer_agent/fixtures/missions_v1.json",
+    "protocol_completion_rate": 1.0,
+    "acceptance_rate": 0.48,
+    "transaction_completion_rate": 0.48,
+    "transaction_failed_rate": 0.52,
+    "reject_rate": 0.0,
+    "no_safe_offer_rate": 0.0,
+    "counter_rate": 0.0,
+    "hard_constraint_violation_rate": 0.0,
+    "public_api_error_rate": 0.0,
+    "average_turns": 0.0,
+    "mean_session_ms": 3023.63,
+    "path": "artifacts/realification/phase4-missions.json"
+  },
+  "llm_eval": {
+    "missions": 5,
+    "structured_output_valid_rate": 1.0,
+    "buyer_policy_violation_rate": 0.0,
+    "fallback_rate": 0.0,
+    "mean_turns": 0.0,
+    "mean_buyer_decision_ms": 1633.9,
+    "mean_session_ms": 4373.56,
+    "mean_total_tokens": 1120.6,
+    "path": "artifacts/realification/phase4-llm-missions.json"
+  },
+  "latency_ms": {
+    "hero_capabilities": 28.2,
+    "hero_offer_request": 2055.65,
+    "hero_accept": 34.2,
+    "hero_session_deterministic": 2127.14,
+    "hero_buyer_llm": 2913.22,
+    "hero_session_llm": 4978.92,
+    "llm_mean_buyer_decision": 1633.9
+  },
+  "prompt_injection": {
+    "merchant_to_buyer": "blocked_by_validator",
+    "buyer_to_merchant": "merchant_policy_enforced"
+  },
+  "privacy_audit": {
+    "public_pricing_fields": ["product_price_cents", "total_price_cents", "currency"],
+    "margin_stripped": true,
+    "cogs_stripped": true,
+    "merchant_reasoning_sanitized": true
+  },
+  "recommendation": "PHASE 5 — CONFIGURABLE MERCHANT OBJECTIVE"
+}

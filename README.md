@@ -55,6 +55,10 @@ unavailable, AstraOS falls back to the deterministic rule parser.
 The protocol adapter contains no pricing, eligibility, matching, Pareto,
 or policy logic.
 
+The **Buyer Agent is a separate process** in `apps/buyer-agent`. It is
+not the AstraOS UI. It discovers capabilities and negotiates only over
+`/api/v1/agent/*` (optional MCP adapter calls that same REST surface).
+
 See [docs/architecture.md](docs/architecture.md).
 
 ## Tech stack
@@ -64,6 +68,7 @@ See [docs/architecture.md](docs/architecture.md).
   (`BAAI/bge-small-en-v1.5`), with hashing fallback if the model is missing
 - Frontend: Next.js, TypeScript
 - Demo: Docker Compose or local processes
+- External Buyer Agent: independent Python process (`apps/buyer-agent`)
 
 ## Run locally
 
@@ -186,6 +191,10 @@ repository.
 | `make embeddings-model` | Install `[semantic]` extra and cache the local embedding model |
 | `make embeddings` | Refresh cached product embeddings for the configured provider |
 | `make eval-retrieval` | Hashing vs semantic retrieval benchmark |
+| `make buyer-demo-deterministic` | External Buyer Agent hero mission (no LLM) |
+| `make buyer-demo` | External Buyer Agent hero mission (LLM, hashing fallback) |
+| `make buyer-agent-test` | Buyer Agent unit tests |
+| `make buyer-eval` | Frozen 25-mission deterministic Buyer Agent eval |
 | `make reset-demo` | Destructive remigrate + seed |
 | `make test` | pytest |
 | `make lint` | ruff + mypy |

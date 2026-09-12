@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astraos-buyer-agent"
+version = "0.4.0"
+description = "Independent external Buyer Agent for the AstraOS public protocol"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+]
+
+[project.scripts]
+buyer-agent = "buyer_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["buyer_agent*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+markers = [
+    "buyer_agent_network: real HTTP against a live AstraOS API",
+    "buyer_agent_llm: live LLM buyer tests skipped without credentials",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["buyer_agent", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+pretty = true
+warn_return_any = true
+disallow_untyped_defs = true
+plugins = ["pydantic.mypy"]

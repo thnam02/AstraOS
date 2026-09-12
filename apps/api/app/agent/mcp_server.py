@@ -1,7 +1,7 @@
 """Minimal MCP stdio adapter. Calls the public REST agent interface only.
 
-This process contains no pricing, eligibility, matching, Pareto, or policy
-logic. If the MCP client is unavailable, use POST /api/v1/agent/* instead.
+This process is a protocol translator. If the MCP client is unavailable,
+use POST /api/v1/agent/* instead.
 """
 
 from __future__ import annotations
@@ -15,6 +15,11 @@ from urllib.request import Request, urlopen
 from app.config import settings
 
 TOOLS = [
+    {
+        "name": "astraos_capabilities",
+        "description": "Discover the public AstraOS agent protocol.",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
     {
         "name": "astraos_request_offer",
         "description": "Submit shopping intent and receive a merchant proposal.",
@@ -70,6 +75,15 @@ TOOLS = [
             "required": ["ref"],
         },
     },
+    {
+        "name": "astraos_get_transaction",
+        "description": "Fetch a machine-readable transaction record.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"transaction_id": {"type": "string"}},
+            "required": ["transaction_id"],
+        },
+    },
 ]
 
 
@@ -104,6 +118,8 @@ def _http(method: str, path: str, body: dict[str, Any] | None = None) -> Any:
 
 
 def _call_tool(name: str, arguments: dict[str, Any]) -> Any:
+    if name == "astraos_capabilities":
+        return _http("GET", "/api/v1/agent/capabilities")
     if name == "astraos_request_offer":
         return _http(
             "POST",
@@ -121,6 +137,10 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> Any:
         return _http("POST", "/api/v1/agent/offers/accept", arguments)
     if name == "astraos_get_order":
         return _http("GET", f"/api/v1/agent/orders/{arguments['ref']}")
+    if name == "astraos_get_transaction":
+        return _http(
+            "GET", f"/api/v1/agent/transactions/{arguments['transaction_id']}"
+        )
     return {"error_code": "UNKNOWN_TOOL", "machine_message": name}
 
 

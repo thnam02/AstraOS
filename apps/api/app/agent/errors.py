@@ -39,9 +39,11 @@ class AgentProtocolError(Exception):
         self.http_status = http_status
 
     def as_dict(self) -> dict[str, object]:
+        retryable = self.http_status >= 500
         return {
             "error_code": self.code.value,
             "machine_message": self.machine_message,
             "human_debug_message": self.human_debug_message,
             "allowed_next_actions": self.allowed_next_actions,
+            "retryable": retryable,
         }

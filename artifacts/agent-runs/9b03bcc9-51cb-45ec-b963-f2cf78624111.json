@@ -1,0 +1,77 @@
+{
+  "run_id": "9b03bcc9-51cb-45ec-b963-f2cf78624111",
+  "buyer_agent_version": "0.4.0",
+  "prompt_version": "buyer-agent-v1",
+  "buyer_mode": "llm",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "mission": {
+    "mission_id": "urgent-traveller",
+    "request": "I'm flying from Sydney to Singapore tomorrow and need wireless noise-cancelling headphones under A$350. I need them delivered today. I'll wear them for hours, so comfort and reliability matter more than getting the absolute cheapest option.",
+    "persona": "URGENT_TRAVELLER",
+    "profile": {
+      "urgency": "high",
+      "comfort": "high",
+      "reliability": "high",
+      "price_sensitivity": "medium",
+      "quality": "high"
+    },
+    "hard": {
+      "max_total_cents": 35000,
+      "same_day_required": true,
+      "max_delivery_days": null,
+      "require_anc": true,
+      "require_wireless": true,
+      "excluded_brands": []
+    },
+    "acceptance_threshold": 0.62,
+    "max_turns": 4,
+    "negotiation_style": "urgent"
+  },
+  "capabilities": {
+    "protocol_name": "astraos-agent",
+    "version": "1.0",
+    "operations": [
+      "capabilities",
+      "request_offer",
+      "inspect_offer",
+      "counter_offer",
+      "accept_offer",
+      "get_transaction",
+      "get_order"
+    ],
+    "protocol": [
+      "REST",
+      "MCP"
+    ]
+  },
+  "actions": [
+    "REQUEST",
+    "ACCEPT"
+  ],
+  "history": [
+    {
+      "buyer": "REQUEST",
+      "merchant": "PROPOSED"
+    }
+  ],
+  "proposal_id": "d455bf02-c58f-471d-8286-8a43fbbda7f8",
+  "session_id": "116146aa-f0d7-44da-b61a-96ab49ddb649",
+  "transaction_id": "ee760308-0400-4e12-9157-7fd26e0bd57a",
+  "order_ref": "AST-2026-000001",
+  "end_state": "ACCEPTED",
+  "turns": 0,
+  "latencies_ms": {
+    "capabilities_ms": 28.5,
+    "request_offer_ms": 1946.68,
+    "buyer_decision_ms": 2913.22,
+    "accept_ms": 74.32,
+    "session_ms": 4978.92
+  },
+  "token_usage": {
+    "input_tokens": 1248,
+    "output_tokens": 31,
+    "total_tokens": 1279
+  },
+  "policy_violations": []
+}

@@ -63,6 +63,30 @@ policy. Reserve, then write an immutable local order. No payment moves.
 **Is the Buyer Agent your product?**
 No. It is an external client. AstraOS is the merchant-side engine.
 
+**Is the Buyer Agent just part of your UI?**
+No. It runs as an independent process in `apps/buyer-agent` and
+communicates only through the public AstraOS agent protocol.
+
+**Does the Buyer Agent know merchant margins?**
+No. Merchant economics remain private to AstraOS. The public proposal
+exposes customer price, delivery, warranty, bundle, returns, proof, and
+allowed actions.
+
+**Can the buyer tell AstraOS what price to charge?**
+The buyer can request a maximum acceptable price, but AstraOS determines
+whether any merchant-safe proposal can satisfy it.
+
+**Do you support agent protocols?**
+AstraOS exposes a protocol-neutral REST machine interface
+(`astraos-agent` v1.0) and an optional MCP adapter over the same
+merchant logic. REST is the guaranteed demo path.
+
+**What happens when the buyer accepts?**
+AstraOS revalidates the immutable proposal against current merchant
+state, reserves inventory and creates the order through the commerce
+execution boundary. The buyer submits a proposal id, not commercial
+terms.
+
 **How would this integrate with a real retailer?**
 The agent adapter maps onto the same canonical services. A retailer OMS
 and payment stack would replace the local reservation/order snapshot.

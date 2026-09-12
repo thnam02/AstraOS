@@ -1,4 +1,4 @@
-.PHONY: up down logs test lint migrate migration seed reset-db reset-demo eval embeddings embeddings-model eval-retrieval demo-hero baseline
+.PHONY: up down logs test lint migrate migration seed reset-db reset-demo eval embeddings embeddings-model eval-retrieval demo-hero baseline buyer-demo buyer-demo-deterministic buyer-agent-test buyer-eval
 
 API_DIR := apps/api
 
@@ -28,10 +28,25 @@ logs:
 
 test:
 	cd $(API_DIR) && $(API_PY) -m pytest
+	cd apps/buyer-agent && PYTHONPATH=. ../api/.venv/bin/python -m pytest
 
 lint:
 	cd $(API_DIR) && $(API_PY) -m ruff check .
 	cd $(API_DIR) && $(API_PY) -m mypy app
+	cd apps/buyer-agent && PYTHONPATH=. ../api/.venv/bin/python -m ruff check buyer_agent tests
+	cd apps/buyer-agent && PYTHONPATH=. ../api/.venv/bin/python -m mypy buyer_agent
+
+buyer-demo:
+	cd apps/buyer-agent && PYTHONPATH=. ../api/.venv/bin/python -m buyer_agent run --scenario urgent-traveller --mode llm
+
+buyer-demo-deterministic:
+	cd apps/buyer-agent && PYTHONPATH=. ../api/.venv/bin/python -m buyer_agent run --scenario urgent-traveller --mode deterministic
+
+buyer-agent-test:
+	cd apps/buyer-agent && PYTHONPATH=. ../api/.venv/bin/python -m pytest
+
+buyer-eval:
+	cd apps/buyer-agent && PYTHONPATH=. ../api/.venv/bin/python -m buyer_agent eval --mode deterministic --out ../../artifacts/realification/phase4-missions.json
 
 migrate:
 	cd $(API_DIR) && $(API_PY) -m alembic upgrade head

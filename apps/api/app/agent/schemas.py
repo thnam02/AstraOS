@@ -119,6 +119,7 @@ class AgentTransactionResponse(BaseModel):
 
 class AgentCapabilities(BaseModel):
     service: str = "astraos-agent-gateway"
+    protocol_name: str = "astraos-agent"
     version: str = "1.0"
     operations: list[str]
     supported: list[str]

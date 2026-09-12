@@ -89,3 +89,20 @@ Say: “In agentic commerce, the unit of competition is no longer just the
 product or the price. It is the entire offer.”
 
 LEARN is optional. Do not train live. The model is synthetic.
+
+## Optional — External Buyer Agent (Phase 4)
+
+With the API running, in a second terminal:
+
+```bash
+make buyer-demo-deterministic
+# or: make buyer-demo
+```
+
+This is a separate process. It discovers `/api/v1/agent/capabilities`,
+requests an offer, may inspect or counter, then accepts or rejects.
+LIVE can stay open as the merchant view of the same engine. Do not
+copy-paste between them; both talk to the API.
+
+If the buyer LLM key is missing, the Buyer Agent falls back to its
+deterministic policy validator. That is still a real M2M session.

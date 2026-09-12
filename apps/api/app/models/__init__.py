@@ -8,6 +8,7 @@ from app.models.merchant import Merchant
 from app.models.policy import MerchantPolicy
 from app.models.product import Product, ProductVariant
 from app.models.provenance import AttributeEvidence, DataSource
+from app.models.qualification import QualificationRun, QualificationVariantResult
 from app.models.returns import ReturnPolicy, VariantReturnPolicy
 from app.models.warranty import VariantWarrantyOption, WarrantyOption
 
@@ -22,6 +23,8 @@ __all__ = [
     "MerchantPolicy",
     "Product",
     "ProductVariant",
+    "QualificationRun",
+    "QualificationVariantResult",
     "ReturnPolicy",
     "VariantBundleOption",
     "VariantDeliveryOption",

@@ -103,6 +103,25 @@ class ProductRepository:
         result = await self.session.scalars(stmt)
         return result.unique().one_or_none()
 
+    async def list_active_variants(
+        self, *, category: str | None = None
+    ) -> Sequence[ProductVariant]:
+        """All active SKUs in an optional category. MVP full scan is intentional."""
+        stmt = (
+            select(ProductVariant)
+            .join(Product)
+            .options(*_VARIANT_LOAD, selectinload(ProductVariant.product))
+            .where(
+                ProductVariant.is_active.is_(True),
+                Product.is_active.is_(True),
+            )
+            .order_by(Product.brand, Product.name, ProductVariant.sku)
+        )
+        if category:
+            stmt = stmt.where(Product.category == category)
+        result = await self.session.scalars(stmt)
+        return result.unique().all()
+
     async def stats(self) -> CatalogueCounts:
         products = int(
             await self.session.scalar(select(func.count()).select_from(Product)) or 0

@@ -2,7 +2,7 @@ export function DataBadge({
   tone = "neutral",
   children,
 }: {
-  tone?: "neutral" | "success" | "warning" | "danger";
+  tone?: "neutral" | "success" | "warning" | "danger" | "uncertain";
   children: string;
 }) {
   const styles = {
@@ -10,6 +10,7 @@ export function DataBadge({
     success: "border-success/20 bg-success/5 text-success",
     warning: "border-warning/20 bg-warning/5 text-warning",
     danger: "border-danger/20 bg-danger/5 text-danger",
+    uncertain: "border-uncertain/25 bg-uncertain/8 text-uncertain",
   } as const;
 
   return (

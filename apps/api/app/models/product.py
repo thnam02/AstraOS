@@ -28,14 +28,6 @@ if TYPE_CHECKING:
     from app.models.returns import VariantReturnPolicy
     from app.models.warranty import VariantWarrantyOption
 
-if TYPE_CHECKING:
-    from app.models.bundle import VariantBundleOption
-    from app.models.delivery import VariantDeliveryOption
-    from app.models.inventory import InventoryRecord
-    from app.models.provenance import AttributeEvidence
-    from app.models.returns import VariantReturnPolicy
-    from app.models.warranty import VariantWarrantyOption
-
 
 class Product(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Conceptual catalogue item, e.g. Aurora A9."""

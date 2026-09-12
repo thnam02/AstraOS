@@ -3,6 +3,7 @@
 from app.schemas.bundle import BundleOptionResponse
 from app.schemas.delivery import DeliveryOptionResponse
 from app.schemas.health import HealthResponse
+from app.schemas.intent import QualifyRequest, QualifyResponse
 from app.schemas.inventory import InventoryResponse
 from app.schemas.merchant import MerchantPolicyResponse, MerchantPolicyUpdate
 from app.schemas.product import (
@@ -22,6 +23,8 @@ __all__ = [
     "DeliveryOptionResponse",
     "HealthResponse",
     "InventoryResponse",
+    "QualifyRequest",
+    "QualifyResponse",
     "MerchantPolicyResponse",
     "MerchantPolicyUpdate",
     "ProductDetail",

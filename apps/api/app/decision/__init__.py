@@ -1,5 +1,5 @@
 """AstraOS decision engine package.
 
-Future modules: intent, eligibility, retrieval, offers, policies,
-pareto, utility, economics. Implementation begins after Stage 0.
+Stage 2 implements intent interpretation and deterministic eligibility.
+Retrieval, offers, Pareto, utility, and economics remain later stages.
 """

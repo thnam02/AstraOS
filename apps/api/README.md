@@ -2,8 +2,8 @@
 
 FastAPI service for AstraOS.
 
-Stage 1 exposes catalogue read APIs and merchant policy storage.
-Decision logic is not implemented yet.
+Stage 2 adds intent parsing and deterministic eligibility at
+`POST /api/v1/intent/qualify`. Catalogue and policy APIs from Stage 1 remain.
 
 ```bash
 make migrate

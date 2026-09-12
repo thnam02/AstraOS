@@ -178,3 +178,105 @@ export type MerchantPolicyUpdate = {
   bundle_enabled?: boolean;
   flexible_returns_enabled?: boolean;
 };
+
+export type ConstraintStatus = "SATISFIED" | "VIOLATED" | "UNKNOWN";
+
+export type HardConstraint = {
+  id: string;
+  field: string;
+  operator: string;
+  value: unknown;
+  unit: string | null;
+  source_phrase: string;
+  normalized_value: unknown;
+  importance: "MANDATORY";
+};
+
+export type SoftPreference = {
+  id: string;
+  field: string;
+  direction: "MAXIMIZE" | "MINIMIZE";
+  importance: number;
+  source_phrase: string;
+};
+
+export type IntentAmbiguity = {
+  source_phrase: string;
+  reason: string;
+  suggested_resolution: string | null;
+  appears_mandatory: boolean;
+};
+
+export type ShoppingIntent = {
+  raw_text: string;
+  category: string | null;
+  hard_constraints: HardConstraint[];
+  soft_preferences: SoftPreference[];
+  context_tags: string[];
+  ambiguities: IntentAmbiguity[];
+  parser_type: string;
+  parser_version: string;
+  status: "READY" | "NEEDS_CLARIFICATION" | "UNSUPPORTED";
+};
+
+export type ConstraintEvaluation = {
+  constraint_id: string;
+  field: string;
+  operator: string;
+  expected_value: unknown;
+  observed_value: unknown;
+  status: ConstraintStatus;
+  reason: string;
+  source_reference: string | null;
+  source_name: string | null;
+  evidence_id: string | null;
+  evidence_freshness: string | null;
+  verification_status: string | null;
+  observed_at: string | null;
+  expires_at: string | null;
+  supporting_detail: string | null;
+};
+
+export type VariantQualificationCard = {
+  product_id: string;
+  variant_id: string;
+  sku: string;
+  product_name: string;
+  brand: string;
+  variant_name: string | null;
+  base_price_cents: number;
+  eligible: boolean;
+  outcome: "eligible" | "rejected" | "uncertain";
+  violated_count: number;
+  unknown_count: number;
+  satisfied_count: number;
+  exclusion_reasons: string[];
+  evaluations: ConstraintEvaluation[];
+};
+
+export type QualifyResponse = {
+  run_id: string;
+  status: ShoppingIntent["status"];
+  intent: ShoppingIntent;
+  summary: {
+    variants_checked: number;
+    eligible: number;
+    violated: number;
+    uncertain: number;
+  };
+  timing: {
+    parse_ms: number;
+    eligibility_ms: number;
+    total_ms: number;
+  };
+  eligible_products: VariantQualificationCard[];
+  uncertain_products: VariantQualificationCard[];
+  rejected_products: VariantQualificationCard[];
+  rejected_truncated: boolean;
+  uncertain_truncated: boolean;
+};
+
+export type QualificationVariantDetail = {
+  run_id: string;
+  variant: VariantQualificationCard;
+};

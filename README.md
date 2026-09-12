@@ -4,24 +4,173 @@ Merchant-side offer intelligence for AI commerce.
 
 **Product ≠ Offer.**
 
-AstraOS is a merchant-side decision engine for agentic commerce. Later stages
-will take AI shopping intent, qualify products, construct commercial offers,
-enforce merchant policies, optimise those offers, return proof-backed
-machine-readable responses, and learn from Intent → Offer → Outcome data.
+AstraOS is a merchant-side decision engine for agentic commerce. It takes AI
+shopping intent, qualifies products against hard constraints, and (in later
+stages) will construct commercial offers, enforce merchant policies, optimise
+those offers, return proof-backed machine-readable responses, and learn from
+Intent → Offer → Outcome data.
 
 This repository is the technical foundation for UAVS Hackathon 2026.
 
 ## Current status
 
-**Stage 1 — Domain Model and Merchant Data**
+**Stage 2 — Intent Interpretation + Deterministic Eligibility**
 
-Stage 0 scaffold is complete. Stage 1 adds PostgreSQL domain tables, Alembic
-migrations, a deterministic synthetic headphone catalogue, catalogue read APIs,
-a merchant policy store, and a merchant-data inspector.
+- Stage 0 — Scaffold — COMPLETE
+- Stage 1 — Domain model and merchant data — COMPLETE
+- Stage 2 — Intent interpretation + deterministic eligibility — COMPLETE
 
-The decision engine is **not implemented yet**. No intent parsing, eligibility,
-retrieval, offer construction, Pareto optimisation, buyer utility, Agent Arena,
-or learning code exists.
+The LIVE page now accepts a natural-language shopper request, parses it into a
+`ShoppingIntent`, and deterministically marks every active SKU as eligible,
+rejected, or uncertain.
+
+**Semantic similarity never overrides mandatory eligibility.**
+
+**Missing evidence is UNKNOWN, not SATISFIED.**
+
+## What Stage 2 does
+
+```
+AI shopping intent
+  → structured ShoppingIntent
+  → deterministic condition evaluation
+  → eligible / rejected / uncertain products
+```
+
+Eligibility is not relevance. Soft preferences (comfort, reliability, price
+sensitivity) are stored as interpretation metadata only. They never admit or
+exclude a SKU.
+
+A product is eligible only when every mandatory condition is `SATISFIED`.
+`VIOLATED` and `UNKNOWN` both block eligibility. LLMs may interpret language.
+LLMs must not decide product eligibility.
+
+## ShoppingIntent
+
+Internal typed model:
+
+- `raw_text`, `category`
+- `hard_constraints` — field, operator, value, unit, `source_phrase`
+- `soft_preferences` — field, direction, importance 0..1
+- `context_tags` — stored only (`long_haul_travel`, commuting, …)
+- `ambiguities` — unsupported phrases are recorded, never dropped
+- `parser_type`, `parser_version`, `status`
+
+Statuses: `READY`, `NEEDS_CLARIFICATION`, `UNSUPPORTED`.
+
+If a buyer says “must look luxurious” or “no animal leather” and the catalogue
+has no supported field, AstraOS records an ambiguity. Mandatory unsupported
+requirements make every SKU `UNKNOWN` for that condition. Absence of a material
+attribute is not treated as “no leather”.
+
+## Parsers
+
+`IntentParser` is a protocol. Implementations:
+
+- `RuleBasedIntentParser` — deterministic phrase matcher for demos, tests, and
+  fallback. No API key required.
+- `LLMIntentParser` — optional schema-constrained structured output, allow-listed
+  fields/operators, one validation retry, then rule-based fallback.
+
+`INTENT_PARSER_MODE=rule_based` (default) or `llm`. If LLM credentials are
+missing, the application keeps working in rule-based mode. Tests never call a
+live model.
+
+## Normalisation
+
+Downstream eligibility never sees natural-language variants.
+
+| Phrase | Result |
+| --- | --- |
+| `under $350` / `A$350` / `AUD 350` | `price LT 35000` AUD cents |
+| `$350 or less` / `up to $350` | `price LTE 35000` |
+| `at least 30 hours battery` | `battery_hours GTE 30` |
+| `more than 30 hours battery` | `battery_hours GT 30` |
+| `delivered today` / `same day` | `delivery_days LTE 0` |
+| `tomorrow` | `delivery_days LTE 1` |
+| `within 2 days` | `delivery_days LTE 2` |
+| `0.25kg` | `250` grams |
+| `noise cancelling` / `ANC` | `anc EQ true` |
+
+**under** means strictly less than (`LT`). **up to** / **or less** means `LTE`.
+
+## Eligibility
+
+Every hard condition resolves to exactly one of:
+
+- `SATISFIED`
+- `VIOLATED`
+- `UNKNOWN`
+
+Eligible iff `violated_count == 0` and `unknown_count == 0`.
+
+Field lookup goes through a registry, not scattered `if field == "anc"` checks:
+
+| Field | Source |
+| --- | --- |
+| `price` | `ProductVariant.base_price_cents` |
+| `anc`, `battery_hours`, `weight_g`, `foldable`, `wireless`, `microphone` | variant `attributes` JSON |
+| `brand`, `category` | `Product` |
+| `in_stock` | `units_available - units_reserved` |
+| `delivery_days` / same-day | `VariantDeliveryOption` + `DeliveryOption` |
+
+Missing or null attributes are `UNKNOWN`, never false. Missing inventory is
+`UNKNOWN`, not zero stock. Delivery is evaluated from fulfilment rows, never
+from product attributes.
+
+- Same-day `SATISFIED` when an available option has `delivery_days <= 0`
+- `VIOLATED` when delivery rows exist but none meet the limit
+- `UNKNOWN` when no usable delivery data exists
+
+If the only supporting `AttributeEvidence` for an attribute-backed fact is
+expired, the condition is `UNKNOWN` with reason `STALE_EVIDENCE`. Stock and
+delivery use their own operational rows.
+
+Operators are explicit functions (`EQ`, `NE`, `LT`, `LTE`, `GT`, `GTE`, `IN`,
+`NOT_IN`). No `eval()`, no generated expressions.
+
+## APIs
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/health` | Liveness |
+| GET | `/api/v1/catalogue/products` | List products |
+| GET | `/api/v1/catalogue/products/{id}` | Product + variants |
+| GET | `/api/v1/catalogue/variants/{id}` | SKU detail |
+| GET | `/api/v1/catalogue/stats` | Catalogue counters |
+| GET | `/api/v1/merchant/policy` | Active policy |
+| PATCH | `/api/v1/merchant/policy` | Update stored policy bounds/flags |
+| POST | `/api/v1/intent/qualify` | Parse + qualify the catalogue |
+| GET | `/api/v1/intent/qualification/{run_id}` | Full run / paginated traces |
+| GET | `/api/v1/intent/qualification/{run_id}/variants/{variant_id}` | One condition trace |
+
+`POST /api/v1/intent/qualify` body:
+
+```json
+{ "intent": "I need noise-cancelling headphones under A$350...", "parser_mode": "rule_based" }
+```
+
+Response includes structured intent, eligible / uncertain / rejected previews,
+counts, and `parse_ms` / `eligibility_ms` / `total_ms`. Rejected lists may be
+truncated in the POST body; the GET endpoints return the complete trace.
+
+Qualification runs are persisted (`QualificationRun`,
+`QualificationVariantResult`). Offer candidates and outcome-learning tables are
+not created in this stage.
+
+## Frontend
+
+`/` is the first LIVE experience:
+
+- Left: shopper request, example intent, parser mode, **QUALIFY REQUEST**
+- Center: structured intent + per-SKU condition rows
+- Right: counts and the future process rail (Understand / Qualify complete;
+  Construct, Optimise, Learn not started; Prove partial)
+
+Click a condition to open a proof drawer (expected, observed, source,
+verification, freshness). This is not a search-results page.
+
+Catalogue inspector remains at `/catalogue`.
 
 ## Architecture
 
@@ -29,42 +178,12 @@ or learning code exists.
 Routes → Services → Repositories / Decision modules → Database
 ```
 
-Business logic does not live in API route handlers. Decision packages under
-`apps/api/app/decision/` remain empty placeholders.
+Decision logic lives under `apps/api/app/decision/intent/` and
+`apps/api/app/decision/eligibility/`, not in route handlers.
 
-The API uses async SQLAlchemy 2 with PostgreSQL via psycopg.
-
-## Database schema
-
-Money is stored as integer cents. Currency is an ISO code (`AUD` in the seed).
-Missing product facts are stored as absent/null JSON keys, not zeros.
-
-```
-Merchant
-  └── MerchantPolicy
-
-Product
-  └── ProductVariant
-       ├── InventoryRecord
-       ├── VariantDeliveryOption → DeliveryOption
-       ├── VariantWarrantyOption → WarrantyOption
-       ├── VariantBundleOption → BundleOption
-       ├── VariantReturnPolicy → ReturnPolicy
-       └── AttributeEvidence → DataSource
-```
-
-Merchant economics fields:
-
-- Variant: `base_price_cents`, `cogs_cents`
-- Delivery / warranty / bundle: `merchant_cost_cents` vs customer charge/price
-- Policy: `minimum_margin_rate`, `maximum_discount_rate`, subsidy flags
-
-Provenance:
-
-- `DataSource` records where a fact came from (`MANUFACTURER`, `MERCHANT_PIM`, …)
-- `AttributeEvidence` stores the observed value, verification status, and
-  optional `expires_at`. Stale evidence is representable. No cryptographic
-  signing in this stage.
+Money remains integer cents. The Stage 2 MVP scans all active variants in the
+selected category. That is acceptable for a few hundred SKUs. This is not
+production-scale retrieval.
 
 ## Synthetic seed
 
@@ -72,39 +191,8 @@ Provenance:
 make seed
 ```
 
-- Deterministic via `ASTRAOS_SEED=2026`
-- Fictional brands only (Aurora Audio, Nimbus, Vanta, …)
-- Category: `headphones`
-- Target: 100–160 products, 300–400 SKUs
-- Upserts by stable UUID5 keys, so repeats do not duplicate rows
-- About 5–10% of SKUs omit attributes for later UNKNOWN handling
-- About 2–5% of evidence is deliberately stale
-- Mix of out-of-stock, low-stock, same-day, weak-margin, and expensive SKUs
-
-`make reset-db` is destructive: it remigrates the configured database from the
-Stage 0 baseline and reseeds.
-
-## APIs
-
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | `/health` | Liveness |
-| GET | `/api/v1/catalogue/products` | List products (`brand`, `category`, `active_only`, `limit`, `offset`) |
-| GET | `/api/v1/catalogue/products/{id}` | Product + variants + merchant attachments |
-| GET | `/api/v1/catalogue/variants/{id}` | SKU detail |
-| GET | `/api/v1/catalogue/stats` | Catalogue counters |
-| GET | `/api/v1/merchant/policy` | Active policy |
-| PATCH | `/api/v1/merchant/policy` | Update stored policy bounds/flags |
-
-Policy PATCH accepts `minimum_margin_rate`, `maximum_discount_rate`, and the
-subsidy/upgrade toggles. It does not evaluate offers.
-
-## Frontend
-
-- `/` LIVE shell and API status
-- `/catalogue` merchant-data inspector
-- `/catalogue/[productId]` product/SKU detail
-- Header **RULES** drawer edits merchant policy
+Deterministic via `ASTRAOS_SEED=2026`. Fictional headphone brands only.
+`make reset-db` remigrates from the Stage 0 baseline and reseeds.
 
 ## Local prerequisites
 
@@ -114,36 +202,28 @@ subsidy/upgrade toggles. It does not evaluate offers.
 Host development defaults to `POSTGRES_HOST=localhost` and user `astraos`.
 
 ```bash
-# one-time local role/databases if you are not using Docker
-# create role astraos with password astraos
-# create databases astraos and astraos_test
-```
-
-## Docker setup
-
-```bash
 cp .env.example .env
-make up
-```
-
-## Development setup
-
-```bash
-cd apps/api
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-# from repo root
 make migrate
 make seed
+```
+
+```bash
+cd apps/api && source .venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ```bash
-cd apps/web
-npm install
-npm run dev
+cd apps/web && npm run dev
 ```
+
+Optional LLM parser:
+
+```
+INTENT_PARSER_MODE=llm
+LLM_API_KEY=...
+```
+
+Without those values the API stays on the rule-based parser.
 
 ## Available commands
 
@@ -155,7 +235,6 @@ npm run dev
 | `make test` | Run API pytest suite against `astraos_test` |
 | `make lint` | Run ruff and mypy |
 | `make migrate` | Apply Alembic migrations |
-| `make migration name="..."` | Autogenerate a new Alembic revision |
 | `make seed` | Upsert the synthetic merchant catalogue |
 | `make reset-db` | Destructive remigrate + seed |
 
@@ -163,21 +242,23 @@ npm run dev
 
 | Service | URL |
 | --- | --- |
-| Frontend | http://localhost:3000 |
+| Frontend LIVE | http://localhost:3000 |
 | Catalogue | http://localhost:3000/catalogue |
 | Backend | http://localhost:8000 |
 | OpenAPI | http://localhost:8000/docs |
-| PostgreSQL | `localhost:5432` locally, or Docker `db:5432` |
 
 ## Roadmap
 
 - **Stage 0 — Scaffold** — COMPLETE
 - **Stage 1 — Domain model and merchant data** — COMPLETE
-- **Stage 2 — Intent and eligibility**
-- **Stage 3 — Product retrieval**
+- **Stage 2 — Intent interpretation + deterministic eligibility** — COMPLETE
+- **Stage 3 — Semantic retrieval + product ranking**
 - **Stage 4 — Offer construction and merchant economics**
 - **Stage 5 — Pareto optimisation and buyer utility**
 - **Stage 6 — LIVE decision UI**
 - **Stage 7 — Agent Arena and benchmark simulator**
 - **Stage 8 — Intent → Offer → Outcome learning**
 - **Stage 9 — Protocol adapters and demo hardening**
+
+Stage 2 does not implement embeddings, offer construction, discounts, Pareto
+filtering, buyer utility, P(win), Agent Arena, or learning.

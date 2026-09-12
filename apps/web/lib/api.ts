@@ -7,6 +7,8 @@ import type {
   ProductDetail,
   ProductListResponse,
   ProductVariantDetail,
+  QualifyResponse,
+  QualificationVariantDetail,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -81,4 +83,26 @@ export function updateMerchantPolicy(
     method: "PATCH",
     body: JSON.stringify(payload),
   });
+}
+
+export function qualifyIntent(
+  intent: string,
+  parserMode?: "rule_based" | "llm",
+): Promise<QualifyResponse> {
+  return request<QualifyResponse>("/api/v1/intent/qualify", {
+    method: "POST",
+    body: JSON.stringify({
+      intent,
+      parser_mode: parserMode,
+    }),
+  });
+}
+
+export function getQualificationVariant(
+  runId: string,
+  variantId: string,
+): Promise<QualificationVariantDetail> {
+  return request<QualificationVariantDetail>(
+    `/api/v1/intent/qualification/${runId}/variants/${variantId}`,
+  );
 }

@@ -26,7 +26,7 @@ def create_app() -> FastAPI:
     application = FastAPI(
         title="AstraOS API",
         description="Merchant-side decision engine for agentic commerce.",
-        version="0.0.1",
+        version="0.2.0",
         lifespan=lifespan,
     )
     application.add_middleware(

@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
     astraos_seed: int = 2026
 
+    intent_parser_mode: str = "rule_based"
+    llm_api_key: str = ""
+    openai_api_key: str = ""
+    llm_model: str = "gpt-4o-mini"
+    llm_base_url: str = "https://api.openai.com/v1"
+
     @property
     def sqlalchemy_database_uri(self) -> str:
         """Return a SQLAlchemy URL using the psycopg driver."""

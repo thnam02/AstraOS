@@ -72,6 +72,10 @@ export function OptimisationPanel({
       ) : null}
 
       <ParetoChart points={optimisation.plot_points} />
+      <p className="text-xs text-muted">
+        Buyer utility is a transparent cold-start simulation. It is not a
+        purchase probability.
+      </p>
       <p className="text-[11px] text-muted">
         Muted = dominated · black = Pareto-efficient · green = AstraOS response.
         Bubble size is intervention cost. Utility is a simulation, not a
@@ -132,6 +136,19 @@ export function OptimisationPanel({
                   <dt className="text-[11px] text-muted">SIMULATED UTILITY</dt>
                   <dd className="tabular-nums">{rec.buyer_utility.toFixed(3)}</dd>
                 </div>
+                {rec.learned_synthetic_score != null ? (
+                  <div>
+                    <dt className="text-[11px] text-muted">
+                      EXPERIMENTAL LEARNED SCORE
+                    </dt>
+                    <dd className="tabular-nums text-muted">
+                      {rec.learned_synthetic_score.toFixed(3)}
+                    </dd>
+                    <p className="mt-1 text-[10px] text-muted">
+                      trained on synthetic outcomes
+                    </p>
+                  </div>
+                ) : null}
                 <div>
                   <dt className="text-[11px] text-muted">CONTRIBUTION</dt>
                   <dd className="tabular-nums">

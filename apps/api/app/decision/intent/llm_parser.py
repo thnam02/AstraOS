@@ -97,14 +97,18 @@ class OpenAICompatibleJSONClient:
             "response_format": {"type": "json_object"},
             "temperature": 0,
         }
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.post(
-                f"{self.base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                json=payload,
-            )
-            response.raise_for_status()
-            body = response.json()
+        timeout = settings.llm_timeout_seconds
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            try:
+                response = await client.post(
+                    f"{self.base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json=payload,
+                )
+                response.raise_for_status()
+                body = response.json()
+            except httpx.TimeoutException as exc:
+                raise LLMParserUnavailable("LLM request timed out.") from exc
         content = body["choices"][0]["message"]["content"]
         parsed = json.loads(content)
         if not isinstance(parsed, dict):
@@ -134,7 +138,11 @@ class LLMIntentParser:
             try:
                 payload = await self._complete(text)
                 return self._validate(text, payload)
-            except (UnsupportedIntentFieldError, ValueError) as exc:
+            except (
+                UnsupportedIntentFieldError,
+                ValueError,
+                LLMParserUnavailable,
+            ) as exc:
                 last_error = exc
         fallback = await RuleBasedIntentParser().parse(text)
         if last_error is not None:

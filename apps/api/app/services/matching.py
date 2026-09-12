@@ -204,7 +204,16 @@ class SemanticMatchingService:
                 assert row is not None
                 vectors[snapshot.variant_id] = [float(v) for v in row.embedding]
                 continue
-            vector = self.provider.embed(document.text)
+            try:
+                vector = self.provider.embed(document.text)
+            except Exception:
+                logger.exception(
+                    "embedding_failed variant=%s", snapshot.variant_id
+                )
+                if row is not None:
+                    vectors[snapshot.variant_id] = [float(v) for v in row.embedding]
+                    continue
+                raise
             await self.embeddings.upsert(
                 variant_id=snapshot.variant_id,
                 embedding=vector,

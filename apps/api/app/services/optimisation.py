@@ -9,13 +9,18 @@ from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.decision.intent.models import ShoppingIntent
 from app.decision.offers.models import OfferCandidate
-from app.decision.optimisation.engine import score_space
+from app.decision.optimisation.engine import (
+    apply_experimental_buyer_objective,
+    score_space,
+)
 from app.decision.optimisation.models import (
     ALGORITHM_VERSION,
     DEFAULT_ALPHA,
     SELECTION_RULE,
+    EngineResult,
 )
 from app.decision.pareto.frontier import HERO_OBJECTIVES
 from app.decision.utility.models import UTILITY_DISCLAIMER
@@ -106,6 +111,13 @@ class OptimisationService:
             profile_id=buyer_profile,
             alpha=alpha,
         )
+        result = await self._maybe_apply_learned_objective(
+            result,
+            candidates=candidates,
+            intent=intent,
+            buyer_profile=buyer_profile,
+            alpha=alpha,
+        )
         persist_started = time.perf_counter()
         response = await self._persist(
             construction_id=construction.id,
@@ -122,7 +134,89 @@ class OptimisationService:
         response.timing.total_optimisation_ms = round(
             (time.perf_counter() - started) * 1000, 2
         )
+        await self._attach_shadow_score(
+            response,
+            result=result,
+            candidates=candidates,
+            intent=intent,
+            buyer_profile=buyer_profile,
+        )
         return response, result
+
+    async def _attach_shadow_score(
+        self,
+        response: OptimisationResponse,
+        *,
+        result: object,
+        candidates: list[OfferCandidate],
+        intent: ShoppingIntent,
+        buyer_profile: str,
+    ) -> None:
+        """Experimental only. Never changes the cold-start recommendation."""
+        if response.recommended_offer is None:
+            return
+        try:
+            from app.decision.learning import LEARNING_DISCLAIMER, SCORE_LABEL
+            from app.decision.optimisation.models import EngineResult
+            from app.decision.utility.scorer import weights_for
+            from app.services.learning import LearningService
+
+            assert isinstance(result, EngineResult)
+            weights = weights_for(intent, buyer_profile)
+            scores = await LearningService(self.session).shadow_scores_for_public(
+                result.scored,
+                offers=candidates,
+                intent=intent,
+                weights=weights,
+                matches=[],
+                buyer_profile=buyer_profile,
+            )
+            key = str(response.recommended_offer.offer_id)
+            if key in scores:
+                response.recommended_offer.learned_synthetic_score = scores[key]
+                response.recommended_offer.learned_score_label = SCORE_LABEL
+                response.buyer_model.disclaimer = (
+                    f"{response.buyer_model.disclaimer} {LEARNING_DISCLAIMER}"
+                )
+        except Exception:
+            logger.exception("shadow_score_failed")
+            return
+
+    async def _maybe_apply_learned_objective(
+        self,
+        result: EngineResult,
+        *,
+        candidates: list[OfferCandidate],
+        intent: ShoppingIntent,
+        buyer_profile: str,
+        alpha: float,
+    ) -> EngineResult:
+        """LEARNED_EXPERIMENTAL only. Default COLD_START is unchanged."""
+        from app.decision.utility.scorer import weights_for
+        from app.services.learning import LearningService
+
+        if settings.response_model_mode != "LEARNED_EXPERIMENTAL":
+            return result
+        scores = await LearningService(self.session).shadow_scores_for_public(
+            result.scored,
+            offers=candidates,
+            intent=intent,
+            weights=weights_for(intent, buyer_profile),
+            matches=[],
+            buyer_profile=buyer_profile,
+        )
+        if not scores:
+            return result
+        objective = {uuid.UUID(key): value for key, value in scores.items()}
+        updated = apply_experimental_buyer_objective(
+            result, objective, alpha=alpha
+        )
+        updated.explanation = [
+            "EXPERIMENTAL: Pareto buyer objective used the active learned "
+            "synthetic response model. Cold-start utility traces are unchanged.",
+            *updated.explanation,
+        ]
+        return updated
 
     async def get_run(self, run_id: uuid.UUID) -> OptimisationResponse | None:
         row = await self.runs.get(run_id)
@@ -142,7 +236,6 @@ class OptimisationService:
         result: object,
         started: float,
     ) -> OptimisationResponse:
-        from app.decision.optimisation.models import EngineResult
         from app.models import MerchantPolicy
 
         assert isinstance(result, EngineResult)

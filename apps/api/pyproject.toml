@@ -44,7 +44,7 @@ asyncio_default_fixture_loop_scope = "session"
 line-length = 88
 target-version = "py312"
 src = ["app", "tests"]
-exclude = [".venv", "alembic"]
+exclude = [".venv", "alembic", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
@@ -66,5 +66,5 @@ exclude = ["alembic", "tests"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["sklearn.*"]
+module = ["sklearn.*", "joblib"]
 ignore_missing_imports = true

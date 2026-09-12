@@ -19,6 +19,12 @@ import type {
   NegotiationResponse,
   AcceptProposalResponse,
   DemoStateResponse,
+  ArenaRunResponse,
+  ArenaBenchmarkCreated,
+  ArenaBenchmarkResponse,
+  LearningOverview,
+  LearningDatasetSummary,
+  LearningTrainResponse,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -50,6 +56,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getHealth(): Promise<HealthResponse> {
   return request<HealthResponse>("/health");
+}
+
+export function getReady(): Promise<{
+  status: string;
+  degraded_mode: string[];
+  checks: { name: string; ok: boolean; detail: string }[];
+}> {
+  return request("/ready");
 }
 
 export function getCatalogueStats(): Promise<CatalogueStatsResponse> {
@@ -297,6 +311,77 @@ export function setDemoPolicy(payload: {
   maximum_discount_rate?: number;
 }): Promise<DemoStateResponse> {
   return request<DemoStateResponse>("/api/v1/demo/policy", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function runArenaDuel(payload: {
+  intent: string;
+  buyer_profile?: BuyerProfile;
+}): Promise<ArenaRunResponse> {
+  return request<ArenaRunResponse>("/api/v1/arena/run", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createArenaBenchmark(payload: {
+  mission_count: number;
+  seed: number;
+  strategies?: string[];
+}): Promise<ArenaBenchmarkCreated> {
+  return request<ArenaBenchmarkCreated>("/api/v1/arena/benchmarks", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getArenaBenchmark(
+  benchmarkId: string,
+): Promise<ArenaBenchmarkResponse> {
+  return request<ArenaBenchmarkResponse>(
+    `/api/v1/arena/benchmarks/${benchmarkId}`,
+  );
+}
+
+export async function getLatestArenaBenchmark(): Promise<ArenaBenchmarkResponse | null> {
+  try {
+    return await request<ArenaBenchmarkResponse>(
+      "/api/v1/arena/benchmarks/latest",
+    );
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+export function arenaBenchmarkExportUrl(
+  benchmarkId: string,
+  format: "json" | "csv",
+): string {
+  return `${API_BASE_URL}/api/v1/arena/benchmarks/${benchmarkId}/export?format=${format}`;
+}
+
+export function getLearningOverview(): Promise<LearningOverview> {
+  return request<LearningOverview>("/api/v1/learning/overview");
+}
+
+export function generateLearningDataset(payload: {
+  interaction_count_target: number;
+  seed: number;
+}): Promise<LearningDatasetSummary> {
+  return request<LearningDatasetSummary>("/api/v1/learning/datasets/generate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function trainLearningModels(payload: {
+  dataset_id: string;
+  seed?: number;
+}): Promise<LearningTrainResponse> {
+  return request<LearningTrainResponse>("/api/v1/learning/train", {
     method: "POST",
     body: JSON.stringify(payload),
   });

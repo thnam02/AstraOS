@@ -104,6 +104,8 @@ class PublicScoredOffer(BaseModel):
     is_recommended: bool
     is_baseline: bool
     product_fit: float
+    learned_synthetic_score: float | None = None
+    learned_score_label: str | None = None
 
 
 class OptimisationResponse(BaseModel):

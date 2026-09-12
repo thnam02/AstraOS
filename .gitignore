@@ -27,3 +27,6 @@ out/
 
 # Docker
 postgres-data/
+
+# Trained model artifacts
+apps/api/artifacts/models/*.joblib

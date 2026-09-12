@@ -201,6 +201,13 @@ export function LiveWorkbench() {
         >
           {busy ? "NEGOTIATING…" : "UNDERSTAND → NEGOTIATE"}
         </button>
+        {busy ? (
+          <p className="text-sm text-muted">
+            Understanding intent, checking mandatory requirements, matching the
+            catalogue, constructing offers, applying merchant policy, and
+            computing the efficient frontier.
+          </p>
+        ) : null}
         {error ? <p className="text-sm text-danger">{error}</p> : null}
         <ApiStatus />
       </section>
@@ -271,6 +278,14 @@ export function LiveWorkbench() {
         ) : (
           <p className="text-sm text-muted">No run yet.</p>
         )}
+        {result || offers || optimisation ? (
+          <DecisionTrace
+            match={result}
+            offers={offers}
+            optimisation={optimisation}
+            hasProposal={Boolean(negotiation?.proposal)}
+          />
+        ) : null}
         <ol className="space-y-2">
           {(
             [
@@ -446,6 +461,41 @@ export function LiveWorkbench() {
           />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function DecisionTrace({
+  match,
+  offers,
+  optimisation,
+  hasProposal,
+}: {
+  match: MatchResponse | null;
+  offers: GenerateOffersResponse | null;
+  optimisation: OptimisationResponse | null;
+  hasProposal: boolean;
+}) {
+  const rows = [
+    match ? `${match.qualification.variants_checked} variants` : null,
+    match ? `${match.qualification.eligible} eligible` : null,
+    match ? `${match.semantic_matching.matches.length} semantic matches` : null,
+    offers
+      ? `${offers.summary.generated_candidates.toLocaleString()} offer configurations`
+      : null,
+    optimisation
+      ? `${optimisation.summary.policy_safe.toLocaleString()} policy-safe`
+      : null,
+    optimisation
+      ? `${optimisation.summary.pareto_efficient} Pareto efficient`
+      : null,
+    hasProposal ? "1 merchant proposal" : null,
+  ].filter((item): item is string => item != null);
+  if (!rows.length) return null;
+  return (
+    <div className="border border-line bg-surface px-4 py-3 text-sm">
+      <p className="text-[11px] tracking-[0.14em] text-muted">DECISION TRACE</p>
+      <p className="mt-2 tabular-nums">{rows.join(" → ")}</p>
     </div>
   );
 }

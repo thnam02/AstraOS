@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { getHealth } from "@/lib/api";
+import { getReady } from "@/lib/api";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import type { ConnectionStatus } from "@/types";
 
@@ -12,10 +12,12 @@ export function ApiStatus() {
   useEffect(() => {
     let cancelled = false;
 
-    getHealth()
+    getReady()
       .then((payload) => {
         if (!cancelled) {
-          setStatus(payload.status === "ok" ? "connected" : "unavailable");
+          setStatus(
+            payload.status === "not_ready" ? "unavailable" : "connected",
+          );
         }
       })
       .catch(() => {

@@ -288,3 +288,41 @@ def score_space(
             "counterfactual_ms": round(counterfactual_ms, 2),
         },
     )
+
+
+def apply_experimental_buyer_objective(
+    result: EngineResult,
+    buyer_objective: dict[UUID, float],
+    *,
+    alpha: float = DEFAULT_ALPHA,
+    epsilon: float = DEFAULT_EPSILON,
+) -> EngineResult:
+    """Rebuild Pareto using learned scores. Cold-start utility traces stay."""
+    safe = [item for item in result.scored if item.policy.policy_safe]
+    objectives = [
+        buyer_objective.get(item.offer_id, item.utility.score) for item in safe
+    ]
+    frontier_result = build_frontier(
+        [item.offer_id for item in safe],
+        objectives,
+        [item.economics.contribution_margin_cents for item in safe],
+        epsilon=epsilon,
+    )
+    efficient_ids = set(frontier_result.efficient_offer_ids)
+    for item in result.scored:
+        item.is_pareto_efficient = item.offer_id in efficient_ids
+        dominated = frontier_result.dominated_by.get(str(item.offer_id))
+        item.dominated_by_offer_id = dominated
+        item.is_recommended = False
+    frontier = [item for item in result.scored if item.is_pareto_efficient]
+    recommended, selection = select_offer(
+        frontier, alpha=alpha, buyer_objective=buyer_objective
+    )
+    if recommended is not None:
+        recommended.is_recommended = True
+        for item in result.scored:
+            item.is_recommended = item.offer_id == recommended.offer_id
+    result.frontier = frontier
+    result.recommended = recommended
+    result.selection = selection
+    return result

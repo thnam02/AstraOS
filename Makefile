@@ -1,4 +1,4 @@
-.PHONY: up down logs test lint migrate migration seed reset-db eval embeddings
+.PHONY: up down logs test lint migrate migration seed reset-db reset-demo eval embeddings demo-hero
 
 API_DIR := apps/api
 
@@ -45,6 +45,13 @@ seed:
 reset-db:
 	@echo "Destructive: remigrates $(POSTGRES_DB) from the Stage 0 baseline and reseeds."
 	cd $(API_DIR) && $(API_PY) -m app.seed --reset
+
+reset-demo:
+	@echo "Destructive demo reset: remigrate + seed 2026."
+	cd $(API_DIR) && $(API_PY) -m app.cli reset-demo
+
+demo-hero:
+	cd $(API_DIR) && $(API_PY) -m app.cli demo hero
 
 embeddings:
 	cd $(API_DIR) && $(API_PY) -m app.eval.index

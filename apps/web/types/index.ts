@@ -504,6 +504,8 @@ export type PublicScoredOffer = {
   is_recommended: boolean;
   is_baseline: boolean;
   product_fit: number;
+  learned_synthetic_score?: number | null;
+  learned_score_label?: string | null;
 };
 
 export type PlotPoint = {
@@ -711,6 +713,227 @@ export type AcceptProposalResponse = {
   } | null;
   events: { type: string; at: string; state: string }[];
   lineage: Record<string, unknown>;
+};
+
+export type ArenaStrategyName =
+  | "DEFAULT"
+  | "ALWAYS_DISCOUNT"
+  | "CHEAPEST_ELIGIBLE"
+  | "SEMANTIC_ONLY"
+  | "ASTRAOS";
+
+export type ArenaStrategyResponse = {
+  strategy_name: string;
+  product_id: string | null;
+  variant_id: string | null;
+  offer_id: string | null;
+  sku: string | null;
+  product_name: string | null;
+  total_customer_price_cents: number | null;
+  currency: string;
+  delivery: string | null;
+  delivery_days: number | null;
+  warranty: string | null;
+  warranty_months: number | null;
+  bundle: string | null;
+  returns: string | null;
+  buyer_utility: number | null;
+  merchant_contribution_cents: number | null;
+  intervention_cost_cents: number | null;
+  hard_constraints_satisfied: boolean;
+  policy_safe: boolean;
+  transaction_possible: boolean;
+  failure_reason: string | null;
+  utility_trace: {
+    components: { component: string; fit: number; weight: number; weighted: number }[];
+    total: number;
+    version: string;
+  } | null;
+  used_pareto: boolean;
+  used_max_discount: boolean;
+  is_cheapest_in_space: boolean;
+};
+
+export type ArenaRunResponse = {
+  arena_run_id: string;
+  mission_id: string;
+  buyer_profile: string;
+  strategies: { name: string; response: ArenaStrategyResponse }[];
+  buyer_selection: {
+    selected_strategy: string | null;
+    selected_offer_id: string | null;
+    simulated_utility: number | null;
+    no_purchase: boolean;
+    reason: string;
+    tie_break: string | null;
+  };
+  explanation: {
+    profile_id?: string;
+    profile_label?: string;
+    weights?: Record<string, number>;
+    reasons?: string[];
+  };
+  disclaimer: string;
+  created_at: string;
+};
+
+export type ArenaStrategyMetrics = {
+  strategy_name: string;
+  missions: number;
+  wins: number;
+  selection_rate: number;
+  avg_buyer_utility: number | null;
+  avg_contribution_when_selected: number | null;
+  contribution_per_opportunity_cents: number;
+  avg_intervention_cost_cents: number | null;
+  hard_constraint_violation_rate: number;
+  policy_violation_rate: number;
+  no_offer_rate: number;
+  transaction_completion_rate: number;
+};
+
+export type ArenaSegmentMetrics = {
+  scenario_tag: string;
+  buyer_profile: string;
+  strategy_name: string;
+  missions: number;
+  wins: number;
+  selection_rate: number;
+  avg_buyer_utility: number | null;
+  avg_contribution_cents: number | null;
+};
+
+export type ArenaBenchmarkCreated = {
+  benchmark_id: string;
+  status: string;
+  mission_count: number;
+  seed: number;
+  disclaimer: string;
+};
+
+export type ArenaBenchmarkResponse = {
+  benchmark_id: string;
+  status: string;
+  seed: number;
+  mission_count: number;
+  strategies: string[];
+  buyer_model_version: string;
+  merchant_policy_version: string;
+  started_at: string;
+  completed_at: string | null;
+  summary: {
+    no_purchase_rate?: number;
+    pairwise?: {
+      left: string;
+      right: string;
+      left_wins: number;
+      right_wins: number;
+      no_purchase_or_other: number;
+    }[];
+  };
+  strategy_metrics: ArenaStrategyMetrics[];
+  segment_metrics: ArenaSegmentMetrics[];
+  pairwise: {
+    left: string;
+    right: string;
+    left_wins: number;
+    right_wins: number;
+    no_purchase_or_other: number;
+  }[];
+  timing: Record<string, number>;
+  config: Record<string, unknown>;
+  disclaimer: string;
+};
+
+export type LearningDatasetSummary = {
+  dataset_id: string;
+  seed: number;
+  interaction_count: number;
+  positive_count: number;
+  negative_count: number;
+  feature_schema_version: string;
+  source_types: string[];
+  metadata: {
+    audit?: {
+      buyer_profiles?: Record<string, number>;
+      scenario_tags?: Record<string, number>;
+      deliveries?: Record<string, number>;
+      positive_rate?: number;
+    };
+    build_ms?: number;
+    mission_count?: number;
+  };
+  disclaimer: string;
+  created_at: string;
+};
+
+export type LearningModelSummary = {
+  model_id: string;
+  name: string;
+  algorithm: string;
+  status: string;
+  training_data_source: string;
+  train_size: number;
+  validation_size: number;
+  test_size: number;
+  metrics: {
+    classification?: Record<string, number>;
+    ranking?: Record<string, number>;
+    calibration?: { low: number; high: number; predicted: number; observed: number; count: number }[];
+  };
+  disclaimer: string;
+  created_at: string;
+};
+
+export type LearningTrainResponse = {
+  training_run_id: string;
+  selected_algorithm: string;
+  reports: Record<
+    string,
+    {
+      classification: Record<string, number>;
+      ranking: Record<string, number>;
+      calibration: { low: number; high: number; predicted: number; observed: number; count: number }[];
+    }
+  >;
+  ablations: Record<string, { classification: Record<string, number>; ranking: Record<string, number> }>;
+  hero_mission: {
+    group_id?: string;
+    offers?: {
+      price_cents: number;
+      delivery_days: number;
+      warranty_months: number;
+      cold_start_utility: number;
+      learned_score: number;
+      selected: boolean;
+    }[];
+    note?: string;
+  };
+  disclaimer: string;
+};
+
+export type LearningOverview = {
+  disclaimer: string;
+  maturity: { id: string; label: string; state: string }[];
+  dataset: LearningDatasetSummary | null;
+  models: LearningModelSummary[];
+  sample_interactions: {
+    intent: string | null;
+    profile: string | null;
+    price_cents: number;
+    delivery: string | null;
+    warranty: string | null;
+    outcome: string;
+    source: string;
+  }[];
+  latest_training: {
+    selected?: string | null;
+    reports?: LearningTrainResponse["reports"];
+    ablations?: LearningTrainResponse["ablations"];
+    hero_mission?: LearningTrainResponse["hero_mission"];
+    timing?: Record<string, number>;
+  } | null;
+  associations: { feature: string; coefficient: number }[];
 };
 
 export type DemoStateResponse = {

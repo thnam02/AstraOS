@@ -8,7 +8,6 @@ import { MerchantPolicyDrawer } from "@/components/shared/MerchantPolicyDrawer";
 
 const NAV_ITEMS = [
   { href: "/", label: "LIVE" },
-  { href: "/catalogue", label: "CATALOGUE" },
   { href: "/arena", label: "ARENA" },
   { href: "/learn", label: "LEARN" },
 ] as const;
@@ -48,6 +47,16 @@ export function AppHeader() {
                 );
               })}
             </nav>
+            <Link
+              href="/catalogue"
+              className={`text-xs font-medium tracking-[0.14em] ${
+                pathname.startsWith("/catalogue")
+                  ? "text-ink"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              DATA
+            </Link>
             <button
               type="button"
               onClick={() => setRulesOpen(true)}

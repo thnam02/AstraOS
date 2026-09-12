@@ -1,6 +1,12 @@
 """SQLAlchemy domain models for merchant catalogue data."""
 
 from app.db.base import Base
+from app.models.arena import (
+    ArenaBenchmarkRun,
+    ArenaRun,
+    ArenaSegmentMetrics,
+    ArenaStrategyMetrics,
+)
 from app.models.bundle import BundleOption, VariantBundleOption
 from app.models.commerce import (
     CommerceTransaction,
@@ -11,6 +17,12 @@ from app.models.commerce import (
 from app.models.delivery import DeliveryOption, VariantDeliveryOption
 from app.models.embedding import VariantEmbedding
 from app.models.inventory import InventoryRecord
+from app.models.learning import (
+    CommerceInteraction,
+    LearningDatasetVersion,
+    ModelTrainingRun,
+    ResponseModelVersion,
+)
 from app.models.match import MatchResult, MatchRun
 from app.models.merchant import Merchant
 from app.models.negotiation import (
@@ -28,30 +40,38 @@ from app.models.returns import ReturnPolicy, VariantReturnPolicy
 from app.models.warranty import VariantWarrantyOption, WarrantyOption
 
 __all__ = [
+    "ArenaBenchmarkRun",
+    "ArenaRun",
+    "ArenaSegmentMetrics",
+    "ArenaStrategyMetrics",
     "AttributeEvidence",
     "Base",
     "BundleOption",
+    "CommerceInteraction",
     "CommerceTransaction",
     "DataSource",
     "DeliveryOption",
     "InventoryRecord",
     "InventoryReservation",
+    "LearningDatasetVersion",
     "MatchResult",
     "MatchRun",
     "Merchant",
     "MerchantProposal",
+    "ModelTrainingRun",
     "NegotiationSession",
     "NegotiationTurn",
-    "Order",
-    "OrderNumberSequence",
     "OfferCandidateRow",
     "OfferConstructionRun",
     "OptimisationRun",
+    "Order",
+    "OrderNumberSequence",
     "MerchantPolicy",
     "Product",
     "ProductVariant",
     "QualificationRun",
     "QualificationVariantResult",
+    "ResponseModelVersion",
     "ReturnPolicy",
     "VariantBundleOption",
     "VariantDeliveryOption",

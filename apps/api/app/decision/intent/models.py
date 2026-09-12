@@ -5,6 +5,13 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from app.decision.intent.taxonomy import (
+    ContextLabel,
+    OutcomeLabel,
+    TradeoffDimension,
+    ValueField,
+)
+
 
 class ConstraintOperator(StrEnum):
     """Safe comparison operators. No expression evaluation."""
@@ -92,6 +99,50 @@ class IntentAmbiguity(BaseModel):
     appears_mandatory: bool = False
 
 
+class IntentContext(BaseModel):
+    """Usage or lifestyle situation. Not a hard constraint."""
+
+    label: ContextLabel
+    importance: float = Field(default=0.7, ge=0, le=1)
+    source_phrase: str
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
+class DesiredOutcome(BaseModel):
+    """What the shopper is trying to achieve."""
+
+    label: OutcomeLabel
+    importance: float = Field(ge=0, le=1)
+    source_phrase: str
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
+class ValuePreference(BaseModel):
+    """Value only when merchant data can potentially support it."""
+
+    field: ValueField
+    direction: PreferenceDirection = PreferenceDirection.MAXIMIZE
+    importance: float = Field(ge=0, le=1)
+    source_phrase: str
+
+
+class TradeoffPreference(BaseModel):
+    """Relative importance between two competing goals."""
+
+    preferred_dimension: TradeoffDimension
+    over_dimension: TradeoffDimension
+    strength: float = Field(default=0.7, ge=0, le=1)
+    source_phrase: str
+
+
+class UnsupportedSemanticNeed(BaseModel):
+    """A semantic request the catalogue cannot represent."""
+
+    label: str
+    source_phrase: str
+    reason: str = "unsupported_semantic_need"
+
+
 class ShoppingIntent(BaseModel):
     """Structured buyer request produced by an IntentParser."""
 
@@ -100,6 +151,13 @@ class ShoppingIntent(BaseModel):
     hard_constraints: list[HardConstraint] = Field(default_factory=list)
     soft_preferences: list[SoftPreference] = Field(default_factory=list)
     context_tags: list[str] = Field(default_factory=list)
+    context_items: list[IntentContext] = Field(default_factory=list)
+    desired_outcomes: list[DesiredOutcome] = Field(default_factory=list)
+    values: list[ValuePreference] = Field(default_factory=list)
+    tradeoffs: list[TradeoffPreference] = Field(default_factory=list)
+    unsupported_semantic_needs: list[UnsupportedSemanticNeed] = Field(
+        default_factory=list
+    )
     ambiguities: list[IntentAmbiguity] = Field(default_factory=list)
     parser_type: str
     parser_version: str
@@ -108,5 +166,5 @@ class ShoppingIntent(BaseModel):
 
 SUPPORTED_CONSTRAINT_FIELDS = {item.value for item in ConstraintField}
 SUPPORTED_OPERATORS = {item.value for item in ConstraintOperator}
-PARSER_VERSION_RULE = "rule_based.v1"
-PARSER_VERSION_LLM = "llm.v1"
+PARSER_VERSION_RULE = "rule_based.v2"
+PARSER_VERSION_LLM = "llm.v2"

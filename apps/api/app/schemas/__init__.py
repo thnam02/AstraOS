@@ -5,6 +5,12 @@ from app.schemas.delivery import DeliveryOptionResponse
 from app.schemas.health import HealthResponse
 from app.schemas.intent import QualifyRequest, QualifyResponse
 from app.schemas.inventory import InventoryResponse
+from app.schemas.match import (
+    AnalyseRequest,
+    AnalyseResponse,
+    MatchRequest,
+    MatchResponse,
+)
 from app.schemas.merchant import MerchantPolicyResponse, MerchantPolicyUpdate
 from app.schemas.product import (
     CatalogueStatsResponse,
@@ -17,19 +23,23 @@ from app.schemas.returns import ReturnPolicyResponse
 from app.schemas.warranty import WarrantyOptionResponse
 
 __all__ = [
+    "AnalyseRequest",
+    "AnalyseResponse",
     "AttributeEvidenceResponse",
     "BundleOptionResponse",
     "CatalogueStatsResponse",
     "DeliveryOptionResponse",
     "HealthResponse",
     "InventoryResponse",
-    "QualifyRequest",
-    "QualifyResponse",
+    "MatchRequest",
+    "MatchResponse",
     "MerchantPolicyResponse",
     "MerchantPolicyUpdate",
     "ProductDetail",
     "ProductListResponse",
     "ProductVariantDetail",
+    "QualifyRequest",
+    "QualifyResponse",
     "ReturnPolicyResponse",
     "WarrantyOptionResponse",
 ]

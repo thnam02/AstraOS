@@ -16,21 +16,41 @@ from app.decision.intent.models import (
     SUPPORTED_OPERATORS,
     ConstraintField,
     ConstraintOperator,
+    DesiredOutcome,
     HardConstraint,
     IntentAmbiguity,
+    IntentContext,
     PreferenceDirection,
     PreferenceField,
     ShoppingIntent,
     SoftPreference,
+    TradeoffPreference,
+    UnsupportedSemanticNeed,
+    ValuePreference,
 )
 from app.decision.intent.rule_based_parser import RuleBasedIntentParser
+from app.decision.intent.taxonomy import (
+    CANONICAL_CONTEXTS,
+    CANONICAL_OUTCOMES,
+    CANONICAL_TRADEOFFS,
+    CANONICAL_VALUES,
+    ContextLabel,
+    OutcomeLabel,
+    TradeoffDimension,
+    ValueField,
+)
 
 SYSTEM_PROMPT = """You extract a structured shopping intent for AstraOS.
-Return JSON only. Use only allow-listed fields and operators.
+Return JSON only. Use only allow-listed fields, operators, and canonical labels.
 Do not decide product eligibility, prices, discounts, or merchant policy.
+Do not invent product facts.
 Preserve source_phrase from the buyer's text.
+Populate hard_constraints, soft_preferences, context_items, desired_outcomes,
+values, and tradeoffs when the text supports them.
 If a mandatory requirement has no supported field, record it as an ambiguity
 with reason unsupported_attribute and appears_mandatory true.
+If a semantic need cannot be represented by merchant data, record
+unsupported_semantic_needs rather than inventing a score.
 """
 
 
@@ -177,13 +197,81 @@ class LLMIntentParser:
             IntentAmbiguity.model_validate(row)
             for row in payload.get("ambiguities") or []
         ]
+        context_items: list[IntentContext] = []
+        for row in payload.get("context_items") or []:
+            label = str(row.get("label", ""))
+            if label not in CANONICAL_CONTEXTS:
+                continue
+            context_items.append(
+                IntentContext(
+                    label=ContextLabel(label),
+                    importance=float(row.get("importance", 0.7)),
+                    source_phrase=str(row.get("source_phrase") or raw_text),
+                    confidence=row.get("confidence"),
+                )
+            )
+        outcomes: list[DesiredOutcome] = []
+        for row in payload.get("desired_outcomes") or []:
+            label = str(row.get("label", ""))
+            if label not in CANONICAL_OUTCOMES:
+                continue
+            outcomes.append(
+                DesiredOutcome(
+                    label=OutcomeLabel(label),
+                    importance=float(row.get("importance", 0.7)),
+                    source_phrase=str(row.get("source_phrase") or raw_text),
+                    confidence=row.get("confidence"),
+                )
+            )
+        values: list[ValuePreference] = []
+        for row in payload.get("values") or []:
+            field = str(row.get("field", ""))
+            if field not in CANONICAL_VALUES:
+                continue
+            values.append(
+                ValuePreference(
+                    field=ValueField(field),
+                    direction=PreferenceDirection(
+                        str(row.get("direction", "MAXIMIZE"))
+                    ),
+                    importance=float(row.get("importance", 0.6)),
+                    source_phrase=str(row.get("source_phrase") or raw_text),
+                )
+            )
+        tradeoffs: list[TradeoffPreference] = []
+        for row in payload.get("tradeoffs") or []:
+            preferred = str(row.get("preferred_dimension", ""))
+            over = str(row.get("over_dimension", ""))
+            if preferred not in CANONICAL_TRADEOFFS or over not in CANONICAL_TRADEOFFS:
+                continue
+            tradeoffs.append(
+                TradeoffPreference(
+                    preferred_dimension=TradeoffDimension(preferred),
+                    over_dimension=TradeoffDimension(over),
+                    strength=float(row.get("strength", 0.7)),
+                    source_phrase=str(row.get("source_phrase") or raw_text),
+                )
+            )
+        unsupported = [
+            UnsupportedSemanticNeed.model_validate(row)
+            for row in payload.get("unsupported_semantic_needs") or []
+        ]
+        tags = [str(tag) for tag in payload.get("context_tags") or []]
+        for item in context_items:
+            if item.label.value not in tags:
+                tags.append(item.label.value)
         category = payload.get("category")
         return ShoppingIntent(
             raw_text=raw_text,
             category=str(category) if category else None,
             hard_constraints=constraints,
             soft_preferences=preferences,
-            context_tags=[str(tag) for tag in payload.get("context_tags") or []],
+            context_tags=tags,
+            context_items=context_items,
+            desired_outcomes=outcomes,
+            values=values,
+            tradeoffs=tradeoffs,
+            unsupported_semantic_needs=unsupported,
             ambiguities=ambiguities,
             parser_type=self.parser_type,
             parser_version=PARSER_VERSION_LLM,

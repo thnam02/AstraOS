@@ -3,7 +3,9 @@
 from app.db.base import Base
 from app.models.bundle import BundleOption, VariantBundleOption
 from app.models.delivery import DeliveryOption, VariantDeliveryOption
+from app.models.embedding import VariantEmbedding
 from app.models.inventory import InventoryRecord
+from app.models.match import MatchResult, MatchRun
 from app.models.merchant import Merchant
 from app.models.policy import MerchantPolicy
 from app.models.product import Product, ProductVariant
@@ -19,6 +21,8 @@ __all__ = [
     "DataSource",
     "DeliveryOption",
     "InventoryRecord",
+    "MatchResult",
+    "MatchRun",
     "Merchant",
     "MerchantPolicy",
     "Product",
@@ -28,6 +32,7 @@ __all__ = [
     "ReturnPolicy",
     "VariantBundleOption",
     "VariantDeliveryOption",
+    "VariantEmbedding",
     "VariantReturnPolicy",
     "VariantWarrantyOption",
     "WarrantyOption",

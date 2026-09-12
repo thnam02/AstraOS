@@ -213,10 +213,100 @@ export type ShoppingIntent = {
   hard_constraints: HardConstraint[];
   soft_preferences: SoftPreference[];
   context_tags: string[];
+  context_items: {
+    label: string;
+    importance: number;
+    source_phrase: string;
+    confidence: number | null;
+  }[];
+  desired_outcomes: {
+    label: string;
+    importance: number;
+    source_phrase: string;
+    confidence: number | null;
+  }[];
+  values: {
+    field: string;
+    direction: "MAXIMIZE" | "MINIMIZE";
+    importance: number;
+    source_phrase: string;
+  }[];
+  tradeoffs: {
+    preferred_dimension: string;
+    over_dimension: string;
+    strength: number;
+    source_phrase: string;
+  }[];
+  unsupported_semantic_needs: {
+    label: string;
+    source_phrase: string;
+    reason: string;
+  }[];
   ambiguities: IntentAmbiguity[];
   parser_type: string;
   parser_version: string;
   status: "READY" | "NEEDS_CLARIFICATION" | "UNSUPPORTED";
+};
+
+export type RankedProductMatch = {
+  product_id: string;
+  variant_id: string;
+  sku: string;
+  product_name: string;
+  brand: string;
+  variant_name: string | null;
+  base_price_cents: number;
+  rank: number;
+  semantic_similarity: number;
+  product_fit: number;
+  context_fit: number;
+  preference_fit: number;
+  evidence_coverage: number;
+  overall_semantic_fit: number;
+  matched_needs: string[];
+  unsupported_needs: string[];
+  reasons: {
+    need: string;
+    kind: string;
+    facts: {
+      attribute: string;
+      value: unknown;
+      display: string;
+      evidence_id: string | null;
+      source_name: string | null;
+    }[];
+  }[];
+  evidence: {
+    attribute: string;
+    value: unknown;
+    display: string;
+    evidence_id: string | null;
+    source_name: string | null;
+  }[];
+};
+
+export type MatchResponse = {
+  run_id: string;
+  status: ShoppingIntent["status"];
+  intent: ShoppingIntent;
+  qualification: {
+    variants_checked: number;
+    eligible: number;
+    violated: number;
+    uncertain: number;
+  };
+  semantic_matching: {
+    model: string;
+    document_version: string;
+    matches: RankedProductMatch[];
+  };
+  timing: {
+    intent_parse_ms: number;
+    qualification_ms: number;
+    embedding_ms: number;
+    rerank_ms: number;
+    total_ms: number;
+  };
 };
 
 export type ConstraintEvaluation = {

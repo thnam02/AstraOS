@@ -139,7 +139,13 @@ def normalize_intent(intent: ShoppingIntent) -> ShoppingIntent:
         seen.add(key)
         collapsed.append(constraint)
 
-    normalized = intent.model_copy(update={"hard_constraints": collapsed})
+    tags = list(intent.context_tags)
+    for item in intent.context_items:
+        if item.label.value not in tags:
+            tags.append(item.label.value)
+    normalized = intent.model_copy(
+        update={"hard_constraints": collapsed, "context_tags": tags}
+    )
     normalized.status = derive_intent_status(normalized)
     return normalized
 

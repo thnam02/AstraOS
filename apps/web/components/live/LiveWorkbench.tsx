@@ -1,83 +1,72 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { ApiStatus } from "@/components/live/ApiStatus";
-import { qualifyIntent } from "@/lib/api";
+import { matchIntent } from "@/lib/api";
 import { HERO_INTENT, contextLabel, fieldLabel } from "@/lib/intent";
 import { formatAudCents } from "@/lib/money";
-import type {
-  ConstraintEvaluation,
-  ConstraintStatus,
-  QualifyResponse,
-  VariantQualificationCard,
-} from "@/types";
-
-type Filter = "eligible" | "uncertain" | "rejected";
+import type { MatchResponse, RankedProductMatch, ShoppingIntent } from "@/types";
 
 const PROCESS = [
   { id: "understand", label: "Understand", after: "complete" },
   { id: "qualify", label: "Qualify", after: "complete" },
+  { id: "match", label: "Match", after: "complete" },
   { id: "construct", label: "Construct", after: "not_started" },
   { id: "optimise", label: "Optimise", after: "not_started" },
-  { id: "prove", label: "Prove", after: "partial" },
+  { id: "negotiate", label: "Negotiate", after: "not_started" },
+  { id: "transact", label: "Transact", after: "not_started" },
   { id: "learn", label: "Learn", after: "not_started" },
 ] as const;
+
+function pct(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function importanceLabel(value: number): string {
+  if (value >= 0.75) return "HIGH";
+  if (value <= 0.25) return "LOW";
+  return "MEDIUM";
+}
 
 export function LiveWorkbench() {
   const [text, setText] = useState(HERO_INTENT);
   const [parserMode, setParserMode] = useState<"rule_based" | "llm">("rule_based");
-  const [result, setResult] = useState<QualifyResponse | null>(null);
-  const [filter, setFilter] = useState<Filter>("eligible");
+  const [result, setResult] = useState<MatchResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [proof, setProof] = useState<{
-    product: string;
-    evaluation: ConstraintEvaluation;
-  } | null>(null);
 
-  async function qualify() {
+  async function run() {
     setBusy(true);
     setError(null);
     try {
-      const payload = await qualifyIntent(text, parserMode);
-      setResult(payload);
-      if (payload.summary.eligible > 0) setFilter("eligible");
-      else if (payload.summary.uncertain > 0) setFilter("uncertain");
-      else setFilter("rejected");
+      setResult(await matchIntent(text, parserMode, 8));
     } catch {
-      setError("Qualification failed. Is the API running?");
+      setError("Matching failed. Is the API running?");
     } finally {
       setBusy(false);
     }
   }
 
-  const cards = useMemo(() => {
-    if (!result) return [];
-    if (filter === "eligible") return result.eligible_products;
-    if (filter === "uncertain") return result.uncertain_products;
-    return result.rejected_products;
-  }, [filter, result]);
-
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(260px,1fr)_minmax(420px,1.4fr)_minmax(240px,0.9fr)]">
+    <div className="grid gap-6 xl:grid-cols-[minmax(260px,0.9fr)_minmax(380px,1.2fr)_minmax(280px,1fr)]">
       <section className="space-y-5">
         <div className="space-y-2">
           <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-            AI SHOPPER REQUEST
+            BUYER AGENT REQUEST
           </p>
           <h1 className="text-2xl font-semibold tracking-tight text-ink">
-            Intent intake
+            Deep intent intake
           </h1>
           <p className="text-sm leading-6 text-muted">
-            Language is interpreted. Products are not searched — they are
-            admitted or excluded by mandatory conditions.
+            Language is interpreted. Hard rules decide who may compete.
+            Semantic fit then ranks only the products that already passed.
           </p>
         </div>
         <textarea
           value={text}
           onChange={(event) => setText(event.target.value)}
-          rows={10}
+          rows={11}
           className="w-full resize-y rounded-[6px] border border-line bg-surface px-3 py-3 text-sm leading-6 text-ink outline-none focus:border-ink"
         />
         <div className="flex flex-wrap items-center gap-3">
@@ -104,11 +93,11 @@ export function LiveWorkbench() {
         </div>
         <button
           type="button"
-          onClick={() => void qualify()}
+          onClick={() => void run()}
           disabled={busy || !text.trim()}
           className="rounded-[6px] bg-ink px-4 py-2 text-xs font-medium tracking-[0.12em] text-surface disabled:opacity-40"
         >
-          {busy ? "QUALIFYING…" : "QUALIFY REQUEST"}
+          {busy ? "MATCHING…" : "UNDERSTAND AND MATCH"}
         </button>
         {error ? <p className="text-sm text-danger">{error}</p> : null}
         <ApiStatus />
@@ -117,58 +106,34 @@ export function LiveWorkbench() {
       <section className="space-y-6">
         <div>
           <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-            QUALIFICATION
+            ASTRAOS UNDERSTANDING
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-            Condition inspection
+            Qualify then match
           </h2>
         </div>
         {!result ? (
           <p className="text-sm leading-6 text-muted">
-            Submit a request to see structured intent and whether each SKU is
-            allowed to compete.
+            Submit a request to see structured intent, hard qualification, and
+            grounded semantic matches.
           </p>
         ) : (
           <>
-            <StructuredIntent intent={result.intent} />
-            <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  ["eligible", result.summary.eligible],
-                  ["uncertain", result.summary.uncertain],
-                  ["rejected", result.summary.violated],
-                ] as const
-              ).map(([key, count]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setFilter(key)}
-                  className={`rounded-[6px] border px-2.5 py-1 text-xs capitalize ${
-                    filter === key
-                      ? "border-ink text-ink"
-                      : "border-line text-muted"
-                  }`}
-                >
-                  {key} {count}
-                </button>
-              ))}
-            </div>
-            <div className="space-y-3">
-              {cards.map((card) => (
-                <QualificationRow
-                  key={card.variant_id}
-                  card={card}
-                  onInspect={(evaluation) =>
-                    setProof({
-                      product: card.product_name,
-                      evaluation,
-                    })
-                  }
-                />
-              ))}
-              {cards.length === 0 ? (
-                <p className="text-sm text-muted">No variants in this bucket.</p>
-              ) : null}
+            <DeepIntent intent={result.intent} />
+            <div className="border border-line bg-surface px-4 py-4 text-sm">
+              <p className="text-[11px] tracking-[0.14em] text-muted">
+                QUALIFICATION
+              </p>
+              <p className="mt-2 tabular-nums">
+                {result.qualification.variants_checked} checked ·{" "}
+                {result.qualification.eligible} eligible ·{" "}
+                {result.qualification.violated} violated ·{" "}
+                {result.qualification.uncertain} uncertain
+              </p>
+              <p className="mt-2 text-xs text-muted">
+                Semantic ranking runs only on eligible SKUs. Fit is not a
+                purchase probability.
+              </p>
             </div>
           </>
         )}
@@ -177,24 +142,28 @@ export function LiveWorkbench() {
       <aside className="space-y-6">
         <div>
           <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-            SUMMARY
+            BEST PRODUCT MATCHES
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-            Pipeline
+            Semantic fit
           </h2>
         </div>
         {result ? (
-          <div className="space-y-3 text-sm">
-            <p className="tabular-nums text-ink">
-              {result.summary.variants_checked} variants checked
-            </p>
-            <p className="text-success">{result.summary.eligible} eligible</p>
-            <p className="text-danger">{result.summary.violated} violated</p>
-            <p className="text-uncertain">{result.summary.uncertain} uncertain</p>
+          <div className="space-y-3">
+            {result.semantic_matching.matches.map((match) => (
+              <MatchCard key={match.variant_id} match={match} />
+            ))}
+            {result.semantic_matching.matches.length === 0 ? (
+              <p className="text-sm text-muted">
+                No eligible products to rank.
+              </p>
+            ) : null}
             <p className="text-xs text-muted">
-              {result.timing.total_ms.toFixed(0)} ms total · parse{" "}
-              {result.timing.parse_ms.toFixed(0)} ms · eligibility{" "}
-              {result.timing.eligibility_ms.toFixed(0)} ms
+              {result.timing.total_ms.toFixed(0)} ms · parse{" "}
+              {result.timing.intent_parse_ms.toFixed(0)} · qualify{" "}
+              {result.timing.qualification_ms.toFixed(0)} · embed{" "}
+              {result.timing.embedding_ms.toFixed(0)} · rerank{" "}
+              {result.timing.rerank_ms.toFixed(0)}
             </p>
           </div>
         ) : (
@@ -218,211 +187,140 @@ export function LiveWorkbench() {
             );
           })}
         </ol>
-        <p className="text-xs leading-5 text-muted">
-          Later stages construct offers, optimise, and learn. This view only
-          decides who is allowed to compete.
-        </p>
       </aside>
-
-      {proof ? (
-        <ProofDrawer
-          product={proof.product}
-          evaluation={proof.evaluation}
-          onClose={() => setProof(null)}
-        />
-      ) : null}
     </div>
   );
 }
 
-function StructuredIntent({
-  intent,
-}: {
-  intent: QualifyResponse["intent"];
-}) {
+function DeepIntent({ intent }: { intent: ShoppingIntent }) {
   return (
     <div className="space-y-4 border border-line bg-surface px-4 py-4">
-      <div>
-        <p className="text-[11px] tracking-[0.14em] text-muted">CATEGORY</p>
-        <p className="mt-1 text-sm text-ink">{intent.category ?? "Unspecified"}</p>
-      </div>
-      <div>
-        <p className="text-[11px] tracking-[0.14em] text-muted">MANDATORY</p>
-        <ul className="mt-2 space-y-1">
-          {intent.hard_constraints.map((item) => (
-            <li key={item.id} className="text-sm text-ink">
-              ✓ {fieldLabel(item.field)} {formatConstraint(item.operator, item.normalized_value ?? item.value, item.unit)}
-            </li>
+      <Section title="MANDATORY">
+        {intent.hard_constraints.map((item) => (
+          <p key={item.id} className="text-sm">
+            {fieldLabel(item.field)} {formatConstraint(item.operator, item.normalized_value ?? item.value, item.unit)}
+          </p>
+        ))}
+      </Section>
+      {intent.context_items.length ? (
+        <Section title="CONTEXT">
+          {intent.context_items.map((item) => (
+            <p key={item.label} className="text-sm capitalize">
+              {contextLabel(item.label)}
+            </p>
           ))}
-        </ul>
-      </div>
+        </Section>
+      ) : null}
+      {intent.desired_outcomes.length ? (
+        <Section title="DESIRED OUTCOMES">
+          {intent.desired_outcomes.map((item) => (
+            <p key={item.label} className="text-sm capitalize">
+              {contextLabel(item.label)}
+            </p>
+          ))}
+        </Section>
+      ) : null}
       {intent.soft_preferences.length ? (
-        <div>
-          <p className="text-[11px] tracking-[0.14em] text-muted">PREFERENCES</p>
-          <ul className="mt-2 space-y-1">
-            {intent.soft_preferences.map((item) => (
-              <li key={item.id} className="text-sm text-ink">
-                {item.direction === "MAXIMIZE" ? "↑" : "↓"} {fieldLabel(item.field)}
-                <span className="text-muted">
-                  {" "}
-                  · {item.direction === "MINIMIZE" && item.field === "price" ? "price sensitivity" : item.direction.toLowerCase()}{" "}
-                  {item.importance < 0.4 ? "medium-low" : item.importance > 0.8 ? "high" : "medium"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Section title="PREFERENCES">
+          {intent.soft_preferences.map((item) => (
+            <p key={item.id} className="text-sm">
+              {fieldLabel(item.field)}{" "}
+              <span className="text-muted">{importanceLabel(item.importance)}</span>
+            </p>
+          ))}
+        </Section>
       ) : null}
-      {intent.context_tags.length ? (
-        <div>
-          <p className="text-[11px] tracking-[0.14em] text-muted">CONTEXT</p>
-          <p className="mt-1 text-sm capitalize text-ink">
-            {intent.context_tags.map(contextLabel).join(", ")}
-          </p>
-        </div>
+      {intent.tradeoffs.length ? (
+        <Section title="TRADE-OFF">
+          {intent.tradeoffs.map((item) => (
+            <p key={`${item.preferred_dimension}-${item.over_dimension}`} className="text-sm">
+              {fieldLabel(item.preferred_dimension)} {">"}{" "}
+              {item.over_dimension === "price"
+                ? "lowest possible price"
+                : fieldLabel(item.over_dimension)}
+            </p>
+          ))}
+        </Section>
       ) : null}
-      {intent.ambiguities.length ? (
-        <div>
-          <p className="text-[11px] tracking-[0.14em] text-uncertain">
-            NEEDS CLARIFICATION
-          </p>
-          <ul className="mt-2 space-y-1">
-            {intent.ambiguities.map((item) => (
-              <li key={item.source_phrase} className="text-sm text-ink">
-                “{item.source_phrase}”{" "}
-                <span className="text-muted">{item.reason.replace(/_/g, " ")}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {intent.unsupported_semantic_needs.length || intent.ambiguities.length ? (
+        <Section title="UNSUPPORTED / CLARIFY">
+          {intent.unsupported_semantic_needs.map((item) => (
+            <p key={item.label} className="text-sm text-uncertain">
+              {item.source_phrase}
+            </p>
+          ))}
+          {intent.ambiguities.map((item) => (
+            <p key={item.source_phrase} className="text-sm text-uncertain">
+              {item.source_phrase}
+            </p>
+          ))}
+        </Section>
       ) : null}
     </div>
   );
 }
 
-function QualificationRow({
-  card,
-  onInspect,
-}: {
-  card: VariantQualificationCard;
-  onInspect: (evaluation: ConstraintEvaluation) => void;
-}) {
+function MatchCard({ match }: { match: RankedProductMatch }) {
   return (
     <article className="border border-line bg-surface px-4 py-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
-          <p className="text-sm font-medium tracking-[0.06em] uppercase text-ink">
-            {card.product_name}
-          </p>
-          <p className="font-mono text-[11px] text-muted">
-            {card.sku} · {formatAudCents(card.base_price_cents)}
-          </p>
-        </div>
-        <OutcomeMark outcome={card.outcome} />
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-sm font-medium tracking-[0.06em] uppercase">
+          #{match.rank} {match.product_name}
+        </p>
+        <span className="text-[11px] text-success">PASS</span>
       </div>
-      <dl className="mt-3 space-y-1.5">
-        {card.evaluations.map((evaluation) => (
-          <button
-            key={evaluation.constraint_id}
-            type="button"
-            onClick={() => onInspect(evaluation)}
-            className="flex w-full items-center justify-between gap-3 text-left text-sm"
-          >
-            <dt className="text-muted">{fieldLabel(evaluation.field)}</dt>
-            <dd>
-              <StatusMark status={evaluation.status} />
-            </dd>
-          </button>
-        ))}
+      <p className="font-mono text-[11px] text-muted">
+        {match.sku} · {formatAudCents(match.base_price_cents)}
+      </p>
+      <dl className="mt-3 grid grid-cols-2 gap-1 text-[11px]">
+        <Score label="Semantic fit" value={match.overall_semantic_fit} />
+        <Score label="Context fit" value={match.context_fit} />
+        <Score label="Preference fit" value={match.preference_fit} />
+        <Score label="Evidence" value={match.evidence_coverage} />
       </dl>
+      <p className="mt-3 text-[11px] tracking-[0.12em] text-muted">WHY IT FITS</p>
+      <ul className="mt-1 space-y-2">
+        {match.reasons.map((reason) => (
+          <li key={`${reason.kind}-${reason.need}`}>
+            <p className="text-sm capitalize">{contextLabel(reason.need)}</p>
+            {reason.facts.map((fact) => (
+              <p key={fact.attribute} className="text-xs text-muted">
+                → {fact.display}
+                {fact.source_name ? ` · ${fact.source_name}` : ""}
+              </p>
+            ))}
+          </li>
+        ))}
+      </ul>
+      {match.unsupported_needs.length ? (
+        <p className="mt-2 text-xs text-uncertain">
+          Limited evidence: {match.unsupported_needs.map(contextLabel).join(", ")}
+        </p>
+      ) : null}
     </article>
   );
 }
 
-function OutcomeMark({ outcome }: { outcome: VariantQualificationCard["outcome"] }) {
-  const label =
-    outcome === "eligible"
-      ? "ELIGIBLE"
-      : outcome === "uncertain"
-        ? "NOT ELIGIBLE"
-        : "REJECTED";
-  const tone =
-    outcome === "eligible"
-      ? "text-success"
-      : outcome === "uncertain"
-        ? "text-uncertain"
-        : "text-danger";
-  return <span className={`text-[11px] font-medium tracking-[0.12em] ${tone}`}>{label}</span>;
-}
-
-function StatusMark({ status }: { status: ConstraintStatus }) {
-  const styles: Record<ConstraintStatus, string> = {
-    SATISFIED: "text-success",
-    VIOLATED: "text-danger",
-    UNKNOWN: "text-uncertain",
-  };
+function Score({ label, value }: { label: string; value: number }) {
   return (
-    <span className={`text-[11px] font-medium tracking-[0.1em] ${styles[status]}`}>
-      {status}
-    </span>
-  );
-}
-
-function ProofDrawer({
-  product,
-  evaluation,
-  onClose,
-}: {
-  product: string;
-  evaluation: ConstraintEvaluation;
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-ink/20">
-      <button type="button" className="h-full flex-1" onClick={onClose} aria-label="Close proof" />
-      <aside className="h-full w-full max-w-md space-y-5 overflow-y-auto border-l border-line bg-surface px-6 py-8">
-        <p className="text-[11px] tracking-[0.14em] text-muted">PROOF</p>
-        <div>
-          <h3 className="text-xl font-semibold text-ink">{fieldLabel(evaluation.field)}</h3>
-          <p className="text-sm text-muted">{product}</p>
-        </div>
-        <ProofRow label="Status" value={evaluation.status} />
-        <ProofRow label="Expected" value={formatValue(evaluation.expected_value)} />
-        <ProofRow label="Observed" value={formatValue(evaluation.observed_value)} />
-        <ProofRow label="Source" value={evaluation.source_name ?? "Unavailable"} />
-        <ProofRow
-          label="Verification"
-          value={evaluation.verification_status ?? "Not attached"}
-        />
-        <ProofRow
-          label="Freshness"
-          value={evaluation.evidence_freshness ?? "MISSING"}
-        />
-        <ProofRow
-          label="Observed at"
-          value={evaluation.observed_at ? evaluation.observed_at.slice(0, 10) : "—"}
-        />
-        {evaluation.supporting_detail ? (
-          <ProofRow label="Delivery option" value={evaluation.supporting_detail} />
-        ) : null}
-        <p className="text-xs leading-5 text-muted">{evaluation.reason.replace(/_/g, " ")}</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-xs tracking-[0.12em] text-muted hover:text-ink"
-        >
-          CLOSE
-        </button>
-      </aside>
+    <div className="flex justify-between gap-2">
+      <dt className="text-muted">{label}</dt>
+      <dd className="tabular-nums">{pct(value)}</dd>
     </div>
   );
 }
 
-function ProofRow({ label, value }: { label: string; value: string }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <div>
-      <p className="text-[11px] tracking-[0.12em] text-muted">{label.toUpperCase()}</p>
-      <p className="mt-1 text-sm text-ink">{value}</p>
+      <p className="text-[11px] tracking-[0.14em] text-muted">{title}</p>
+      <div className="mt-2 space-y-1">{children}</div>
     </div>
   );
 }
@@ -433,13 +331,7 @@ function formatConstraint(operator: string, value: unknown, unit: string | null)
     return `${symbol} ${formatAudCents(value)}`;
   }
   if (unit === "DAYS" && value === 0) return "today";
-  if (operator === "EQ" && value === true) return "required";
+  if (operator === "EQ" && value === true) return "";
   if (operator === "EQ" && value === false) return "must be false";
   return `${operator} ${String(value)}`;
-}
-
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "missing";
-  if (typeof value === "boolean") return value ? "true" : "false";
-  return String(value);
 }

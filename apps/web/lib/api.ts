@@ -9,6 +9,7 @@ import type {
   ProductVariantDetail,
   QualifyResponse,
   QualificationVariantDetail,
+  MatchResponse,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -105,4 +106,19 @@ export function getQualificationVariant(
   return request<QualificationVariantDetail>(
     `/api/v1/intent/qualification/${runId}/variants/${variantId}`,
   );
+}
+
+export function matchIntent(
+  intent: string,
+  parserMode?: "rule_based" | "llm",
+  limit = 8,
+): Promise<MatchResponse> {
+  return request<MatchResponse>("/api/v1/match", {
+    method: "POST",
+    body: JSON.stringify({
+      intent,
+      parser_mode: parserMode,
+      limit,
+    }),
+  });
 }

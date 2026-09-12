@@ -9,14 +9,23 @@ from app.decision.intent.models import (
     PARSER_VERSION_RULE,
     ConstraintField,
     ConstraintOperator,
+    DesiredOutcome,
     HardConstraint,
     IntentAmbiguity,
+    IntentContext,
     PreferenceDirection,
     PreferenceField,
     ShoppingIntent,
     SoftPreference,
+    TradeoffPreference,
+    UnsupportedSemanticNeed,
 )
 from app.decision.intent.normalizer import parse_money_to_cents, parse_number
+from app.decision.intent.taxonomy import (
+    ContextLabel,
+    OutcomeLabel,
+    TradeoffDimension,
+)
 
 PARSER_TYPE = "rule_based"
 
@@ -41,6 +50,10 @@ class RuleBasedIntentParser:
         constraints: list[HardConstraint] = []
         preferences: list[SoftPreference] = []
         tags: list[str] = []
+        context_items: list[IntentContext] = []
+        outcomes: list[DesiredOutcome] = []
+        tradeoffs: list[TradeoffPreference] = []
+        unsupported: list[UnsupportedSemanticNeed] = []
         ambiguities: list[IntentAmbiguity] = []
         counter = 0
 
@@ -111,12 +124,107 @@ class RuleBasedIntentParser:
                     )
                 )
 
-        for pattern, tag in _CONTEXT_PATTERNS:
+        seen_ctx: set[str] = set()
+        for pattern, ctx_label, importance in _CONTEXT_ITEMS:
             for match in re.finditer(pattern, lowered, flags=re.IGNORECASE):
-                if not take(match):
+                if ctx_label.value in seen_ctx:
                     continue
-                if tag not in tags:
-                    tags.append(tag)
+                seen_ctx.add(ctx_label.value)
+                tags.append(ctx_label.value)
+                context_items.append(
+                    IntentContext(
+                        label=ctx_label,
+                        importance=importance,
+                        source_phrase=match.group(0).strip(),
+                        confidence=0.85,
+                    )
+                )
+
+        seen_out: set[str] = set()
+        for pattern, out_label, importance in _OUTCOME_PATTERNS:
+            for match in re.finditer(pattern, lowered, flags=re.IGNORECASE):
+                if out_label.value in seen_out:
+                    continue
+                seen_out.add(out_label.value)
+                outcomes.append(
+                    DesiredOutcome(
+                        label=out_label,
+                        importance=importance,
+                        source_phrase=match.group(0).strip(),
+                        confidence=0.8,
+                    )
+                )
+
+        seen_trade: set[tuple[str, str]] = set()
+        for pattern, preferred, over, strength in _TRADEOFF_PATTERNS:
+            for match in re.finditer(pattern, lowered, flags=re.IGNORECASE):
+                key = (preferred.value, over.value)
+                if key in seen_trade:
+                    continue
+                seen_trade.add(key)
+                tradeoffs.append(
+                    TradeoffPreference(
+                        preferred_dimension=preferred,
+                        over_dimension=over,
+                        strength=strength,
+                        source_phrase=match.group(0).strip(),
+                    )
+                )
+
+        if (
+            ContextLabel.LONG_HAUL_TRAVEL.value in seen_ctx
+            and OutcomeLabel.TRAVEL_CONVENIENCE.value not in seen_out
+        ):
+            source = next(
+                item.source_phrase
+                for item in context_items
+                if item.label == ContextLabel.LONG_HAUL_TRAVEL
+            )
+            seen_out.add(OutcomeLabel.TRAVEL_CONVENIENCE.value)
+            outcomes.append(
+                DesiredOutcome(
+                    label=OutcomeLabel.TRAVEL_CONVENIENCE,
+                    importance=0.75,
+                    source_phrase=source,
+                    confidence=0.75,
+                )
+            )
+        pref_fields = {item.field for item in preferences}
+        if (
+            PreferenceField.RELIABILITY in pref_fields
+            and ContextLabel.EXTENDED_CONTINUOUS_USE.value in seen_ctx
+            and OutcomeLabel.RELIABLE_EXTENDED_USE.value not in seen_out
+        ):
+            source = next(
+                (
+                    item.source_phrase
+                    for item in context_items
+                    if item.label == ContextLabel.EXTENDED_CONTINUOUS_USE
+                ),
+                "reliability",
+            )
+            seen_out.add(OutcomeLabel.RELIABLE_EXTENDED_USE.value)
+            outcomes.append(
+                DesiredOutcome(
+                    label=OutcomeLabel.RELIABLE_EXTENDED_USE,
+                    importance=0.8,
+                    source_phrase=source,
+                    confidence=0.75,
+                )
+            )
+
+        for pattern, need_label, reason in _UNSUPPORTED_SEMANTIC:
+            for match in re.finditer(pattern, lowered, flags=re.IGNORECASE):
+                if _overlaps(_Span(match.start(), match.end()), consumed):
+                    continue
+                consumed.append(_Span(match.start(), match.end()))
+                unsupported.append(
+                    UnsupportedSemanticNeed(
+                        label=need_label,
+                        source_phrase=match.group(0).strip(),
+                        reason=reason,
+                    )
+                )
 
         for pattern, reason, mandatory, suggestion in _AMBIGUITY_PATTERNS:
             for match in re.finditer(pattern, lowered, flags=re.IGNORECASE):
@@ -155,6 +263,11 @@ class RuleBasedIntentParser:
             hard_constraints=constraints,
             soft_preferences=preferences,
             context_tags=tags,
+            context_items=context_items,
+            desired_outcomes=outcomes,
+            values=[],
+            tradeoffs=tradeoffs,
+            unsupported_semantic_needs=unsupported,
             ambiguities=ambiguities,
             parser_type=PARSER_TYPE,
             parser_version=PARSER_VERSION_RULE,
@@ -241,7 +354,8 @@ _HARD_PATTERNS: list[
         "DAYS",
     ),
     (
-        r"\b(?:tomorrow|next day|next-day)\b",
+        r"\b(?:deliver(?:ed|y)?|arrive)\s+(?:by\s+)?tomorrow\b"
+        r"|\btomorrow(?:'s)?\s+delivery\b",
         ConstraintField.DELIVERY_DAYS,
         ConstraintOperator.LTE,
         1,
@@ -365,23 +479,118 @@ _SOFT_PATTERNS: list[tuple[str, PreferenceField, PreferenceDirection, float]] = 
     ),
 ]
 
-_CONTEXT_PATTERNS: list[tuple[str, str]] = [
+_CONTEXT_ITEMS: list[tuple[str, ContextLabel, float]] = [
     (
         r"\b(?:12[-\s]?hour flight|long(?:er)? (?:haul )?flight|"
-        r"long[-\s]?haul)\b",
-        "long_haul_travel",
+        r"long[-\s]?haul|international flight|"
+        r"sydney to singapore|singapore to sydney)\b",
+        ContextLabel.LONG_HAUL_TRAVEL,
+        0.9,
     ),
-    (r"\bfrequent(?:ly)? travel", "frequent_travel"),
-    (r"\bcommut", "commuting"),
-    (r"\bgaming\b", "gaming"),
-    (r"\bstudio\b", "studio"),
-    (r"\b(?:sports?|running|gym)\b", "sports"),
-    (r"\boffice\b", "office"),
+    (
+        r"\bwear (?:them|it) for hours\b|\bfor hours\b|"
+        r"\bextended (?:wear|use|listening)\b",
+        ContextLabel.EXTENDED_CONTINUOUS_USE,
+        0.85,
+    ),
+    (r"\bfrequent(?:ly)? travel", ContextLabel.FREQUENT_TRAVEL, 0.75),
+    (r"\bshort (?:trip|flight|commute)\b", ContextLabel.SHORT_TRAVEL, 0.7),
+    (r"\bcommut", ContextLabel.COMMUTING, 0.75),
+    (r"\bgaming\b", ContextLabel.GAMING, 0.8),
+    (r"\bstudio\b", ContextLabel.STUDIO, 0.8),
+    (r"\b(?:sports?|running|gym)\b", ContextLabel.SPORTS, 0.75),
+    (r"\boffice\b", ContextLabel.OFFICE, 0.7),
+]
+
+_OUTCOME_PATTERNS: list[tuple[str, OutcomeLabel, float]] = [
+    (
+        r"\bwear (?:them|it) for hours\b|\bcomfort matters\b|"
+        r"\blow fatigue\b|\bfor hours\b",
+        OutcomeLabel.LOW_FATIGUE,
+        0.85,
+    ),
+    (
+        r"\breliab(?:le|ility).{0,40}(?:hours|extended|flight|travel)"
+        r"|(?:hours|extended|flight).{0,40}reliab(?:le|ility)"
+        r"|\breliable extended\b|\bneed them (?:to )?last\b",
+        OutcomeLabel.RELIABLE_EXTENDED_USE,
+        0.8,
+    ),
+    (
+        r"\bnoise[-\s]?cancell|\banc\b|\bisolation\b",
+        OutcomeLabel.STRONG_NOISE_ISOLATION,
+        0.7,
+    ),
+    (
+        r"\blong(?:er)? battery\b|\bbattery (?:life )?matters\b",
+        OutcomeLabel.LONG_BATTERY_ENDURANCE,
+        0.75,
+    ),
+    (
+        r"\b(?:12[-\s]?hour flight|long(?:er)? (?:haul )?flight|"
+        r"long[-\s]?haul|international flight|sydney to singapore|"
+        r"travel convenien)",
+        OutcomeLabel.TRAVEL_CONVENIENCE,
+        0.8,
+    ),
+    (r"\bfoldable\b|\bpack(?:able)?\b", OutcomeLabel.EASY_STORAGE, 0.65),
+    (r"\bportable\b|\blightweight travel\b", OutcomeLabel.PORTABLE_TRAVEL, 0.7),
+    (r"\bcalls?\b|\bmicrophone\b|\bpodcast", OutcomeLabel.CLEAR_CALLS, 0.7),
+    (r"\bimmersive\b|\bgaming\b", OutcomeLabel.IMMERSIVE_AUDIO, 0.65),
+    (r"\bwaterproof\b|\bIPX", OutcomeLabel.WEATHER_RESILIENCE, 0.65),
+]
+
+_TRADEOFF_PATTERNS: list[tuple[str, TradeoffDimension, TradeoffDimension, float]] = [
+    (
+        r"comfort and reliability matter more than getting the absolute cheapest"
+        r"|comfort and reliability matter more than .{0,20}cheapest",
+        TradeoffDimension.COMFORT,
+        TradeoffDimension.PRICE,
+        0.8,
+    ),
+    (
+        r"reliability matter more than .{0,30}cheapest"
+        r"|rather pay more for reliability"
+        r"|reliability than get the cheapest",
+        TradeoffDimension.RELIABILITY,
+        TradeoffDimension.PRICE,
+        0.8,
+    ),
+    (
+        r"comfort matters more than .{0,20}(?:price|cheapest)",
+        TradeoffDimension.COMFORT,
+        TradeoffDimension.PRICE,
+        0.75,
+    ),
+]
+
+_UNSUPPORTED_SEMANTIC: list[tuple[str, str, str]] = [
+    (
+        r"\bfeel luxurious\b|\bluxury feel\b",
+        "luxurious_feel",
+        "no_merchant_attribute",
+    ),
+    (
+        r"\bsustainab(?:le|ility)\b",
+        "sustainability",
+        "no_merchant_attribute",
+    ),
+    (
+        r"\brepairab(?:le|ility)\b",
+        "repairability",
+        "no_merchant_attribute",
+    ),
+    (
+        r"\bdurab(?:le|ility)\b",
+        "durability",
+        "no_merchant_attribute",
+    ),
 ]
 
 _AMBIGUITY_PATTERNS: list[tuple[str, str, bool, str]] = [
     (
-        r"\b(?:must look )?luxurious(?: appearance)?\b|\blook luxurious\b",
+        r"\b(?:must look |must feel )?luxurious(?: appearance| feel)?\b"
+        r"|\blook luxurious\b|\bfeel luxurious\b",
         "unsupported_attribute",
         True,
         "Appearance is not a catalogue field.",

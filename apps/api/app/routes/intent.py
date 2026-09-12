@@ -12,6 +12,8 @@ from app.schemas.intent import (
     QualifyRequest,
     QualifyResponse,
 )
+from app.schemas.match import AnalyseRequest, AnalyseResponse
+from app.services.matching import SemanticMatchingService
 from app.services.qualification import IntentQualificationService
 
 router = APIRouter(prefix="/intent", tags=["intent"])
@@ -19,6 +21,18 @@ router = APIRouter(prefix="/intent", tags=["intent"])
 
 def _service(db: AsyncSession = Depends(get_db)) -> IntentQualificationService:
     return IntentQualificationService(db)
+
+
+def _matching(db: AsyncSession = Depends(get_db)) -> SemanticMatchingService:
+    return SemanticMatchingService(db)
+
+
+@router.post("/analyse", response_model=AnalyseResponse)
+async def analyse_intent(
+    payload: AnalyseRequest,
+    service: SemanticMatchingService = Depends(_matching),
+) -> AnalyseResponse:
+    return await service.analyse(payload.intent, payload.parser_mode)
 
 
 @router.post("/qualify", response_model=QualifyResponse)

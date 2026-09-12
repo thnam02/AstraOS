@@ -1,6 +1,4 @@
-export const HERO_INTENT = `I need noise-cancelling headphones under A$350 for a 12-hour flight.
-I need them delivered today.
-Comfort and reliability matter more than getting the absolute cheapest option.`;
+export const HERO_INTENT = `I'm flying from Sydney to Singapore tomorrow and need wireless noise-cancelling headphones under A$350. I need them delivered today. I'll wear them for hours, so comfort and reliability matter more than getting the absolute cheapest option.`;
 
 export function fieldLabel(field: string): string {
   const labels: Record<string, string> = {

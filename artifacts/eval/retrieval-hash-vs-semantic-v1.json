@@ -1,0 +1,2180 @@
+{
+  "dataset_version": "retrieval_eval_v1",
+  "cases": 77,
+  "hashing": {
+    "provider": "hashing",
+    "model": "hashing-vectorizer-384",
+    "dimension": 384,
+    "document_version": "product_semantic.v1",
+    "ranked_cases": 32,
+    "hard_constraint_violations": 0,
+    "hard_constraint_violation_rate": 0.0,
+    "similarity": {
+      "recall@1": 0.0105,
+      "recall@3": 0.0315,
+      "recall@5": 0.0526,
+      "precision@1": 1.0,
+      "precision@3": 1.0,
+      "precision@5": 1.0,
+      "mrr": 1.0,
+      "ndcg@3": 0.979,
+      "ndcg@5": 0.9786,
+      "no_result": 0.0
+    },
+    "rerank": {
+      "recall@1": 0.0105,
+      "recall@3": 0.0307,
+      "recall@5": 0.0517,
+      "precision@1": 1.0,
+      "precision@3": 0.9792,
+      "precision@5": 0.9875,
+      "mrr": 1.0,
+      "ndcg@3": 0.9767,
+      "ndcg@5": 0.9785,
+      "no_result": 0.0
+    },
+    "by_segment": {
+      "battery_endurance": {
+        "similarity": {
+          "recall@1": 0.0093,
+          "recall@3": 0.0278,
+          "recall@5": 0.0463,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0093,
+          "recall@3": 0.0278,
+          "recall@5": 0.0463,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "budget_quality": {
+        "similarity": {
+          "recall@1": 0.0169,
+          "recall@3": 0.0506,
+          "recall@5": 0.0843,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0169,
+          "recall@3": 0.0506,
+          "recall@5": 0.0843,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "commuting_portability": {
+        "similarity": {
+          "recall@1": 0.0106,
+          "recall@3": 0.0317,
+          "recall@5": 0.0528,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 0.9371,
+          "ndcg@5": 0.9367,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0106,
+          "recall@3": 0.0293,
+          "recall@5": 0.0504,
+          "precision@1": 1.0,
+          "precision@3": 0.9444,
+          "precision@5": 0.9667,
+          "mrr": 1.0,
+          "ndcg@3": 0.9533,
+          "ndcg@5": 0.9547,
+          "no_result": 0.0
+        }
+      },
+      "exercise": {
+        "similarity": {
+          "recall@1": 0.0034,
+          "recall@3": 0.0101,
+          "recall@5": 0.0168,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0034,
+          "recall@3": 0.0101,
+          "recall@5": 0.0168,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "long_haul_travel": {
+        "similarity": {
+          "recall@1": 0.0051,
+          "recall@3": 0.0152,
+          "recall@5": 0.0253,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0051,
+          "recall@3": 0.0152,
+          "recall@5": 0.0253,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "mixed_tradeoffs": {
+        "similarity": {
+          "recall@1": 0.0064,
+          "recall@3": 0.0192,
+          "recall@5": 0.032,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0064,
+          "recall@3": 0.0192,
+          "recall@5": 0.032,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "reliability": {
+        "similarity": {
+          "recall@1": 0.015,
+          "recall@3": 0.0451,
+          "recall@5": 0.0752,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 0.8519,
+          "ndcg@5": 0.8469,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.015,
+          "recall@3": 0.0383,
+          "recall@5": 0.0684,
+          "precision@1": 1.0,
+          "precision@3": 0.8333,
+          "precision@5": 0.9,
+          "mrr": 1.0,
+          "ndcg@3": 0.7667,
+          "ndcg@5": 0.7921,
+          "no_result": 0.0
+        }
+      },
+      "work_calling": {
+        "similarity": {
+          "recall@1": 0.0043,
+          "recall@3": 0.013,
+          "recall@5": 0.0217,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0043,
+          "recall@3": 0.013,
+          "recall@5": 0.0217,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      }
+    },
+    "latency_ms": {
+      "profile": 0.004,
+      "query_embed": 0.176,
+      "retrieve_similarity_ms": 2.743,
+      "rerank_ms": 5.513,
+      "match_warm_ms": 8.26
+    },
+    "cases": [
+      {
+        "query_id": "hero_stage2",
+        "segment": "reliability",
+        "eligible": 74,
+        "relevant": 73,
+        "similarity_top5": [
+          "2e010b6e-decb-5b20-bdfe-2f4334e27625",
+          "c00daae4-6bbc-531c-967b-5b7053796432",
+          "7e52f21e-f9a7-53a7-bf68-8b68e9d6423a",
+          "93f0fb0c-3e37-528a-b138-65616034b261",
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb"
+        ],
+        "rerank_top5": [
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693",
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "7e52f21e-f9a7-53a7-bf68-8b68e9d6423a",
+          "c30ecb7f-76f3-573c-979f-338479107bab",
+          "dcee6775-a930-5537-9c47-556477850f91"
+        ],
+        "recall@5_similarity": 0.0685,
+        "recall@5_rerank": 0.0548
+      },
+      {
+        "query_id": "hero_stage3",
+        "segment": "reliability",
+        "eligible": 62,
+        "relevant": 61,
+        "similarity_top5": [
+          "c00daae4-6bbc-531c-967b-5b7053796432",
+          "93f0fb0c-3e37-528a-b138-65616034b261",
+          "5372b424-c932-55dd-a951-049a889fe7b1",
+          "7e52f21e-f9a7-53a7-bf68-8b68e9d6423a",
+          "51e207fa-f599-5d07-b2be-915117ca527c"
+        ],
+        "rerank_top5": [
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693",
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "f2988006-f06a-5f0f-b354-7022b6dd89c6",
+          "c30ecb7f-76f3-573c-979f-338479107bab",
+          "72417fbc-2d35-5357-8946-60d010ea283e"
+        ],
+        "recall@5_similarity": 0.082,
+        "recall@5_rerank": 0.082
+      },
+      {
+        "query_id": "commute",
+        "segment": "commuting_portability",
+        "eligible": 72,
+        "relevant": 70,
+        "similarity_top5": [
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "d3c694bc-0ef4-5438-84c1-3c82472a29dd",
+          "3539612b-352c-515d-b0ec-96738472b194",
+          "1ef4b77d-0151-5e1c-aa10-30b06216dafd",
+          "cfa9dc2e-aae7-5f06-a250-026b9b194f9c"
+        ],
+        "rerank_top5": [
+          "72417fbc-2d35-5357-8946-60d010ea283e",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "7077378e-ffa9-598d-8bde-89f06b70a43d",
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693"
+        ],
+        "recall@5_similarity": 0.0714,
+        "recall@5_rerank": 0.0571
+      },
+      {
+        "query_id": "office",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "de175e10-aed2-5694-8156-59861fc191d4",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "f2988006-f06a-5f0f-b354-7022b6dd89c6",
+          "2e010b6e-decb-5b20-bdfe-2f4334e27625",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a"
+        ],
+        "rerank_top5": [
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "de175e10-aed2-5694-8156-59861fc191d4",
+          "8967cfd4-6f76-53fd-bc80-3c6f243cc158",
+          "f2988006-f06a-5f0f-b354-7022b6dd89c6"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "gaming",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "836f59b8-a01b-583f-af01-3998d28ef3a8",
+          "c9857db0-384a-593f-b8fb-a2772f60fe5c",
+          "645d232f-8722-50da-b436-6ff3dda9abc2",
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7",
+          "fc6b7298-1c2f-5bc3-b972-a7900fa38e58"
+        ],
+        "rerank_top5": [
+          "836f59b8-a01b-583f-af01-3998d28ef3a8",
+          "8967cfd4-6f76-53fd-bc80-3c6f243cc158",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "402eb8a1-e2f5-50f7-af79-8e76651768c6",
+          "eca2910e-179b-5968-ace9-8948d8075407"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "budget",
+        "segment": "budget_quality",
+        "eligible": 40,
+        "relevant": 40,
+        "similarity_top5": [
+          "07bbcacb-513a-5b99-9e9a-91f1d817c605",
+          "9498dc72-89b8-5d39-b176-bc20d8b03866",
+          "321fea8b-fe54-5d0f-9645-76189df9067f",
+          "4571fb57-d884-5a6c-9bcd-fc84d01e5080",
+          "fdf2ef86-3e01-55fd-b509-a289eb728408"
+        ],
+        "rerank_top5": [
+          "07bbcacb-513a-5b99-9e9a-91f1d817c605",
+          "9498dc72-89b8-5d39-b176-bc20d8b03866",
+          "321fea8b-fe54-5d0f-9645-76189df9067f",
+          "4571fb57-d884-5a6c-9bcd-fc84d01e5080",
+          "fdf2ef86-3e01-55fd-b509-a289eb728408"
+        ],
+        "recall@5_similarity": 0.125,
+        "recall@5_rerank": 0.125
+      },
+      {
+        "query_id": "podcast",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "68069933-fe27-5a52-90b4-f88cd79801cd",
+          "50b7802b-57e6-574c-8421-86d7f3ac3482",
+          "18694bad-47f2-596d-851b-69f39ab137ec",
+          "32c21b54-64f5-500f-b368-92b545ce2e3b",
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a"
+        ],
+        "rerank_top5": [
+          "68069933-fe27-5a52-90b4-f88cd79801cd",
+          "50b7802b-57e6-574c-8421-86d7f3ac3482",
+          "18694bad-47f2-596d-851b-69f39ab137ec",
+          "32c21b54-64f5-500f-b368-92b545ce2e3b",
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "fold_travel",
+        "segment": "commuting_portability",
+        "eligible": 182,
+        "relevant": 176,
+        "similarity_top5": [
+          "1d93ede6-633c-57c4-948f-03706de56547",
+          "50309bc6-544a-5901-be88-8ff12c30d185",
+          "e258c79a-9732-5bdb-82c3-0566feee1dc1",
+          "fe905bb7-2926-57d4-a015-862d28f6799e",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04"
+        ],
+        "rerank_top5": [
+          "fe905bb7-2926-57d4-a015-862d28f6799e",
+          "1d93ede6-633c-57c4-948f-03706de56547",
+          "234c3571-00fe-5592-ab09-6c77156ba298",
+          "d779a638-02ae-5bf5-98ba-ff781d79f0f7",
+          "557eef8b-7655-5f77-a80f-da5cc854f1a3"
+        ],
+        "recall@5_similarity": 0.0284,
+        "recall@5_rerank": 0.0284
+      },
+      {
+        "query_id": "same_day_wireless",
+        "segment": "budget_quality",
+        "eligible": 102,
+        "relevant": 102,
+        "similarity_top5": [
+          "136c8f16-e1c6-5313-afa4-d0fc0dee26da",
+          "004ab728-cbb9-5246-a3ee-fb293675231e",
+          "b5a2c752-3b7b-59c8-8df5-7abd08d3b7b5",
+          "a57e8a3b-6d87-5e66-9e63-fa85e7edb520",
+          "168e7a1d-3e17-5ba2-992b-db1062ffcaab"
+        ],
+        "rerank_top5": [
+          "136c8f16-e1c6-5313-afa4-d0fc0dee26da",
+          "004ab728-cbb9-5246-a3ee-fb293675231e",
+          "b5a2c752-3b7b-59c8-8df5-7abd08d3b7b5",
+          "a57e8a3b-6d87-5e66-9e63-fa85e7edb520",
+          "168e7a1d-3e17-5ba2-992b-db1062ffcaab"
+        ],
+        "recall@5_similarity": 0.049,
+        "recall@5_rerank": 0.049
+      },
+      {
+        "query_id": "sydney_flight",
+        "segment": "budget_quality",
+        "eligible": 74,
+        "relevant": 74,
+        "similarity_top5": [
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "7e52f21e-f9a7-53a7-bf68-8b68e9d6423a",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46"
+        ],
+        "rerank_top5": [
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693",
+          "7e52f21e-f9a7-53a7-bf68-8b68e9d6423a",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "ac5b4516-cf24-5980-a1c1-67ed665dc4be"
+        ],
+        "recall@5_similarity": 0.0676,
+        "recall@5_rerank": 0.0676
+      },
+      {
+        "query_id": "x_office_anc",
+        "segment": "work_calling",
+        "eligible": 171,
+        "relevant": 171,
+        "similarity_top5": [
+          "de175e10-aed2-5694-8156-59861fc191d4",
+          "c00daae4-6bbc-531c-967b-5b7053796432",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "04413873-0fdf-5aac-b41f-3aaa58a56a08",
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46"
+        ],
+        "rerank_top5": [
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "de175e10-aed2-5694-8156-59861fc191d4",
+          "d0642bd7-f873-596f-84b2-75e432f18943",
+          "836f59b8-a01b-583f-af01-3998d28ef3a8",
+          "04413873-0fdf-5aac-b41f-3aaa58a56a08"
+        ],
+        "recall@5_similarity": 0.0292,
+        "recall@5_rerank": 0.0292
+      },
+      {
+        "query_id": "x_commute_fold",
+        "segment": "commuting_portability",
+        "eligible": 182,
+        "relevant": 182,
+        "similarity_top5": [
+          "1d93ede6-633c-57c4-948f-03706de56547",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04",
+          "b720dfd3-c80b-5047-af96-00cb635cfd8f",
+          "0935d5ae-cbe4-543f-beee-9c06f5ff7566",
+          "5f1ca70a-b7c9-564b-aa05-9bca6a29b21b"
+        ],
+        "rerank_top5": [
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "fe905bb7-2926-57d4-a015-862d28f6799e",
+          "1d93ede6-633c-57c4-948f-03706de56547",
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "0935d5ae-cbe4-543f-beee-9c06f5ff7566"
+        ],
+        "recall@5_similarity": 0.0275,
+        "recall@5_rerank": 0.0275
+      },
+      {
+        "query_id": "x_stock_anc",
+        "segment": "mixed_tradeoffs",
+        "eligible": 144,
+        "relevant": 144,
+        "similarity_top5": [
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "6c469f28-2c1d-5284-b4d5-5e583e77f167",
+          "463477b0-71b3-57fa-883e-454039c4ee98"
+        ],
+        "rerank_top5": [
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "6c469f28-2c1d-5284-b4d5-5e583e77f167",
+          "463477b0-71b3-57fa-883e-454039c4ee98"
+        ],
+        "recall@5_similarity": 0.0347,
+        "recall@5_rerank": 0.0347
+      },
+      {
+        "query_id": "x_mic_calls",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "68069933-fe27-5a52-90b4-f88cd79801cd",
+          "50b7802b-57e6-574c-8421-86d7f3ac3482",
+          "18694bad-47f2-596d-851b-69f39ab137ec",
+          "32c21b54-64f5-500f-b368-92b545ce2e3b",
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a"
+        ],
+        "rerank_top5": [
+          "68069933-fe27-5a52-90b4-f88cd79801cd",
+          "50b7802b-57e6-574c-8421-86d7f3ac3482",
+          "18694bad-47f2-596d-851b-69f39ab137ec",
+          "32c21b54-64f5-500f-b368-92b545ce2e3b",
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "x_under_150",
+        "segment": "budget_quality",
+        "eligible": 73,
+        "relevant": 73,
+        "similarity_top5": [
+          "136c8f16-e1c6-5313-afa4-d0fc0dee26da",
+          "004ab728-cbb9-5246-a3ee-fb293675231e",
+          "b5a2c752-3b7b-59c8-8df5-7abd08d3b7b5",
+          "168e7a1d-3e17-5ba2-992b-db1062ffcaab",
+          "6985a0bc-3979-519d-8824-0020f9acf153"
+        ],
+        "rerank_top5": [
+          "136c8f16-e1c6-5313-afa4-d0fc0dee26da",
+          "004ab728-cbb9-5246-a3ee-fb293675231e",
+          "b5a2c752-3b7b-59c8-8df5-7abd08d3b7b5",
+          "168e7a1d-3e17-5ba2-992b-db1062ffcaab",
+          "6985a0bc-3979-519d-8824-0020f9acf153"
+        ],
+        "recall@5_similarity": 0.0685,
+        "recall@5_rerank": 0.0685
+      },
+      {
+        "query_id": "x_or_less",
+        "segment": "budget_quality",
+        "eligible": 114,
+        "relevant": 114,
+        "similarity_top5": [
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "6c469f28-2c1d-5284-b4d5-5e583e77f167",
+          "3539612b-352c-515d-b0ec-96738472b194"
+        ],
+        "rerank_top5": [
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "6c469f28-2c1d-5284-b4d5-5e583e77f167",
+          "3539612b-352c-515d-b0ec-96738472b194"
+        ],
+        "recall@5_similarity": 0.0439,
+        "recall@5_rerank": 0.0439
+      },
+      {
+        "query_id": "x_more_battery",
+        "segment": "battery_endurance",
+        "eligible": 187,
+        "relevant": 187,
+        "similarity_top5": [
+          "4c48dd02-a9d2-5cf4-8db4-a9f13b01565c",
+          "d74ebd39-6daa-57e0-b449-2d13710f5e82",
+          "a57e8a3b-6d87-5e66-9e63-fa85e7edb520",
+          "d93cf110-b478-5767-8534-6c144c79b81f",
+          "6985a0bc-3979-519d-8824-0020f9acf153"
+        ],
+        "rerank_top5": [
+          "4c48dd02-a9d2-5cf4-8db4-a9f13b01565c",
+          "d74ebd39-6daa-57e0-b449-2d13710f5e82",
+          "a57e8a3b-6d87-5e66-9e63-fa85e7edb520",
+          "d93cf110-b478-5767-8534-6c144c79b81f",
+          "6985a0bc-3979-519d-8824-0020f9acf153"
+        ],
+        "recall@5_similarity": 0.0267,
+        "recall@5_rerank": 0.0267
+      },
+      {
+        "query_id": "x_sports_wireless",
+        "segment": "exercise",
+        "eligible": 297,
+        "relevant": 297,
+        "similarity_top5": [
+          "3539612b-352c-515d-b0ec-96738472b194",
+          "32c21b54-64f5-500f-b368-92b545ce2e3b",
+          "6f68852a-7cb7-59b2-b256-71d19fda09c2",
+          "ce1bebe5-716d-56b1-8686-c55bb54f257e",
+          "da720106-d88a-5ed2-898a-2442e7dee48a"
+        ],
+        "rerank_top5": [
+          "ce1bebe5-716d-56b1-8686-c55bb54f257e",
+          "3539612b-352c-515d-b0ec-96738472b194",
+          "0411acb2-5a48-5193-97a2-f6b40abbb03d",
+          "df3b4d3c-cc30-5eea-a0fb-3a286228a6ec",
+          "2aa835da-f47b-5c9b-9614-bf6ba955c4a1"
+        ],
+        "recall@5_similarity": 0.0168,
+        "recall@5_rerank": 0.0168
+      },
+      {
+        "query_id": "x_gaming_wireless",
+        "segment": "work_calling",
+        "eligible": 297,
+        "relevant": 297,
+        "similarity_top5": [
+          "836f59b8-a01b-583f-af01-3998d28ef3a8",
+          "c9857db0-384a-593f-b8fb-a2772f60fe5c",
+          "645d232f-8722-50da-b436-6ff3dda9abc2",
+          "93f0fb0c-3e37-528a-b138-65616034b261",
+          "ac5b4516-cf24-5980-a1c1-67ed665dc4be"
+        ],
+        "rerank_top5": [
+          "836f59b8-a01b-583f-af01-3998d28ef3a8",
+          "8967cfd4-6f76-53fd-bc80-3c6f243cc158",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "402eb8a1-e2f5-50f7-af79-8e76651768c6",
+          "eca2910e-179b-5968-ace9-8948d8075407"
+        ],
+        "recall@5_similarity": 0.0168,
+        "recall@5_rerank": 0.0168
+      },
+      {
+        "query_id": "x_cabin",
+        "segment": "commuting_portability",
+        "eligible": 98,
+        "relevant": 98,
+        "similarity_top5": [
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "04413873-0fdf-5aac-b41f-3aaa58a56a08",
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "50309bc6-544a-5901-be88-8ff12c30d185",
+          "234c3571-00fe-5592-ab09-6c77156ba298"
+        ],
+        "rerank_top5": [
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "04413873-0fdf-5aac-b41f-3aaa58a56a08",
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "50309bc6-544a-5901-be88-8ff12c30d185",
+          "234c3571-00fe-5592-ab09-6c77156ba298"
+        ],
+        "recall@5_similarity": 0.051,
+        "recall@5_rerank": 0.051
+      },
+      {
+        "query_id": "x_short_trip",
+        "segment": "commuting_portability",
+        "eligible": 182,
+        "relevant": 182,
+        "similarity_top5": [
+          "51bacd87-c221-5919-8ccc-4f084a88e6ed",
+          "50309bc6-544a-5901-be88-8ff12c30d185",
+          "bae8c12c-ddb4-5377-8da2-e8b94352dc87",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04",
+          "0935d5ae-cbe4-543f-beee-9c06f5ff7566"
+        ],
+        "rerank_top5": [
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "12d6f359-bb6a-5b0f-9af2-745a16991413",
+          "fe905bb7-2926-57d4-a015-862d28f6799e",
+          "72417fbc-2d35-5357-8946-60d010ea283e",
+          "db7b53a3-11ac-5e60-94ca-609ac19472e9"
+        ],
+        "recall@5_similarity": 0.0275,
+        "recall@5_rerank": 0.0275
+      },
+      {
+        "query_id": "x_freq_travel",
+        "segment": "budget_quality",
+        "eligible": 90,
+        "relevant": 90,
+        "similarity_top5": [
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693",
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "c00daae4-6bbc-531c-967b-5b7053796432"
+        ],
+        "rerank_top5": [
+          "72417fbc-2d35-5357-8946-60d010ea283e",
+          "9d6fcb10-0fcb-509e-aecc-fcdede997c03",
+          "c00daae4-6bbc-531c-967b-5b7053796432",
+          "c9857db0-384a-593f-b8fb-a2772f60fe5c",
+          "17cf989f-6306-517a-9f85-8078e38ea2e7"
+        ],
+        "recall@5_similarity": 0.0556,
+        "recall@5_rerank": 0.0556
+      },
+      {
+        "query_id": "x_battery_40",
+        "segment": "battery_endurance",
+        "eligible": 76,
+        "relevant": 76,
+        "similarity_top5": [
+          "073472c7-af0d-570a-9b1f-70bed0164493",
+          "3e31c139-7b6f-5074-8e6d-72690941156e",
+          "e949a798-a177-544d-9002-331e0f491a85",
+          "7eca29b2-903b-5112-b966-3c63b829acd3",
+          "c1e168d6-3228-57c1-b31f-27228cf38328"
+        ],
+        "rerank_top5": [
+          "073472c7-af0d-570a-9b1f-70bed0164493",
+          "3e31c139-7b6f-5074-8e6d-72690941156e",
+          "e949a798-a177-544d-9002-331e0f491a85",
+          "7eca29b2-903b-5112-b966-3c63b829acd3",
+          "c1e168d6-3228-57c1-b31f-27228cf38328"
+        ],
+        "recall@5_similarity": 0.0658,
+        "recall@5_rerank": 0.0658
+      },
+      {
+        "query_id": "x_over_ear",
+        "segment": "budget_quality",
+        "eligible": 90,
+        "relevant": 90,
+        "similarity_top5": [
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "6c469f28-2c1d-5284-b4d5-5e583e77f167",
+          "3539612b-352c-515d-b0ec-96738472b194",
+          "93e2e507-a649-5c68-99e9-421de4781858"
+        ],
+        "rerank_top5": [
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "6c469f28-2c1d-5284-b4d5-5e583e77f167",
+          "3539612b-352c-515d-b0ec-96738472b194",
+          "93e2e507-a649-5c68-99e9-421de4781858"
+        ],
+        "recall@5_similarity": 0.0556,
+        "recall@5_rerank": 0.0556
+      },
+      {
+        "query_id": "x_bt",
+        "segment": "budget_quality",
+        "eligible": 80,
+        "relevant": 80,
+        "similarity_top5": [
+          "136c8f16-e1c6-5313-afa4-d0fc0dee26da",
+          "004ab728-cbb9-5246-a3ee-fb293675231e",
+          "b5a2c752-3b7b-59c8-8df5-7abd08d3b7b5",
+          "168e7a1d-3e17-5ba2-992b-db1062ffcaab",
+          "9498dc72-89b8-5d39-b176-bc20d8b03866"
+        ],
+        "rerank_top5": [
+          "136c8f16-e1c6-5313-afa4-d0fc0dee26da",
+          "004ab728-cbb9-5246-a3ee-fb293675231e",
+          "b5a2c752-3b7b-59c8-8df5-7abd08d3b7b5",
+          "168e7a1d-3e17-5ba2-992b-db1062ffcaab",
+          "9498dc72-89b8-5d39-b176-bc20d8b03866"
+        ],
+        "recall@5_similarity": 0.0625,
+        "recall@5_rerank": 0.0625
+      },
+      {
+        "query_id": "x_mix",
+        "segment": "commuting_portability",
+        "eligible": 45,
+        "relevant": 45,
+        "similarity_top5": [
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04",
+          "7e52f21e-f9a7-53a7-bf68-8b68e9d6423a",
+          "ac5b4516-cf24-5980-a1c1-67ed665dc4be",
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7"
+        ],
+        "rerank_top5": [
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04",
+          "7e52f21e-f9a7-53a7-bf68-8b68e9d6423a",
+          "ac5b4516-cf24-5980-a1c1-67ed665dc4be",
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7"
+        ],
+        "recall@5_similarity": 0.1111,
+        "recall@5_rerank": 0.1111
+      },
+      {
+        "query_id": "x_podcast2",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "68069933-fe27-5a52-90b4-f88cd79801cd",
+          "50b7802b-57e6-574c-8421-86d7f3ac3482",
+          "18694bad-47f2-596d-851b-69f39ab137ec",
+          "32c21b54-64f5-500f-b368-92b545ce2e3b",
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a"
+        ],
+        "rerank_top5": [
+          "68069933-fe27-5a52-90b4-f88cd79801cd",
+          "50b7802b-57e6-574c-8421-86d7f3ac3482",
+          "18694bad-47f2-596d-851b-69f39ab137ec",
+          "32c21b54-64f5-500f-b368-92b545ce2e3b",
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "x_budget_anc",
+        "segment": "budget_quality",
+        "eligible": 22,
+        "relevant": 22,
+        "similarity_top5": [
+          "07bbcacb-513a-5b99-9e9a-91f1d817c605",
+          "57d64fc7-02a2-57f2-a1a1-1c3436512184",
+          "321fea8b-fe54-5d0f-9645-76189df9067f",
+          "e621cc2a-ec53-5c23-9203-d856b089e801",
+          "23c704fc-cf58-5ebe-bc4a-8e9d58a84729"
+        ],
+        "rerank_top5": [
+          "07bbcacb-513a-5b99-9e9a-91f1d817c605",
+          "57d64fc7-02a2-57f2-a1a1-1c3436512184",
+          "321fea8b-fe54-5d0f-9645-76189df9067f",
+          "e621cc2a-ec53-5c23-9203-d856b089e801",
+          "23c704fc-cf58-5ebe-bc4a-8e9d58a84729"
+        ],
+        "recall@5_similarity": 0.2273,
+        "recall@5_rerank": 0.2273
+      },
+      {
+        "query_id": "x_game_mic_anc",
+        "segment": "work_calling",
+        "eligible": 140,
+        "relevant": 140,
+        "similarity_top5": [
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "7eca29b2-903b-5112-b966-3c63b829acd3",
+          "beb54bcc-fe43-5950-a237-bb3215d9e2f8",
+          "6c469f28-2c1d-5284-b4d5-5e583e77f167"
+        ],
+        "rerank_top5": [
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "836f59b8-a01b-583f-af01-3998d28ef3a8",
+          "402eb8a1-e2f5-50f7-af79-8e76651768c6",
+          "cadfe895-b0eb-588d-bc83-76c337118782",
+          "eca2910e-179b-5968-ace9-8948d8075407"
+        ],
+        "recall@5_similarity": 0.0357,
+        "recall@5_rerank": 0.0357
+      },
+      {
+        "query_id": "x_travel_same",
+        "segment": "long_haul_travel",
+        "eligible": 198,
+        "relevant": 198,
+        "similarity_top5": [
+          "6a3dbc0d-96aa-5c70-801a-fabedaddb603",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "236a0260-28b2-5490-8f9f-45cf4e250b05",
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "0a74d876-5a4a-54ed-8ce3-931e93648ce3"
+        ],
+        "rerank_top5": [
+          "f997a9a6-d7fe-5a33-ba13-3c876b5c3f51",
+          "28024296-64c8-540f-b32c-20f27aaa0ff6",
+          "14232e85-2dfc-5e98-9927-d401c8a9d435",
+          "72417fbc-2d35-5357-8946-60d010ea283e",
+          "df3b4d3c-cc30-5eea-a0fb-3a286228a6ec"
+        ],
+        "recall@5_similarity": 0.0253,
+        "recall@5_rerank": 0.0253
+      },
+      {
+        "query_id": "x_two_day",
+        "segment": "budget_quality",
+        "eligible": 57,
+        "relevant": 57,
+        "similarity_top5": [
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "3539612b-352c-515d-b0ec-96738472b194",
+          "8572fe62-68d1-54e5-99cf-4d17d5e79948",
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7",
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693"
+        ],
+        "rerank_top5": [
+          "4e01287b-508d-5ce5-bb8f-03fcb4b49d46",
+          "3539612b-352c-515d-b0ec-96738472b194",
+          "8572fe62-68d1-54e5-99cf-4d17d5e79948",
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7",
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693"
+        ],
+        "recall@5_similarity": 0.0877,
+        "recall@5_rerank": 0.0877
+      },
+      {
+        "query_id": "x_abs_cheap",
+        "segment": "mixed_tradeoffs",
+        "eligible": 171,
+        "relevant": 171,
+        "similarity_top5": [
+          "5b9cc309-ef9a-5b86-95ac-17df570d2f85",
+          "57d64fc7-02a2-57f2-a1a1-1c3436512184",
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "04413873-0fdf-5aac-b41f-3aaa58a56a08"
+        ],
+        "rerank_top5": [
+          "5b9cc309-ef9a-5b86-95ac-17df570d2f85",
+          "57d64fc7-02a2-57f2-a1a1-1c3436512184",
+          "0f2da01c-a4a3-587e-9c30-9fc1d53660eb",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "04413873-0fdf-5aac-b41f-3aaa58a56a08"
+        ],
+        "recall@5_similarity": 0.0292,
+        "recall@5_rerank": 0.0292
+      }
+    ],
+    "hero": {
+      "query_id": "hero_stage3",
+      "eligible": 62,
+      "similarity_top5": [
+        {
+          "rank": 1,
+          "sku": "ECH-T85-BLK",
+          "product_name": "Echo Travel Pro 85",
+          "semantic_similarity": 0.3073,
+          "overall_semantic_fit": 0.7346,
+          "product_fit": 0.8568,
+          "context_fit": 0.7559,
+          "preference_fit": 0.7127,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 2,
+          "sku": "ECH-M81-SLV",
+          "product_name": "Echo Shift 81",
+          "semantic_similarity": 0.2955,
+          "overall_semantic_fit": 0.6923,
+          "product_fit": 0.7715,
+          "context_fit": 0.6564,
+          "preference_fit": 0.7619,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 3,
+          "sku": "ATL-M69-BLK",
+          "product_name": "Atlas Shift 69",
+          "semantic_similarity": 0.2754,
+          "overall_semantic_fit": 0.6541,
+          "product_fit": 0.747,
+          "context_fit": 0.6337,
+          "preference_fit": 0.6515,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 4,
+          "sku": "ZEN-M147-SLV",
+          "product_name": "Zenith Plus 147",
+          "semantic_similarity": 0.2749,
+          "overall_semantic_fit": 0.7698,
+          "product_fit": 0.8838,
+          "context_fit": 0.7776,
+          "preference_fit": 0.845,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 5,
+          "sku": "NIM-T97-SLV",
+          "product_name": "Nimbus Travel Pro 97",
+          "semantic_similarity": 0.2735,
+          "overall_semantic_fit": 0.7604,
+          "product_fit": 0.8877,
+          "context_fit": 0.7952,
+          "preference_fit": 0.7712,
+          "evidence_coverage": 1.0
+        }
+      ],
+      "rerank_top5": [
+        {
+          "rank": 1,
+          "sku": "SON-T32-SLV",
+          "product_name": "Sonic Cabin 32",
+          "semantic_similarity": 0.2667,
+          "overall_semantic_fit": 0.8202,
+          "product_fit": 0.9372,
+          "context_fit": 0.8799,
+          "preference_fit": 0.8954,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 2,
+          "sku": "ATL-T72-BLK",
+          "product_name": "Atlas Cabin 72",
+          "semantic_similarity": 0.2184,
+          "overall_semantic_fit": 0.8195,
+          "product_fit": 0.9441,
+          "context_fit": 0.9108,
+          "preference_fit": 0.8792,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 3,
+          "sku": "NOV-T19-WHT",
+          "product_name": "Nova Fold 19",
+          "semantic_similarity": 0.2593,
+          "overall_semantic_fit": 0.7829,
+          "product_fit": 0.906,
+          "context_fit": 0.8143,
+          "preference_fit": 0.8431,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 4,
+          "sku": "SON-S38-BLK",
+          "product_name": "Sonic Sport 38",
+          "semantic_similarity": 0.2288,
+          "overall_semantic_fit": 0.7818,
+          "product_fit": 0.913,
+          "context_fit": 0.7943,
+          "preference_fit": 0.875,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 5,
+          "sku": "NOV-T19-SLV",
+          "product_name": "Nova Fold 19",
+          "semantic_similarity": 0.2481,
+          "overall_semantic_fit": 0.7809,
+          "product_fit": 0.907,
+          "context_fit": 0.8446,
+          "preference_fit": 0.8023,
+          "evidence_coverage": 1.0
+        }
+      ]
+    }
+  },
+  "semantic": {
+    "provider": "sentence_transformer",
+    "model": "BAAI/bge-small-en-v1.5",
+    "dimension": 384,
+    "document_version": "product_semantic.v1",
+    "ranked_cases": 32,
+    "hard_constraint_violations": 0,
+    "hard_constraint_violation_rate": 0.0,
+    "similarity": {
+      "recall@1": 0.0105,
+      "recall@3": 0.031,
+      "recall@5": 0.052,
+      "precision@1": 1.0,
+      "precision@3": 0.9896,
+      "precision@5": 0.9938,
+      "mrr": 1.0,
+      "ndcg@3": 0.9754,
+      "ndcg@5": 0.9784,
+      "no_result": 0.0
+    },
+    "rerank": {
+      "recall@1": 0.0105,
+      "recall@3": 0.0307,
+      "recall@5": 0.0517,
+      "precision@1": 1.0,
+      "precision@3": 0.9792,
+      "precision@5": 0.9875,
+      "mrr": 1.0,
+      "ndcg@3": 0.9745,
+      "ndcg@5": 0.9777,
+      "no_result": 0.0
+    },
+    "by_segment": {
+      "battery_endurance": {
+        "similarity": {
+          "recall@1": 0.0093,
+          "recall@3": 0.0278,
+          "recall@5": 0.0463,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0093,
+          "recall@3": 0.0278,
+          "recall@5": 0.0463,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "budget_quality": {
+        "similarity": {
+          "recall@1": 0.0169,
+          "recall@3": 0.0506,
+          "recall@5": 0.0843,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0169,
+          "recall@3": 0.0506,
+          "recall@5": 0.0843,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "commuting_portability": {
+        "similarity": {
+          "recall@1": 0.0106,
+          "recall@3": 0.0317,
+          "recall@5": 0.0528,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 0.9516,
+          "ndcg@5": 0.9525,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0106,
+          "recall@3": 0.0293,
+          "recall@5": 0.0504,
+          "precision@1": 1.0,
+          "precision@3": 0.9444,
+          "precision@5": 0.9667,
+          "mrr": 1.0,
+          "ndcg@3": 0.9387,
+          "ndcg@5": 0.9485,
+          "no_result": 0.0
+        }
+      },
+      "exercise": {
+        "similarity": {
+          "recall@1": 0.0034,
+          "recall@3": 0.0101,
+          "recall@5": 0.0168,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0034,
+          "recall@3": 0.0101,
+          "recall@5": 0.0168,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "long_haul_travel": {
+        "similarity": {
+          "recall@1": 0.0051,
+          "recall@3": 0.0152,
+          "recall@5": 0.0253,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0051,
+          "recall@3": 0.0152,
+          "recall@5": 0.0253,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "mixed_tradeoffs": {
+        "similarity": {
+          "recall@1": 0.0064,
+          "recall@3": 0.0192,
+          "recall@5": 0.032,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0064,
+          "recall@3": 0.0192,
+          "recall@5": 0.032,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      },
+      "reliability": {
+        "similarity": {
+          "recall@1": 0.015,
+          "recall@3": 0.0369,
+          "recall@5": 0.067,
+          "precision@1": 1.0,
+          "precision@3": 0.8333,
+          "precision@5": 0.9,
+          "mrr": 1.0,
+          "ndcg@3": 0.7518,
+          "ndcg@5": 0.7963,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.015,
+          "recall@3": 0.0383,
+          "recall@5": 0.0684,
+          "precision@1": 1.0,
+          "precision@3": 0.8333,
+          "precision@5": 0.9,
+          "mrr": 1.0,
+          "ndcg@3": 0.7751,
+          "ndcg@5": 0.7978,
+          "no_result": 0.0
+        }
+      },
+      "work_calling": {
+        "similarity": {
+          "recall@1": 0.0043,
+          "recall@3": 0.013,
+          "recall@5": 0.0217,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        },
+        "rerank": {
+          "recall@1": 0.0043,
+          "recall@3": 0.013,
+          "recall@5": 0.0217,
+          "precision@1": 1.0,
+          "precision@3": 1.0,
+          "precision@5": 1.0,
+          "mrr": 1.0,
+          "ndcg@3": 1.0,
+          "ndcg@5": 1.0,
+          "no_result": 0.0
+        }
+      }
+    },
+    "latency_ms": {
+      "profile": 0.005,
+      "query_embed": 30.213,
+      "retrieve_similarity_ms": 13.089,
+      "rerank_ms": 14.18,
+      "match_warm_ms": 27.274
+    },
+    "cases": [
+      {
+        "query_id": "hero_stage2",
+        "segment": "reliability",
+        "eligible": 74,
+        "relevant": 73,
+        "similarity_top5": [
+          "c00daae4-6bbc-531c-967b-5b7053796432",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "0935d5ae-cbe4-543f-beee-9c06f5ff7566",
+          "5372b424-c932-55dd-a951-049a889fe7b1",
+          "2e010b6e-decb-5b20-bdfe-2f4334e27625"
+        ],
+        "rerank_top5": [
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693",
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "7e52f21e-f9a7-53a7-bf68-8b68e9d6423a",
+          "c30ecb7f-76f3-573c-979f-338479107bab",
+          "dcee6775-a930-5537-9c47-556477850f91"
+        ],
+        "recall@5_similarity": 0.0685,
+        "recall@5_rerank": 0.0548
+      },
+      {
+        "query_id": "hero_stage3",
+        "segment": "reliability",
+        "eligible": 62,
+        "relevant": 61,
+        "similarity_top5": [
+          "c00daae4-6bbc-531c-967b-5b7053796432",
+          "5372b424-c932-55dd-a951-049a889fe7b1",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "72417fbc-2d35-5357-8946-60d010ea283e"
+        ],
+        "rerank_top5": [
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693",
+          "72417fbc-2d35-5357-8946-60d010ea283e",
+          "f2988006-f06a-5f0f-b354-7022b6dd89c6",
+          "c30ecb7f-76f3-573c-979f-338479107bab"
+        ],
+        "recall@5_similarity": 0.0656,
+        "recall@5_rerank": 0.082
+      },
+      {
+        "query_id": "commute",
+        "segment": "commuting_portability",
+        "eligible": 72,
+        "relevant": 70,
+        "similarity_top5": [
+          "17cf989f-6306-517a-9f85-8078e38ea2e7",
+          "ac5b4516-cf24-5980-a1c1-67ed665dc4be",
+          "51bacd87-c221-5919-8ccc-4f084a88e6ed",
+          "d3c694bc-0ef4-5438-84c1-3c82472a29dd",
+          "72417fbc-2d35-5357-8946-60d010ea283e"
+        ],
+        "rerank_top5": [
+          "72417fbc-2d35-5357-8946-60d010ea283e",
+          "7077378e-ffa9-598d-8bde-89f06b70a43d",
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "d8151ef5-9f21-5e41-a5b3-5eb7f53ef77e"
+        ],
+        "recall@5_similarity": 0.0714,
+        "recall@5_rerank": 0.0571
+      },
+      {
+        "query_id": "office",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "27728878-2805-592a-9601-f08e7c77697c",
+          "17c69e7e-46de-58d8-aca0-1f1aaefbc086",
+          "23c704fc-cf58-5ebe-bc4a-8e9d58a84729",
+          "8ac135ab-1703-5677-968f-b315b1289fec",
+          "56caaaa4-0e13-59c8-9012-73dcce88486e"
+        ],
+        "rerank_top5": [
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "402eb8a1-e2f5-50f7-af79-8e76651768c6",
+          "8fa34f98-08c7-5d28-8c4c-a0cf30549029",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "8967cfd4-6f76-53fd-bc80-3c6f243cc158"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "gaming",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "6a78cace-916b-512a-8a8b-d53377ccb3fd",
+          "6f68852a-7cb7-59b2-b256-71d19fda09c2",
+          "2f922c9f-093b-5ff1-912f-df484ea2162b",
+          "ff7626fb-15d7-5f6f-a756-2fff885f3760",
+          "3432978c-1d83-5ab3-926b-d2ebca402f3a"
+        ],
+        "rerank_top5": [
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "e61a49c2-5439-596c-8689-3ba06cef854b",
+          "8967cfd4-6f76-53fd-bc80-3c6f243cc158",
+          "402eb8a1-e2f5-50f7-af79-8e76651768c6"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "budget",
+        "segment": "budget_quality",
+        "eligible": 40,
+        "relevant": 40,
+        "similarity_top5": [
+          "da720106-d88a-5ed2-898a-2442e7dee48a",
+          "fdf2ef86-3e01-55fd-b509-a289eb728408",
+          "b2972171-1596-5c07-b84e-4544b81eb8b2",
+          "de143783-4e80-50e8-8a43-db87ca97b04f",
+          "ceed1f6b-78dc-5f13-bcf2-aff6272760cf"
+        ],
+        "rerank_top5": [
+          "da720106-d88a-5ed2-898a-2442e7dee48a",
+          "fdf2ef86-3e01-55fd-b509-a289eb728408",
+          "b2972171-1596-5c07-b84e-4544b81eb8b2",
+          "de143783-4e80-50e8-8a43-db87ca97b04f",
+          "ceed1f6b-78dc-5f13-bcf2-aff6272760cf"
+        ],
+        "recall@5_similarity": 0.125,
+        "recall@5_rerank": 0.125
+      },
+      {
+        "query_id": "podcast",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "c17ce9ad-a057-523e-9c68-6290bc6702cc",
+          "8ac135ab-1703-5677-968f-b315b1289fec",
+          "236a0260-28b2-5490-8f9f-45cf4e250b05",
+          "d5dd4355-e98a-50c9-8e45-9984208290b3",
+          "9af31109-ac87-5a4a-96e2-bcabb77e8ef2"
+        ],
+        "rerank_top5": [
+          "c17ce9ad-a057-523e-9c68-6290bc6702cc",
+          "8ac135ab-1703-5677-968f-b315b1289fec",
+          "236a0260-28b2-5490-8f9f-45cf4e250b05",
+          "d5dd4355-e98a-50c9-8e45-9984208290b3",
+          "9af31109-ac87-5a4a-96e2-bcabb77e8ef2"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "fold_travel",
+        "segment": "commuting_portability",
+        "eligible": 182,
+        "relevant": 176,
+        "similarity_top5": [
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "d9830cb9-facb-59d7-b16d-729787c592a6",
+          "5958a9c0-b965-590b-8b56-7d71e5ea9ca7",
+          "53f1272f-1fc8-5375-97ad-521253a6e63c",
+          "eca2910e-179b-5968-ace9-8948d8075407"
+        ],
+        "rerank_top5": [
+          "d779a638-02ae-5bf5-98ba-ff781d79f0f7",
+          "234c3571-00fe-5592-ab09-6c77156ba298",
+          "557eef8b-7655-5f77-a80f-da5cc854f1a3",
+          "fe905bb7-2926-57d4-a015-862d28f6799e",
+          "463477b0-71b3-57fa-883e-454039c4ee98"
+        ],
+        "recall@5_similarity": 0.0284,
+        "recall@5_rerank": 0.0284
+      },
+      {
+        "query_id": "same_day_wireless",
+        "segment": "budget_quality",
+        "eligible": 102,
+        "relevant": 102,
+        "similarity_top5": [
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a",
+          "ffa331b4-f941-5027-a47c-1a05ee74a224",
+          "b812a581-6fd8-59c4-a6dd-7ff53a5716a5",
+          "756a4b1d-bebd-5ab1-91e8-ab598031e40a",
+          "f0bc27b2-7533-5c5f-83a8-f40f9228a879"
+        ],
+        "rerank_top5": [
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a",
+          "ffa331b4-f941-5027-a47c-1a05ee74a224",
+          "b812a581-6fd8-59c4-a6dd-7ff53a5716a5",
+          "756a4b1d-bebd-5ab1-91e8-ab598031e40a",
+          "f0bc27b2-7533-5c5f-83a8-f40f9228a879"
+        ],
+        "recall@5_similarity": 0.049,
+        "recall@5_rerank": 0.049
+      },
+      {
+        "query_id": "sydney_flight",
+        "segment": "budget_quality",
+        "eligible": 74,
+        "relevant": 74,
+        "similarity_top5": [
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "c00daae4-6bbc-531c-967b-5b7053796432",
+          "51e207fa-f599-5d07-b2be-915117ca527c",
+          "5372b424-c932-55dd-a951-049a889fe7b1",
+          "de175e10-aed2-5694-8156-59861fc191d4"
+        ],
+        "rerank_top5": [
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693",
+          "dcee6775-a930-5537-9c47-556477850f91",
+          "7e52f21e-f9a7-53a7-bf68-8b68e9d6423a",
+          "17cf989f-6306-517a-9f85-8078e38ea2e7"
+        ],
+        "recall@5_similarity": 0.0676,
+        "recall@5_rerank": 0.0676
+      },
+      {
+        "query_id": "x_office_anc",
+        "segment": "work_calling",
+        "eligible": 171,
+        "relevant": 171,
+        "similarity_top5": [
+          "3260f191-5ab5-5234-b891-833ea4733ca2",
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "56caaaa4-0e13-59c8-9012-73dcce88486e",
+          "42796fa9-43e4-52ea-b5b4-fa27a732fafc",
+          "920de88f-d7d6-525f-8397-dbfeb6073784"
+        ],
+        "rerank_top5": [
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "402eb8a1-e2f5-50f7-af79-8e76651768c6",
+          "d0642bd7-f873-596f-84b2-75e432f18943",
+          "8fa34f98-08c7-5d28-8c4c-a0cf30549029"
+        ],
+        "recall@5_similarity": 0.0292,
+        "recall@5_rerank": 0.0292
+      },
+      {
+        "query_id": "x_commute_fold",
+        "segment": "commuting_portability",
+        "eligible": 182,
+        "relevant": 182,
+        "similarity_top5": [
+          "5f1ca70a-b7c9-564b-aa05-9bca6a29b21b",
+          "cadfe895-b0eb-588d-bc83-76c337118782",
+          "50309bc6-544a-5901-be88-8ff12c30d185",
+          "99e760d3-6c81-59c9-9f9b-ca16beb8a307",
+          "42796fa9-43e4-52ea-b5b4-fa27a732fafc"
+        ],
+        "rerank_top5": [
+          "42796fa9-43e4-52ea-b5b4-fa27a732fafc",
+          "557eef8b-7655-5f77-a80f-da5cc854f1a3",
+          "8c120e7a-648a-5f6b-9325-8b2831b1321d",
+          "e949a798-a177-544d-9002-331e0f491a85",
+          "39c57c26-6168-5093-8964-20faedcbf539"
+        ],
+        "recall@5_similarity": 0.0275,
+        "recall@5_rerank": 0.0275
+      },
+      {
+        "query_id": "x_stock_anc",
+        "segment": "mixed_tradeoffs",
+        "eligible": 144,
+        "relevant": 144,
+        "similarity_top5": [
+          "920de88f-d7d6-525f-8397-dbfeb6073784",
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "9d6fcb10-0fcb-509e-aecc-fcdede997c03"
+        ],
+        "rerank_top5": [
+          "920de88f-d7d6-525f-8397-dbfeb6073784",
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "f2988006-f06a-5f0f-b354-7022b6dd89c6"
+        ],
+        "recall@5_similarity": 0.0347,
+        "recall@5_rerank": 0.0347
+      },
+      {
+        "query_id": "x_mic_calls",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "c17ce9ad-a057-523e-9c68-6290bc6702cc",
+          "8ac135ab-1703-5677-968f-b315b1289fec",
+          "236a0260-28b2-5490-8f9f-45cf4e250b05",
+          "d5dd4355-e98a-50c9-8e45-9984208290b3",
+          "9af31109-ac87-5a4a-96e2-bcabb77e8ef2"
+        ],
+        "rerank_top5": [
+          "c17ce9ad-a057-523e-9c68-6290bc6702cc",
+          "8ac135ab-1703-5677-968f-b315b1289fec",
+          "236a0260-28b2-5490-8f9f-45cf4e250b05",
+          "d5dd4355-e98a-50c9-8e45-9984208290b3",
+          "9af31109-ac87-5a4a-96e2-bcabb77e8ef2"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "x_under_150",
+        "segment": "budget_quality",
+        "eligible": 73,
+        "relevant": 73,
+        "similarity_top5": [
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a",
+          "f0bc27b2-7533-5c5f-83a8-f40f9228a879",
+          "136c8f16-e1c6-5313-afa4-d0fc0dee26da",
+          "9dab2400-f076-540b-a1b3-4f6311fe17ea",
+          "1354a65e-b079-548d-83df-47c342688dcf"
+        ],
+        "rerank_top5": [
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a",
+          "f0bc27b2-7533-5c5f-83a8-f40f9228a879",
+          "9dab2400-f076-540b-a1b3-4f6311fe17ea",
+          "136c8f16-e1c6-5313-afa4-d0fc0dee26da",
+          "ceed1f6b-78dc-5f13-bcf2-aff6272760cf"
+        ],
+        "recall@5_similarity": 0.0685,
+        "recall@5_rerank": 0.0685
+      },
+      {
+        "query_id": "x_or_less",
+        "segment": "budget_quality",
+        "eligible": 114,
+        "relevant": 114,
+        "similarity_top5": [
+          "920de88f-d7d6-525f-8397-dbfeb6073784",
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119"
+        ],
+        "rerank_top5": [
+          "920de88f-d7d6-525f-8397-dbfeb6073784",
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119"
+        ],
+        "recall@5_similarity": 0.0439,
+        "recall@5_rerank": 0.0439
+      },
+      {
+        "query_id": "x_more_battery",
+        "segment": "battery_endurance",
+        "eligible": 187,
+        "relevant": 187,
+        "similarity_top5": [
+          "d74ebd39-6daa-57e0-b449-2d13710f5e82",
+          "00a19c8f-cc60-596b-aca6-50d8e15ed425",
+          "1a1a874d-8bf3-58b4-8ed0-53e8858bcf91",
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a",
+          "ffa331b4-f941-5027-a47c-1a05ee74a224"
+        ],
+        "rerank_top5": [
+          "d74ebd39-6daa-57e0-b449-2d13710f5e82",
+          "00a19c8f-cc60-596b-aca6-50d8e15ed425",
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a",
+          "1a1a874d-8bf3-58b4-8ed0-53e8858bcf91",
+          "ffa331b4-f941-5027-a47c-1a05ee74a224"
+        ],
+        "recall@5_similarity": 0.0267,
+        "recall@5_rerank": 0.0267
+      },
+      {
+        "query_id": "x_sports_wireless",
+        "segment": "exercise",
+        "eligible": 297,
+        "relevant": 297,
+        "similarity_top5": [
+          "c30ecb7f-76f3-573c-979f-338479107bab",
+          "8f5f2aa7-ece4-55fe-9139-9047fb458972",
+          "bf6ea206-fe65-5c40-b973-d0dbdf35036a",
+          "0511c7e8-b8af-5d2f-a982-0b9beeedfd1e",
+          "3c2a51b8-19cb-59de-9837-6fecbd710b71"
+        ],
+        "rerank_top5": [
+          "2e3dc78e-f89c-521f-8ea2-6c15ccef28d6",
+          "0411acb2-5a48-5193-97a2-f6b40abbb03d",
+          "12ce30aa-d1a6-53c0-8fd3-9c8d225cc731",
+          "22cb3c20-5d4d-56b3-a836-de91f3d3a28e",
+          "d0642bd7-f873-596f-84b2-75e432f18943"
+        ],
+        "recall@5_similarity": 0.0168,
+        "recall@5_rerank": 0.0168
+      },
+      {
+        "query_id": "x_gaming_wireless",
+        "segment": "work_calling",
+        "eligible": 297,
+        "relevant": 297,
+        "similarity_top5": [
+          "6f68852a-7cb7-59b2-b256-71d19fda09c2",
+          "ff7626fb-15d7-5f6f-a756-2fff885f3760",
+          "3432978c-1d83-5ab3-926b-d2ebca402f3a",
+          "58a90f12-5422-5f5d-8bb8-98479c0e1b1b",
+          "32c21b54-64f5-500f-b368-92b545ce2e3b"
+        ],
+        "rerank_top5": [
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "e61a49c2-5439-596c-8689-3ba06cef854b",
+          "8967cfd4-6f76-53fd-bc80-3c6f243cc158",
+          "402eb8a1-e2f5-50f7-af79-8e76651768c6"
+        ],
+        "recall@5_similarity": 0.0168,
+        "recall@5_rerank": 0.0168
+      },
+      {
+        "query_id": "x_cabin",
+        "segment": "commuting_portability",
+        "eligible": 98,
+        "relevant": 98,
+        "similarity_top5": [
+          "1d93ede6-633c-57c4-948f-03706de56547",
+          "9d6fcb10-0fcb-509e-aecc-fcdede997c03",
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "234c3571-00fe-5592-ab09-6c77156ba298",
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7"
+        ],
+        "rerank_top5": [
+          "1d93ede6-633c-57c4-948f-03706de56547",
+          "9d6fcb10-0fcb-509e-aecc-fcdede997c03",
+          "39c57c26-6168-5093-8964-20faedcbf539",
+          "234c3571-00fe-5592-ab09-6c77156ba298",
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7"
+        ],
+        "recall@5_similarity": 0.051,
+        "recall@5_rerank": 0.051
+      },
+      {
+        "query_id": "x_short_trip",
+        "segment": "commuting_portability",
+        "eligible": 182,
+        "relevant": 182,
+        "similarity_top5": [
+          "d9830cb9-facb-59d7-b16d-729787c592a6",
+          "557eef8b-7655-5f77-a80f-da5cc854f1a3",
+          "14232e85-2dfc-5e98-9927-d401c8a9d435",
+          "53f1272f-1fc8-5375-97ad-521253a6e63c",
+          "8ccd3206-6470-5253-b108-d4ac2969ff57"
+        ],
+        "rerank_top5": [
+          "557eef8b-7655-5f77-a80f-da5cc854f1a3",
+          "7f30b169-1639-57a2-b4c0-7e1802b7bfee",
+          "12d6f359-bb6a-5b0f-9af2-745a16991413",
+          "d9830cb9-facb-59d7-b16d-729787c592a6",
+          "53f1272f-1fc8-5375-97ad-521253a6e63c"
+        ],
+        "recall@5_similarity": 0.0275,
+        "recall@5_rerank": 0.0275
+      },
+      {
+        "query_id": "x_freq_travel",
+        "segment": "budget_quality",
+        "eligible": 90,
+        "relevant": 90,
+        "similarity_top5": [
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "50309bc6-544a-5901-be88-8ff12c30d185",
+          "c00daae4-6bbc-531c-967b-5b7053796432",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04",
+          "30cb8ac4-bef9-5458-86a9-2b83d50d478e"
+        ],
+        "rerank_top5": [
+          "72417fbc-2d35-5357-8946-60d010ea283e",
+          "9d6fcb10-0fcb-509e-aecc-fcdede997c03",
+          "17cf989f-6306-517a-9f85-8078e38ea2e7",
+          "c9857db0-384a-593f-b8fb-a2772f60fe5c",
+          "c00daae4-6bbc-531c-967b-5b7053796432"
+        ],
+        "recall@5_similarity": 0.0556,
+        "recall@5_rerank": 0.0556
+      },
+      {
+        "query_id": "x_battery_40",
+        "segment": "battery_endurance",
+        "eligible": 76,
+        "relevant": 76,
+        "similarity_top5": [
+          "ffa331b4-f941-5027-a47c-1a05ee74a224",
+          "db9be258-1031-5788-a9e0-853a92741519",
+          "7f30b169-1639-57a2-b4c0-7e1802b7bfee",
+          "e61a49c2-5439-596c-8689-3ba06cef854b",
+          "5de02a81-26fd-5599-8c6d-32f17084be95"
+        ],
+        "rerank_top5": [
+          "ffa331b4-f941-5027-a47c-1a05ee74a224",
+          "db9be258-1031-5788-a9e0-853a92741519",
+          "7f30b169-1639-57a2-b4c0-7e1802b7bfee",
+          "e61a49c2-5439-596c-8689-3ba06cef854b",
+          "5de02a81-26fd-5599-8c6d-32f17084be95"
+        ],
+        "recall@5_similarity": 0.0658,
+        "recall@5_rerank": 0.0658
+      },
+      {
+        "query_id": "x_over_ear",
+        "segment": "budget_quality",
+        "eligible": 90,
+        "relevant": 90,
+        "similarity_top5": [
+          "920de88f-d7d6-525f-8397-dbfeb6073784",
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "9d6fcb10-0fcb-509e-aecc-fcdede997c03",
+          "f2988006-f06a-5f0f-b354-7022b6dd89c6"
+        ],
+        "rerank_top5": [
+          "920de88f-d7d6-525f-8397-dbfeb6073784",
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "f2988006-f06a-5f0f-b354-7022b6dd89c6",
+          "9d6fcb10-0fcb-509e-aecc-fcdede997c03"
+        ],
+        "recall@5_similarity": 0.0556,
+        "recall@5_rerank": 0.0556
+      },
+      {
+        "query_id": "x_bt",
+        "segment": "budget_quality",
+        "eligible": 80,
+        "relevant": 80,
+        "similarity_top5": [
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a",
+          "ffa331b4-f941-5027-a47c-1a05ee74a224",
+          "78c61e11-6a99-5584-b103-ec8c1b9c36d2",
+          "f0bc27b2-7533-5c5f-83a8-f40f9228a879",
+          "1938e48f-ba8b-589b-ae4e-cf59553b4f18"
+        ],
+        "rerank_top5": [
+          "19e6024c-1699-5b5f-98aa-657c91fd5a6a",
+          "ffa331b4-f941-5027-a47c-1a05ee74a224",
+          "78c61e11-6a99-5584-b103-ec8c1b9c36d2",
+          "f0bc27b2-7533-5c5f-83a8-f40f9228a879",
+          "1938e48f-ba8b-589b-ae4e-cf59553b4f18"
+        ],
+        "recall@5_similarity": 0.0625,
+        "recall@5_rerank": 0.0625
+      },
+      {
+        "query_id": "x_mix",
+        "segment": "commuting_portability",
+        "eligible": 45,
+        "relevant": 45,
+        "similarity_top5": [
+          "9d6fcb10-0fcb-509e-aecc-fcdede997c03",
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693",
+          "dcee6775-a930-5537-9c47-556477850f91"
+        ],
+        "rerank_top5": [
+          "9d6fcb10-0fcb-509e-aecc-fcdede997c03",
+          "e031da35-1753-51e5-a0d4-3561ab16a8d7",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "b2979e78-28c0-5a1b-b7d6-d57bffb2f693",
+          "dcee6775-a930-5537-9c47-556477850f91"
+        ],
+        "recall@5_similarity": 0.1111,
+        "recall@5_rerank": 0.1111
+      },
+      {
+        "query_id": "x_podcast2",
+        "segment": "work_calling",
+        "eligible": 273,
+        "relevant": 273,
+        "similarity_top5": [
+          "c17ce9ad-a057-523e-9c68-6290bc6702cc",
+          "8ac135ab-1703-5677-968f-b315b1289fec",
+          "236a0260-28b2-5490-8f9f-45cf4e250b05",
+          "d5dd4355-e98a-50c9-8e45-9984208290b3",
+          "9af31109-ac87-5a4a-96e2-bcabb77e8ef2"
+        ],
+        "rerank_top5": [
+          "c17ce9ad-a057-523e-9c68-6290bc6702cc",
+          "8ac135ab-1703-5677-968f-b315b1289fec",
+          "236a0260-28b2-5490-8f9f-45cf4e250b05",
+          "d5dd4355-e98a-50c9-8e45-9984208290b3",
+          "9af31109-ac87-5a4a-96e2-bcabb77e8ef2"
+        ],
+        "recall@5_similarity": 0.0183,
+        "recall@5_rerank": 0.0183
+      },
+      {
+        "query_id": "x_budget_anc",
+        "segment": "budget_quality",
+        "eligible": 22,
+        "relevant": 22,
+        "similarity_top5": [
+          "b3366f7c-109e-50ae-b1ea-1e34369a9e72",
+          "7077378e-ffa9-598d-8bde-89f06b70a43d",
+          "23c704fc-cf58-5ebe-bc4a-8e9d58a84729",
+          "8317f398-952c-57f3-ba33-d89a6c70babd",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04"
+        ],
+        "rerank_top5": [
+          "b3366f7c-109e-50ae-b1ea-1e34369a9e72",
+          "23c704fc-cf58-5ebe-bc4a-8e9d58a84729",
+          "7077378e-ffa9-598d-8bde-89f06b70a43d",
+          "8317f398-952c-57f3-ba33-d89a6c70babd",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04"
+        ],
+        "recall@5_similarity": 0.2273,
+        "recall@5_rerank": 0.2273
+      },
+      {
+        "query_id": "x_game_mic_anc",
+        "segment": "work_calling",
+        "eligible": 140,
+        "relevant": 140,
+        "similarity_top5": [
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "3432978c-1d83-5ab3-926b-d2ebca402f3a",
+          "c17ce9ad-a057-523e-9c68-6290bc6702cc",
+          "32c21b54-64f5-500f-b368-92b545ce2e3b",
+          "bd5eaacc-6e75-53f2-9317-e4d06825f489"
+        ],
+        "rerank_top5": [
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119",
+          "e61a49c2-5439-596c-8689-3ba06cef854b",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "402eb8a1-e2f5-50f7-af79-8e76651768c6",
+          "836f59b8-a01b-583f-af01-3998d28ef3a8"
+        ],
+        "recall@5_similarity": 0.0357,
+        "recall@5_rerank": 0.0357
+      },
+      {
+        "query_id": "x_travel_same",
+        "segment": "long_haul_travel",
+        "eligible": 198,
+        "relevant": 198,
+        "similarity_top5": [
+          "a5fc5476-ca10-5e71-8659-0a5c6b6d5da1",
+          "d9830cb9-facb-59d7-b16d-729787c592a6",
+          "eca2910e-179b-5968-ace9-8948d8075407",
+          "bfa8f9a0-1265-5ee3-a1d9-f1e051910b6a",
+          "28024296-64c8-540f-b32c-20f27aaa0ff6"
+        ],
+        "rerank_top5": [
+          "14232e85-2dfc-5e98-9927-d401c8a9d435",
+          "28024296-64c8-540f-b32c-20f27aaa0ff6",
+          "42796fa9-43e4-52ea-b5b4-fa27a732fafc",
+          "f997a9a6-d7fe-5a33-ba13-3c876b5c3f51",
+          "53f1272f-1fc8-5375-97ad-521253a6e63c"
+        ],
+        "recall@5_similarity": 0.0253,
+        "recall@5_rerank": 0.0253
+      },
+      {
+        "query_id": "x_two_day",
+        "segment": "budget_quality",
+        "eligible": 57,
+        "relevant": 57,
+        "similarity_top5": [
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "b0af6dc7-d204-5e41-8e06-00385eb17d24",
+          "72417fbc-2d35-5357-8946-60d010ea283e",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04"
+        ],
+        "rerank_top5": [
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "237e5302-7cee-5aba-8388-5ba8d5067ea5",
+          "b0af6dc7-d204-5e41-8e06-00385eb17d24",
+          "c42e51c1-db1a-598a-ae8e-7be380854e04",
+          "3260f191-5ab5-5234-b891-833ea4733ca2"
+        ],
+        "recall@5_similarity": 0.0877,
+        "recall@5_rerank": 0.0877
+      },
+      {
+        "query_id": "x_abs_cheap",
+        "segment": "mixed_tradeoffs",
+        "eligible": 171,
+        "relevant": 171,
+        "similarity_top5": [
+          "b3366f7c-109e-50ae-b1ea-1e34369a9e72",
+          "1d93ede6-633c-57c4-948f-03706de56547",
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "c9201b13-6131-508b-83da-573e5b7e3bb9",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119"
+        ],
+        "rerank_top5": [
+          "b3366f7c-109e-50ae-b1ea-1e34369a9e72",
+          "1d93ede6-633c-57c4-948f-03706de56547",
+          "10d90115-acf4-5e49-b7b0-a211122dfba0",
+          "c9201b13-6131-508b-83da-573e5b7e3bb9",
+          "c9168a3d-f0dd-5df0-813e-0de9b2b06119"
+        ],
+        "recall@5_similarity": 0.0292,
+        "recall@5_rerank": 0.0292
+      }
+    ],
+    "index_encode_s": 1.277,
+    "cold_load_ms": 416.6708750126418,
+    "hero": {
+      "query_id": "hero_stage3",
+      "eligible": 62,
+      "similarity_top5": [
+        {
+          "rank": 1,
+          "sku": "ECH-T85-BLK",
+          "product_name": "Echo Travel Pro 85",
+          "semantic_similarity": 0.6795,
+          "overall_semantic_fit": 0.7905,
+          "product_fit": 0.8568,
+          "context_fit": 0.7559,
+          "preference_fit": 0.7127,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 2,
+          "sku": "ATL-M69-BLK",
+          "product_name": "Atlas Shift 69",
+          "semantic_similarity": 0.6651,
+          "overall_semantic_fit": 0.7126,
+          "product_fit": 0.747,
+          "context_fit": 0.6337,
+          "preference_fit": 0.6515,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 3,
+          "sku": "VRV-T45-BLK",
+          "product_name": "Verve Travel Pro 45",
+          "semantic_similarity": 0.6635,
+          "overall_semantic_fit": 0.7496,
+          "product_fit": 0.8377,
+          "context_fit": 0.6929,
+          "preference_fit": 0.6954,
+          "evidence_coverage": 0.8647
+        },
+        {
+          "rank": 4,
+          "sku": "ATL-T72-BLK",
+          "product_name": "Atlas Cabin 72",
+          "semantic_similarity": 0.6601,
+          "overall_semantic_fit": 0.8858,
+          "product_fit": 0.9441,
+          "context_fit": 0.9108,
+          "preference_fit": 0.8792,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 5,
+          "sku": "NOV-T19-SLV",
+          "product_name": "Nova Fold 19",
+          "semantic_similarity": 0.6572,
+          "overall_semantic_fit": 0.8423,
+          "product_fit": 0.907,
+          "context_fit": 0.8446,
+          "preference_fit": 0.8023,
+          "evidence_coverage": 1.0
+        }
+      ],
+      "rerank_top5": [
+        {
+          "rank": 1,
+          "sku": "ATL-T72-BLK",
+          "product_name": "Atlas Cabin 72",
+          "semantic_similarity": 0.6601,
+          "overall_semantic_fit": 0.8858,
+          "product_fit": 0.9441,
+          "context_fit": 0.9108,
+          "preference_fit": 0.8792,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 2,
+          "sku": "SON-T32-SLV",
+          "product_name": "Sonic Cabin 32",
+          "semantic_similarity": 0.6547,
+          "overall_semantic_fit": 0.8784,
+          "product_fit": 0.9372,
+          "context_fit": 0.8799,
+          "preference_fit": 0.8954,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 3,
+          "sku": "NOV-T19-SLV",
+          "product_name": "Nova Fold 19",
+          "semantic_similarity": 0.6572,
+          "overall_semantic_fit": 0.8423,
+          "product_fit": 0.907,
+          "context_fit": 0.8446,
+          "preference_fit": 0.8023,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 4,
+          "sku": "NOV-T19-WHT",
+          "product_name": "Nova Fold 19",
+          "semantic_similarity": 0.6491,
+          "overall_semantic_fit": 0.8414,
+          "product_fit": 0.906,
+          "context_fit": 0.8143,
+          "preference_fit": 0.8431,
+          "evidence_coverage": 1.0
+        },
+        {
+          "rank": 5,
+          "sku": "SON-S38-BLK",
+          "product_name": "Sonic Sport 38",
+          "semantic_similarity": 0.6133,
+          "overall_semantic_fit": 0.8395,
+          "product_fit": 0.913,
+          "context_fit": 0.7943,
+          "preference_fit": 0.875,
+          "evidence_coverage": 1.0
+        }
+      ]
+    }
+  },
+  "semantic_resolution": {
+    "provider_requested": "sentence_transformer",
+    "provider_used": "sentence_transformer",
+    "model": "BAAI/bge-small-en-v1.5",
+    "dimension": 384,
+    "fallback_used": false,
+    "fallback_reason": null,
+    "retrieval_version": "eligible-cosine.v1",
+    "rerank_version": "grounded-rerank.v1"
+  },
+  "stability": {
+    "compared_queries": 32,
+    "top1_changed_rate": 0.9062,
+    "top3_overlap": 0.2396,
+    "top5_overlap": 0.35
+  },
+  "error_analysis": [
+    {
+      "query_id": "hero_stage3",
+      "segment": "reliability",
+      "kind": "reranker_recovered_weaker_embedding",
+      "hashing_recall@5": 0.082,
+      "semantic_recall@5": 0.0656
+    }
+  ],
+  "catalogue_size": 332
+}

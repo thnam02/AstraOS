@@ -10,6 +10,7 @@ os.environ.setdefault("POSTGRES_PASSWORD", "astraos")
 os.environ["POSTGRES_DB"] = "astraos_test"
 # CI and unit tests stay offline. Demo default remains llm + rule fallback.
 os.environ["INTENT_PARSER_MODE"] = "rule_based"
+os.environ["SEMANTIC_EMBEDDING_PROVIDER"] = "hashing"
 
 import pytest
 from fastapi.testclient import TestClient

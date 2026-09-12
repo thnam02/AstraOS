@@ -314,6 +314,13 @@ export type MatchResponse = {
     model: string;
     document_version: string;
     matches: RankedProductMatch[];
+    provider_requested?: string | null;
+    provider_used?: string | null;
+    dimension?: number | null;
+    fallback_used?: boolean;
+    fallback_reason?: string | null;
+    retrieval_version?: string | null;
+    rerank_version?: string | null;
   };
   timing: {
     intent_parse_ms: number;

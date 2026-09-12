@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import time
 import uuid
@@ -14,10 +13,16 @@ from app.decision.eligibility.models import ProductEligibilityResult
 from app.decision.eligibility.snapshot import VariantSnapshot, variant_to_snapshot
 from app.decision.intent.models import ShoppingIntent
 from app.decision.intent.parser import parse_intent
-from app.decision.retrieval.documents import DOCUMENT_VERSION, build_product_document
+from app.decision.retrieval.documents import (
+    DOCUMENT_VERSION,
+    ProductSemanticDocument,
+    build_product_document,
+    document_hash,
+)
 from app.decision.retrieval.embeddings import (
     EmbeddingProvider,
-    default_embedding_provider,
+    EmbeddingResolution,
+    resolve_embedding_provider,
 )
 from app.decision.retrieval.matcher import rank_eligible
 from app.decision.retrieval.models import RankedProductMatch
@@ -50,7 +55,20 @@ class SemanticMatchingService:
         self.embeddings = EmbeddingRepository(session)
         self.runs = MatchRepository(session)
         self.evaluator = EligibilityEvaluator()
-        self.provider = provider or default_embedding_provider()
+        if provider is not None:
+            self.resolution = EmbeddingResolution(
+                provider=provider,
+                requested=getattr(provider, "provider_name", "injected"),
+                used=getattr(provider, "provider_name", "injected"),
+                fallback_used=False,
+                fallback_reason=None,
+                model=provider.model_name,
+                dimension=provider.dimensions,
+            )
+            self.provider = provider
+        else:
+            self.resolution = resolve_embedding_provider()
+            self.provider = self.resolution.provider
 
     async def analyse(
         self, text: str, parser_mode: str | None = None
@@ -135,11 +153,16 @@ class SemanticMatchingService:
         top = ranked[:limit]
         run = await self._persist(raw_text, intent, results, top, summary, timing)
         logger.info(
-            "match_completed run_id=%s parser=%s checked=%s eligible=%s "
+            "match_completed run_id=%s parser=%s provider_requested=%s "
+            "provider_used=%s fallback=%s model=%s checked=%s eligible=%s "
             "matched=%s parse_ms=%.2f qualify_ms=%.2f embed_ms=%.2f "
             "rerank_ms=%.2f total_ms=%.2f",
             run.id,
             intent.parser_type,
+            self.resolution.requested,
+            self.resolution.used,
+            self.resolution.fallback_used,
+            self.provider.model_name,
             summary.variants_checked,
             summary.eligible,
             len(top),
@@ -154,11 +177,7 @@ class SemanticMatchingService:
             status=intent.status.value,
             intent=intent,
             qualification=summary,
-            semantic_matching=SemanticMatchingBlock(
-                model=self.provider.model_name,
-                document_version=DOCUMENT_VERSION,
-                matches=top,
-            ),
+            semantic_matching=self._matching_block(top),
             timing=timing,
         )
 
@@ -175,11 +194,7 @@ class SemanticMatchingService:
             status=run.status,
             intent=ShoppingIntent.model_validate(run.parsed_intent),
             qualification=run.qualification_summary,
-            semantic_matching=SemanticMatchingBlock(
-                model=run.embedding_model,
-                document_version=run.semantic_document_version,
-                matches=matches,
-            ),
+            semantic_matching=_block_from_run(run, matches),
             timing=run.timing,
             created_at=run.created_at,
         )
@@ -188,41 +203,68 @@ class SemanticMatchingService:
         self, snapshots: list[VariantSnapshot]
     ) -> dict[uuid.UUID, list[float]]:
         vectors: dict[uuid.UUID, list[float]] = {}
+        pending: list[tuple[VariantSnapshot, ProductSemanticDocument, str]] = []
         existing = await self.embeddings.list_for_variants(
             [item.variant_id for item in snapshots]
         )
         for snapshot in snapshots:
             document = build_product_document(snapshot)
-            digest = hashlib.sha256(document.text.encode("utf-8")).hexdigest()
+            digest = document_hash(document)
             row = existing.get(snapshot.variant_id)
             if is_current(
                 row,
                 model=self.provider.model_name,
                 version=DOCUMENT_VERSION,
                 document_hash=digest,
+                dimensions=self.provider.dimensions,
             ):
                 assert row is not None
                 vectors[snapshot.variant_id] = [float(v) for v in row.embedding]
                 continue
+            pending.append((snapshot, document, digest))
+        if pending:
+            encode = getattr(self.provider, "embed_documents", None)
+            texts = [item[1].text for item in pending]
             try:
-                vector = self.provider.embed(document.text)
-            except Exception:
-                logger.exception(
-                    "embedding_failed variant=%s", snapshot.variant_id
+                encoded = (
+                    encode(texts)
+                    if callable(encode)
+                    else [self.provider.embed(text) for text in texts]
                 )
-                if row is not None:
-                    vectors[snapshot.variant_id] = [float(v) for v in row.embedding]
-                    continue
+            except Exception:
+                logger.exception("embedding_batch_failed count=%s", len(pending))
                 raise
-            await self.embeddings.upsert(
-                variant_id=snapshot.variant_id,
-                embedding=vector,
-                embedding_model=self.provider.model_name,
-                semantic_document_version=DOCUMENT_VERSION,
-                document_hash=digest,
-            )
-            vectors[snapshot.variant_id] = vector
+            for (snapshot, _document, digest), vector in zip(
+                pending, encoded, strict=True
+            ):
+                await self.embeddings.upsert(
+                    variant_id=snapshot.variant_id,
+                    embedding=vector,
+                    embedding_model=self.provider.model_name,
+                    semantic_document_version=DOCUMENT_VERSION,
+                    document_hash=digest,
+                )
+                vectors[snapshot.variant_id] = vector
         return vectors
+
+    def _matching_block(
+        self, matches: list[RankedProductMatch]
+    ) -> SemanticMatchingBlock:
+        meta = self.resolution.metadata()
+        return SemanticMatchingBlock(
+            model=self.provider.model_name,
+            document_version=DOCUMENT_VERSION,
+            matches=matches,
+            provider_requested=str(meta["provider_requested"]),
+            provider_used=str(meta["provider_used"]),
+            dimension=_as_int(meta["dimension"]),
+            fallback_used=bool(meta["fallback_used"]),
+            fallback_reason=(
+                str(meta["fallback_reason"]) if meta["fallback_reason"] else None
+            ),
+            retrieval_version=str(meta["retrieval_version"]),
+            rerank_version=str(meta["rerank_version"]),
+        )
 
     async def _persist(
         self,
@@ -241,7 +283,7 @@ class SemanticMatchingService:
             embedding_model=self.provider.model_name,
             semantic_document_version=DOCUMENT_VERSION,
             qualification_summary=summary.model_dump(),
-            timing=timing.model_dump(),
+            timing={**timing.model_dump(), "embedding": self.resolution.metadata()},
             eligible_variant_ids=[
                 str(row.variant_id) for row in results if row.outcome == "eligible"
             ],
@@ -270,3 +312,49 @@ class SemanticMatchingService:
         await self.session.commit()
         await self.session.refresh(run)
         return run
+
+
+def _block_from_run(
+    run: MatchRun, matches: list[RankedProductMatch]
+) -> SemanticMatchingBlock:
+    meta = {}
+    if isinstance(run.timing, dict):
+        stored = run.timing.get("embedding")
+        if isinstance(stored, dict):
+            meta = stored
+    return SemanticMatchingBlock(
+        model=run.embedding_model,
+        document_version=run.semantic_document_version,
+        matches=matches,
+        provider_requested=_as_str(meta.get("provider_requested")),
+        provider_used=_as_str(meta.get("provider_used"))
+        or _provider_from_model(run.embedding_model),
+        dimension=_as_int(meta.get("dimension")),
+        fallback_used=bool(meta.get("fallback_used", False)),
+        fallback_reason=_as_str(meta.get("fallback_reason")),
+        retrieval_version=_as_str(meta.get("retrieval_version")),
+        rerank_version=_as_str(meta.get("rerank_version")),
+    )
+
+
+def _provider_from_model(model: str) -> str:
+    if model.startswith("hashing"):
+        return "hashing"
+    if model.startswith("deterministic"):
+        return "mock"
+    return "sentence_transformer"
+
+
+def _as_str(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value)
+    return text or None
+
+
+def _as_int(value: object) -> int | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    return None

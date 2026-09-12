@@ -23,6 +23,11 @@ Say: “We don’t reduce the request to keywords.”
 ## 0:35 — Qualify + match
 
 Point to checked / eligible counts and semantic matches with proof.
+Mandatory constraints already dropped ineligible SKUs before ranking.
+Match scores are Product / Context / Preference Fit and Evidence
+Coverage — not raw cosine similarity. If the inspector shows hashing
+fallback, say the local semantic model was unavailable and the pipeline
+stayed online.
 
 ## 0:55 — Construct
 

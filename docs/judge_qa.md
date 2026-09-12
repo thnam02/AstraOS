@@ -71,9 +71,38 @@ and payment stack would replace the local reservation/order snapshot.
 Intent → Offer → Outcome records. Today those labels are synthetic.
 Later, real B2A outcomes can replace them. No online bandit.
 
+**Is this keyword search?**
+No. Eligible products are represented using semantic embeddings generated
+from merchant-supported product facts. Buyer context and desired outcomes
+are embedded into the same space and retrieved semantically. Hard
+constraints are applied first, then a grounded reranker explains Product
+Fit, Context Fit, Preference Fit, and Evidence Coverage.
+
+**Can semantic similarity override price or delivery constraints?**
+No. Mandatory constraints are evaluated deterministically before any
+semantic retrieval. A perfect travel embedding cannot resurrect a SKU
+that violates budget or same-day delivery.
+
+**Do embeddings invent product claims?**
+No. Product semantic documents are constructed only from merchant
+catalogue facts and evidence. The model does not write marketing copy.
+
+**What happens if the embedding model is unavailable?**
+AstraOS has a hashing fallback so the commerce pipeline remains
+operational. Match metadata records `provider_requested`,
+`provider_used`, and `fallback_reason`. The system does not pretend
+neural retrieval occurred.
+
+**How did you validate matching?**
+Against a frozen manually-labelled retrieval set using Recall@K, MRR and
+NDCG, with hard-constraint violation rate measured separately. Hashing
+and the sentence-transformer are compared with and without the same
+grounded reranker.
+
 **Why is this different from semantic search?**
 Search ranks products. AstraOS constructs and selects commercial offers
-under policy.
+under policy. Semantic retrieval is only the MATCH stage, and only over
+already-eligible SKUs.
 
 **Why is this different from a pricing engine?**
 Price is one dimension. Delivery, warranty, bundle, and returns are

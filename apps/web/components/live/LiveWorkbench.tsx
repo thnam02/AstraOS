@@ -471,6 +471,31 @@ export function LiveWorkbench() {
               ))}
             </dl>
           </section>
+          <section>
+            <p className="eyebrow">Embeddings</p>
+            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              {Object.entries({
+                provider_requested: result?.semantic_matching.provider_requested,
+                provider_used: result?.semantic_matching.provider_used,
+                model: result?.semantic_matching.model,
+                dimension: result?.semantic_matching.dimension,
+                document_version: result?.semantic_matching.document_version,
+                retrieval_version: result?.semantic_matching.retrieval_version,
+                rerank_version: result?.semantic_matching.rerank_version,
+                fallback_used: result?.semantic_matching.fallback_used ?? false,
+                fallback_reason: result?.semantic_matching.fallback_reason,
+              }).map(([key, value]) => (
+                <div key={key} className="contents">
+                  <dt className="text-muted">{key}</dt>
+                  <dd>{value === null || value === undefined || value === "" ? "—" : String(value)}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-2 text-xs text-muted">
+              Product / context / preference scores are grounded rerank points
+              out of 100, not purchase probability or raw cosine similarity.
+            </p>
+          </section>
           <pre className="overflow-x-auto text-[11px] text-muted">
             {JSON.stringify(
               {

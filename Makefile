@@ -1,4 +1,4 @@
-.PHONY: up down logs test lint migrate migration seed reset-db reset-demo eval embeddings demo-hero baseline
+.PHONY: up down logs test lint migrate migration seed reset-db reset-demo eval embeddings embeddings-model eval-retrieval demo-hero baseline
 
 API_DIR := apps/api
 
@@ -53,11 +53,19 @@ reset-demo:
 demo-hero:
 	cd $(API_DIR) && $(API_PY) -m app.cli demo hero
 
+embeddings-model:
+	cd $(API_DIR) && $(API_PY) -m pip install '.[semantic]'
+	cd $(API_DIR) && SEMANTIC_EMBEDDING_ALLOW_DOWNLOAD=1 $(API_PY) -c "from app.decision.retrieval.embeddings import load_sentence_transformer, DEFAULT_SEMANTIC_MODEL; from app.config import settings; load_sentence_transformer(settings.semantic_embedding_model or DEFAULT_SEMANTIC_MODEL); print('cached', settings.semantic_embedding_model)"
+
 embeddings:
 	cd $(API_DIR) && $(API_PY) -m app.eval.index
 
 eval:
 	cd $(API_DIR) && $(API_PY) -m app.eval
+
+eval-retrieval:
+	cd $(API_DIR) && $(API_PY) -m app.eval.retrieval_dataset
+	cd $(API_DIR) && $(API_PY) -m app.eval.retrieval --out ../../artifacts/eval/retrieval-hash-vs-semantic-v1.json
 
 # Lightweight Phase 1 reproduction: identity + migration head + frozen eval.
 # Hero, Arena, learning, and full pytest are documented in

@@ -60,7 +60,8 @@ See [docs/architecture.md](docs/architecture.md).
 ## Tech stack
 
 - API: Python 3.12, FastAPI, SQLAlchemy, Alembic, PostgreSQL 16
-- Matching: local hashing embeddings (no hosted model required)
+- Matching: local sentence-transformer embeddings over eligible products
+  (`BAAI/bge-small-en-v1.5`), with hashing fallback if the model is missing
 - Frontend: Next.js, TypeScript
 - Demo: Docker Compose or local processes
 
@@ -78,6 +79,7 @@ cp .env.example .env
 # set POSTGRES_HOST=localhost
 make migrate
 make seed
+make embeddings-model   # once: cache BAAI/bge-small-en-v1.5 locally
 make embeddings
 cd apps/api && source .venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -181,16 +183,21 @@ repository.
 | `make up` | Compose build + start |
 | `make migrate` | Alembic upgrade head |
 | `make seed` | Deterministic catalogue seed 2026 |
-| `make embeddings` | Refresh cached product embeddings |
+| `make embeddings-model` | Install `[semantic]` extra and cache the local embedding model |
+| `make embeddings` | Refresh cached product embeddings for the configured provider |
+| `make eval-retrieval` | Hashing vs semantic retrieval benchmark |
 | `make reset-demo` | Destructive remigrate + seed |
 | `make test` | pytest |
 | `make lint` | ruff + mypy |
 | `make demo-hero` | Hero request → counter → accept |
 
 Internet is not required for the core deterministic flow, Arena, LEARN
-inspection, or transaction simulation. Demo LLM parsing needs
-`INTENT_PARSER_MODE=llm` and `LLM_API_KEY` (or `OPENAI_API_KEY`). Without
-a key, the same API still runs via the rule-based fallback.
+inspection, or transaction simulation once models are cached. Demo LLM
+parsing needs `INTENT_PARSER_MODE=llm` and `LLM_API_KEY` (or
+`OPENAI_API_KEY`). Without a key, the same API still runs via the
+rule-based fallback. Semantic matching needs
+`make embeddings-model` once; without a cached model AstraOS falls back
+to hashing and reports that fallback in `/ready` and match metadata.
 
 Intent evaluation (frozen labelled set):
 

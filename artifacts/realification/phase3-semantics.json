@@ -1,0 +1,135 @@
+{
+  "phase": 3,
+  "title": "real-semantic-embeddings",
+  "git_sha": "92f26738c6fcfe0b2632f79b617f6e999e48eb5d",
+  "evaluation_dataset_version": "retrieval_eval_v1",
+  "evaluation_dataset_path": "apps/api/app/eval/fixtures/retrieval_eval_v1.json",
+  "cases": 77,
+  "ranked_cases": 32,
+  "catalogue_size": 332,
+  "old_provider": "hashing",
+  "new_provider": "sentence_transformer",
+  "model": "BAAI/bge-small-en-v1.5",
+  "dimension": 384,
+  "document_version": "product_semantic.v1",
+  "retrieval_version": "eligible-cosine.v1",
+  "rerank_version": "grounded-rerank.v1",
+  "became_demo_default": true,
+  "ci_provider": "hashing",
+  "hard_constraint_violation_rate": 0.0,
+  "metrics": {
+    "hashing": {
+      "recall@1": 0.0105,
+      "recall@3": 0.0315,
+      "recall@5": 0.0526,
+      "precision@1": 1.0,
+      "mrr": 1.0,
+      "ndcg@3": 0.979,
+      "ndcg@5": 0.9786,
+      "no_result": 0.0,
+      "hard_constraint_violations": 0
+    },
+    "semantic": {
+      "recall@1": 0.0105,
+      "recall@3": 0.031,
+      "recall@5": 0.052,
+      "precision@1": 1.0,
+      "mrr": 1.0,
+      "ndcg@3": 0.9754,
+      "ndcg@5": 0.9784,
+      "no_result": 0.0,
+      "hard_constraint_violations": 0
+    },
+    "hashing_rerank": {
+      "recall@1": 0.0105,
+      "recall@3": 0.0307,
+      "recall@5": 0.0517,
+      "precision@1": 1.0,
+      "mrr": 1.0,
+      "ndcg@3": 0.9767,
+      "ndcg@5": 0.9785,
+      "no_result": 0.0,
+      "hard_constraint_violations": 0
+    },
+    "semantic_rerank": {
+      "recall@1": 0.0105,
+      "recall@3": 0.0307,
+      "recall@5": 0.0517,
+      "precision@1": 1.0,
+      "mrr": 1.0,
+      "ndcg@3": 0.9745,
+      "ndcg@5": 0.9777,
+      "no_result": 0.0,
+      "hard_constraint_violations": 0
+    }
+  },
+  "stability": {
+    "compared_queries": 32,
+    "top1_changed_rate": 0.9062,
+    "top3_overlap": 0.2396,
+    "top5_overlap": 0.35
+  },
+  "latency": {
+    "hashing_warm_match_ms": 8.26,
+    "semantic_warm_match_ms": 27.274,
+    "semantic_query_embed_ms": 30.213,
+    "semantic_retrieve_ms": 13.089,
+    "semantic_rerank_ms": 14.18,
+    "cold_model_load_first_download_s": 16.361,
+    "cold_model_load_cached_ms": 416.67
+  },
+  "index": {
+    "provider_used": "sentence_transformer",
+    "model": "BAAI/bge-small-en-v1.5",
+    "dimension": 384,
+    "documents": 332,
+    "indexed": 332,
+    "reused": 0,
+    "skipped": 0,
+    "duration_s": 2.718,
+    "in_memory_encode_s": 1.277
+  },
+  "fallback_tests": {
+    "unknown_provider": "hashing + fallback_reason=unknown_provider",
+    "missing_sentence_transformers": "hashing + fallback_reason=model_unavailable",
+    "uncached_without_download": "hashing + fallback_reason=model_unavailable",
+    "silent_fallback": false
+  },
+  "hero": {
+    "query_id": "hero_stage3",
+    "eligible": 62,
+    "before_hashing_rerank_top5": [
+      {"rank": 1, "sku": "SON-T32-SLV", "product_name": "Sonic Cabin 32", "semantic_similarity": 0.2667, "overall_semantic_fit": 0.8202, "product_fit": 0.9372, "context_fit": 0.8799, "preference_fit": 0.8954, "evidence_coverage": 1.0},
+      {"rank": 2, "sku": "ATL-T72-BLK", "product_name": "Atlas Cabin 72", "semantic_similarity": 0.2184, "overall_semantic_fit": 0.8195, "product_fit": 0.9441, "context_fit": 0.9108, "preference_fit": 0.8792, "evidence_coverage": 1.0},
+      {"rank": 3, "sku": "NOV-T19-WHT", "product_name": "Nova Fold 19", "semantic_similarity": 0.2593, "overall_semantic_fit": 0.7829, "product_fit": 0.906, "context_fit": 0.8143, "preference_fit": 0.8431, "evidence_coverage": 1.0},
+      {"rank": 4, "sku": "SON-S38-BLK", "product_name": "Sonic Sport 38", "semantic_similarity": 0.2288, "overall_semantic_fit": 0.7818, "product_fit": 0.913, "context_fit": 0.7943, "preference_fit": 0.875, "evidence_coverage": 1.0},
+      {"rank": 5, "sku": "NOV-T19-SLV", "product_name": "Nova Fold 19", "semantic_similarity": 0.2481, "overall_semantic_fit": 0.7809, "product_fit": 0.907, "context_fit": 0.8446, "preference_fit": 0.8023, "evidence_coverage": 1.0}
+    ],
+    "after_semantic_rerank_top5": [
+      {"rank": 1, "sku": "ATL-T72-BLK", "product_name": "Atlas Cabin 72", "semantic_similarity": 0.6601, "overall_semantic_fit": 0.8858, "product_fit": 0.9441, "context_fit": 0.9108, "preference_fit": 0.8792, "evidence_coverage": 1.0},
+      {"rank": 2, "sku": "SON-T32-SLV", "product_name": "Sonic Cabin 32", "semantic_similarity": 0.6547, "overall_semantic_fit": 0.8784, "product_fit": 0.9372, "context_fit": 0.8799, "preference_fit": 0.8954, "evidence_coverage": 1.0},
+      {"rank": 3, "sku": "NOV-T19-SLV", "product_name": "Nova Fold 19", "semantic_similarity": 0.6572, "overall_semantic_fit": 0.8423, "product_fit": 0.907, "context_fit": 0.8446, "preference_fit": 0.8023, "evidence_coverage": 1.0},
+      {"rank": 4, "sku": "NOV-T19-WHT", "product_name": "Nova Fold 19", "semantic_similarity": 0.6491, "overall_semantic_fit": 0.8414, "product_fit": 0.906, "context_fit": 0.8143, "preference_fit": 0.8431, "evidence_coverage": 1.0},
+      {"rank": 5, "sku": "SON-S38-BLK", "product_name": "Sonic Sport 38", "semantic_similarity": 0.6133, "overall_semantic_fit": 0.8395, "product_fit": 0.913, "context_fit": 0.7943, "preference_fit": 0.875, "evidence_coverage": 1.0}
+    ]
+  },
+  "gates": {
+    "real_semantic_model_local": true,
+    "product_embeddings_generated": true,
+    "same_model_for_query_and_document": true,
+    "model_metadata_persisted": true,
+    "stale_index_detectable": true,
+    "hashing_fallback": true,
+    "hard_eligibility_first": true,
+    "hard_constraint_violation_in_top_k": 0,
+    "frozen_retrieval_dataset": true,
+    "hashing_baseline_measured": true,
+    "semantic_measured": true,
+    "rerank_comparison_measured": true,
+    "optimisation_unchanged": true,
+    "arena_unchanged": true,
+    "offer_construction_unchanged": true,
+    "phase1_phase2_artifacts_unchanged": true
+  },
+  "quality_notes": "Semantic+rerank is competitive with hashing+rerank on the frozen attribute-labelled set. Recall@K after rerank is identical; NDCG@5 is 0.0008 lower. Labels are coarse (large relevant sets), so ranking change (90.6% top-1) is the clearer embedding signal. Rerank weights were not retuned."
+}

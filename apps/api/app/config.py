@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     astraos_demo_mode: bool = False
     llm_timeout_seconds: float = 8.0
     protocol_adapter: str = "rest"
+    semantic_embedding_provider: str = "sentence_transformer"
+    semantic_embedding_model: str = "BAAI/bge-small-en-v1.5"
+    semantic_embedding_batch_size: int = 32
+    semantic_embedding_allow_download: bool = False
 
     @property
     def sqlalchemy_database_uri(self) -> str:

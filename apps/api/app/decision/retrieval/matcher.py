@@ -24,11 +24,14 @@ def rank_eligible(
 ) -> list[RankedProductMatch]:
     """Grounded semantic rank of already-eligible variants."""
     profile = build_intent_profile(intent)
-    intent_vector = provider.embed(profile.text or "intent")
+    embed_query = getattr(provider, "embed_query", provider.embed)
+    intent_vector = embed_query(profile.text or "intent")
     matches: list[RankedProductMatch] = []
     for snapshot in snapshots:
         vector = embeddings.get(snapshot.variant_id)
         if vector is None:
+            continue
+        if len(vector) != len(intent_vector):
             continue
         similarity = cosine_similarity(intent_vector, vector)
         matches.append(
@@ -80,11 +83,14 @@ def rank_by_similarity(
 ) -> list[RankedProductMatch]:
     """Baseline B: eligibility + raw embedding similarity only."""
     profile = build_intent_profile(intent)
-    intent_vector = provider.embed(profile.text or "intent")
+    embed_query = getattr(provider, "embed_query", provider.embed)
+    intent_vector = embed_query(profile.text or "intent")
     matches: list[RankedProductMatch] = []
     for snapshot in snapshots:
         vector = embeddings.get(snapshot.variant_id)
         if vector is None:
+            continue
+        if len(vector) != len(intent_vector):
             continue
         similarity = max(0.0, cosine_similarity(intent_vector, vector))
         matches.append(

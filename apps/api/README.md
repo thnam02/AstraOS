@@ -10,15 +10,20 @@ Optional MCP: `python -m app.agent.mcp_server` (calls REST).
 ```bash
 make migrate
 make seed
+make embeddings-model   # caches BAAI/bge-small-en-v1.5; optional extra [semantic]
 make embeddings
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 - `GET /health` — liveness
-- `GET /ready` — database, policy, seed, embeddings, intent parser, adapter
+- `GET /ready` — database, policy, seed, semantic retrieval, intent parser, adapter
 
 Demo default parser is `INTENT_PARSER_MODE=llm` with rule-based fallback.
-CI forces `rule_based`. Intent benchmark: `python -m app.eval.intent_benchmark`.
+CI forces `rule_based` and `SEMANTIC_EMBEDDING_PROVIDER=hashing`.
+Intent benchmark: `python -m app.eval.intent_benchmark`.
+Retrieval benchmark: `python -m app.eval.retrieval`.
+The default Docker image does not install torch; without a cached
+sentence-transformer the API uses hashing and reports the fallback.
 - `GET /api/v1/agent/capabilities`
 - `POST /api/v1/agent/offers/request`
 - `POST /api/v1/agent/offers/counter`

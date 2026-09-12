@@ -142,3 +142,28 @@ def mean(values: list[float]) -> float:
     if not values:
         return 0.0
     return sum(values) / len(values)
+
+
+def mrr(
+    ranked: Sequence[RankedProductMatch],
+    relevant: set[str],
+) -> float:
+    if not relevant:
+        return 1.0
+    for index, item in enumerate(ranked, start=1):
+        if str(item.variant_id) in relevant:
+            return 1.0 / index
+    return 0.0
+
+
+def precision_at_k(
+    ranked: Sequence[RankedProductMatch],
+    relevant: set[str],
+    k: int,
+) -> float:
+    if k <= 0:
+        return 0.0
+    top = {str(item.variant_id) for item in ranked[:k]}
+    if not top:
+        return 0.0
+    return len(top & relevant) / min(k, len(ranked) or k)

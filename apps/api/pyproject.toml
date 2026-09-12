@@ -29,6 +29,9 @@ dev = [
     "ruff>=0.8.0",
     "mypy>=1.13.0",
 ]
+semantic = [
+    "sentence-transformers>=3.0.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -41,6 +44,7 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 markers = [
     "integration_llm: live LLM provider tests skipped without credentials",
+    "semantic_model_integration: live sentence-transformer inference; skipped unless cached",
 ]
 
 [tool.ruff]
@@ -69,5 +73,5 @@ exclude = ["alembic", "tests"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["sklearn.*", "joblib"]
+module = ["sklearn.*", "joblib", "sentence_transformers"]
 ignore_missing_imports = true

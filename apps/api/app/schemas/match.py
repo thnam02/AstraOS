@@ -39,6 +39,13 @@ class SemanticMatchingBlock(BaseModel):
     model: str
     document_version: str
     matches: list[RankedProductMatch]
+    provider_requested: str | None = None
+    provider_used: str | None = None
+    dimension: int | None = None
+    fallback_used: bool = False
+    fallback_reason: str | None = None
+    retrieval_version: str | None = None
+    rerank_version: str | None = None
 
 
 class MatchResponse(BaseModel):

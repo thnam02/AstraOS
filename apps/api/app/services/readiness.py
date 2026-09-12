@@ -10,6 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agent.gateway import CAPABILITIES
 from app.agent.schemas import ReadinessCheck, ReadyResponse
 from app.config import settings
+from app.decision.retrieval.embeddings import (
+    resolve_embedding_provider,
+    semantic_model_cached,
+    sentence_transformers_importable,
+)
 from app.models import MerchantPolicy, ProductVariant, VariantEmbedding
 from app.models.learning import ResponseModelVersion
 
@@ -49,17 +54,69 @@ async def evaluate_readiness(session: AsyncSession) -> ReadyResponse:
     embeddings = await session.scalar(
         select(func.count()).select_from(VariantEmbedding)
     )
+    variant_count = variants or 0
     embed_ok = bool(embeddings and embeddings > 0)
+    resolution = resolve_embedding_provider()
+    current_model = (
+        await session.scalars(select(VariantEmbedding.embedding_model).limit(1))
+    ).first()
+    sample = (
+        await session.scalars(select(VariantEmbedding).limit(1))
+    ).first()
+    sample_dim = (
+        len(sample.embedding)
+        if sample and isinstance(sample.embedding, list)
+        else None
+    )
+    stale = bool(
+        current_model and current_model != resolution.provider.model_name
+    )
+    dim_mismatch = bool(
+        sample_dim is not None and sample_dim != resolution.dimension
+    )
+    partial = bool(embeddings and variant_count and embeddings < variant_count)
+    cached = (
+        True
+        if resolution.used == "hashing"
+        else semantic_model_cached() and sentence_transformers_importable()
+    )
+    index_ready = bool(embed_ok and not stale and not dim_mismatch)
     checks.append(
         ReadinessCheck(
             name="embeddings",
             ok=True,
-            detail=f"{embeddings or 0} cached; local hashing fallback available",
+            detail=f"{embeddings or 0} cached; hashing fallback available",
+            required=False,
+        )
+    )
+    checks.append(
+        ReadinessCheck(
+            name="semantic_retrieval",
+            ok=True,
+            detail=(
+                f"requested_provider={resolution.requested}; "
+                f"configured_model={resolution.model}; "
+                f"model_cached={'true' if cached else 'false'}; "
+                f"index_ready={'true' if index_ready else 'false'}; "
+                f"indexed_documents={embeddings or 0}; "
+                f"expected_documents={variant_count}; "
+                f"fallback_available=true"
+            ),
             required=False,
         )
     )
     if not embed_ok:
         degraded.append("embeddings_cache_empty")
+    if stale:
+        degraded.append("embeddings_stale_model")
+    if dim_mismatch:
+        degraded.append("embeddings_dimension_mismatch")
+    if partial:
+        degraded.append("embeddings_partial_index")
+    if resolution.requested == "sentence_transformer" and (
+        resolution.fallback_used or not cached
+    ):
+        degraded.append("semantic_model_unavailable")
 
     artifacts = Path(__file__).resolve().parents[1] / settings.learning_artifacts_dir
     experimental = (

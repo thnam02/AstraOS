@@ -12,6 +12,10 @@ Intent Intelligence
 Eligibility
     ↓
 Semantic Matching
+    IntentSemanticProfile + ProductSemanticDocument
+    → local sentence-transformer (hashing fallback)
+    → cosine over eligible variants only
+    → grounded deterministic rerank
     ↓
 Offer Construction
     ↓
@@ -64,6 +68,6 @@ The learned score is experimental and trained on synthetic Arena labels.
 | Dependency | If unavailable |
 | --- | --- |
 | LLM parser | Structured extraction with one repair, then rule-based fallback |
-| Embedding provider | Cached embeddings, then local hashing vectors |
+| Embedding provider | Local `BAAI/bge-small-en-v1.5` over eligible products; hashing fallback if the model is unavailable |
 | Learned model | Cold-start utility |
 | MCP | REST `/api/v1/agent/*` |

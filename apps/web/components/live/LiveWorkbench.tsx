@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { ApiStatus } from "@/components/live/ApiStatus";
@@ -28,7 +27,7 @@ import {
   setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
-import { isPresentationMode, productsDiffer, SCENARIOS } from "@/lib/decisionNarrative";
+import { productsDiffer, SCENARIOS } from "@/lib/decisionNarrative";
 import { HERO_INTENT } from "@/lib/intent";
 import type {
   BuyerProfile,
@@ -60,7 +59,6 @@ export function LiveWorkbench() {
   const [stage, setStage] = useState<LiveStage>("understand");
   const [inspect, setInspect] = useState(false);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
-  const presentation = isPresentationMode(useSearchParams().get("presentation"));
 
   const selectedFromChart = useMemo(() => {
     if (!selectedOfferId || !optimisation) return null;
@@ -234,30 +232,28 @@ export function LiveWorkbench() {
           <div className="min-w-0 flex-1">
             <p className="eyebrow">Buyer mission</p>
             <p className="mt-1 max-w-3xl text-sm leading-6">“{text}”</p>
-            {!presentation ? (
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <select
-                  value={parserMode}
-                  onChange={(event) =>
-                    setParserMode(event.target.value as "rule_based" | "llm")
-                  }
-                  className="control px-2 py-1 text-xs"
-                >
-                  <option value="rule_based">Rule-based parser</option>
-                  <option value="llm">LLM parser</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => void run()}
-                  disabled={busy || !text.trim()}
-                  className="btn-primary"
-                >
-                  {busy ? "Running…" : "Run AstraOS"}
-                </button>
-              </div>
-            ) : null}
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <select
+                value={parserMode}
+                onChange={(event) =>
+                  setParserMode(event.target.value as "rule_based" | "llm")
+                }
+                className="control px-2 py-1 text-xs"
+              >
+                <option value="rule_based">Rule-based parser</option>
+                <option value="llm">LLM parser</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => void run()}
+                disabled={busy || !text.trim()}
+                className="btn-primary"
+              >
+                {busy ? "Running…" : "Run AstraOS"}
+              </button>
+            </div>
           </div>
-          {!presentation ? <ApiStatus /> : null}
+          <ApiStatus />
         </div>
         {error ? <ErrorState message={error} /> : null}
         <ProcessRail active={stage} flags={flags} onSelect={setStage} />
@@ -391,7 +387,6 @@ export function LiveWorkbench() {
             }}
             selectedOfferId={selectedOfferId}
             onSelectOffer={setSelectedOfferId}
-            presentation={presentation}
             topMatchName={topMatch?.product_name}
             matchCount={result?.semantic_matching.matches.length}
             proposal={proposalOffer}
@@ -417,7 +412,6 @@ export function LiveWorkbench() {
             <RecommendedOffer
               offer={proposalOffer}
               explanation={proposalWhy}
-              presentation={presentation}
               onWhyDifferent={
                 differ ? () => setStage("match") : undefined
               }
@@ -484,7 +478,6 @@ function StageView({
   onDemoMargin,
   selectedOfferId,
   onSelectOffer,
-  presentation,
   optimisationSummary,
   topMatchName,
   matchCount,
@@ -502,7 +495,6 @@ function StageView({
   intentText: string;
   selectedOfferId: string | null;
   onSelectOffer: (offerId: string) => void;
-  presentation: boolean;
   optimisationSummary?: OptimisationResponse["summary"];
   topMatchName?: string;
   matchCount?: number;
@@ -552,9 +544,7 @@ function StageView({
             { label: "Unknown", value: result.qualification.uncertain },
           ]}
         />
-        {!presentation ? (
-          <QualificationInspect intentText={intentText} parserMode={parserMode} />
-        ) : null}
+        <QualificationInspect intentText={intentText} parserMode={parserMode} />
         <p className="text-xs text-muted">
           Semantic ranking runs only on eligible SKUs.
         </p>
@@ -591,13 +581,11 @@ function StageView({
             offer={proposal}
           />
         ) : null}
-        {!presentation ? (
-          <p className="text-xs text-muted">
-            {result.timing.total_ms.toFixed(0)} ms · parse{" "}
-            {result.timing.intent_parse_ms.toFixed(0)} · qualify{" "}
-            {result.timing.qualification_ms.toFixed(0)}
-          </p>
-        ) : null}
+        <p className="text-xs text-muted">
+          {result.timing.total_ms.toFixed(0)} ms · parse{" "}
+          {result.timing.intent_parse_ms.toFixed(0)} · qualify{" "}
+          {result.timing.qualification_ms.toFixed(0)}
+        </p>
       </div>
     );
   }
@@ -617,7 +605,6 @@ function StageView({
         heroProduct={result?.semantic_matching.matches[0]?.product_name}
         policySafe={optimisationSummary?.policy_safe}
         pareto={optimisationSummary?.pareto_efficient}
-        presentation={presentation}
       />
     );
   }
@@ -640,7 +627,6 @@ function StageView({
         showRecommendation={false}
         selectedOfferId={selectedOfferId}
         onSelectOffer={onSelectOffer}
-        presentation={presentation}
         productSummary={
           topMatchName
             ? `${matchCount ?? 0} products ranked · top ${topMatchName}`
@@ -665,7 +651,6 @@ function StageView({
         busy={busy}
         onMessage={onMessage}
         onSimulate={onSimulate}
-        presentation={presentation}
       />
     );
   }
@@ -689,7 +674,6 @@ function StageView({
         onDemoInventory={onDemoInventory}
         onDemoDelivery={onDemoDelivery}
         onDemoMargin={onDemoMargin}
-        presentation={presentation}
       />
     );
   }

@@ -102,8 +102,12 @@ export function DecisionBridge({
             </div>
           </div>
           <p className="mt-3 text-sm">
-            {offer.product_name} is not the strongest standalone product match, but
-            it creates the strongest complete offer.
+            {offer.product_name} is not the strongest standalone product match.
+            Offer optimisation selected this complete configuration as the
+            merchant response
+            {topOffer && topOffer.buyer_utility > offer.buyer_utility
+              ? ` — a small buyer-utility difference for ${formatAudCents(offer.contribution_margin_cents - topOffer.contribution_margin_cents)} more contribution.`
+              : " because its commercial configuration creates the stronger buyer/merchant trade-off."}
           </p>
         </div>
       ) : (

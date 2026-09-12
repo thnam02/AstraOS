@@ -123,13 +123,11 @@ export function NegotiationPanel({
   busy,
   onMessage,
   onSimulate,
-  presentation = false,
 }: {
   negotiation: NegotiationResponse;
   busy: boolean;
   onMessage: (message: string) => void;
   onSimulate: (mode: "TRAVEL" | "BUDGET") => void;
-  presentation?: boolean;
 }) {
   const [draft, setDraft] = useState("Can you get this below A$315?");
   const commercial = negotiation.commercial;
@@ -149,7 +147,7 @@ export function NegotiationPanel({
         </p>
       </div>
 
-      {!presentation && commercial ? (
+      {commercial ? (
         <dl className="grid gap-3 text-sm sm:grid-cols-4">
           <div>
             <dt className="text-xs text-muted">Min margin</dt>
@@ -171,12 +169,14 @@ export function NegotiationPanel({
       ) : null}
 
       <ol className="space-y-5">
-        {turns.map((turn) => (
+        {turns.map((turn, index) => (
           <li key={turn.turn_id}>
             <ProtocolTurn turn={turn} proposal={negotiation.proposal} />
-            <p className="mt-3 text-center text-muted" aria-hidden>
-              ↓
-            </p>
+            {index < turns.length - 1 ? (
+              <p className="mt-3 text-center text-muted" aria-hidden>
+                ↓
+              </p>
+            ) : null}
           </li>
         ))}
       </ol>
@@ -199,24 +199,20 @@ export function NegotiationPanel({
       />
 
       <div className="flex flex-wrap gap-2">
-        {!presentation ? (
-          <input
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            className="control min-w-[240px] flex-1 px-3 py-2 text-sm"
-            aria-label="Buyer counter message"
-          />
-        ) : null}
-        {!presentation ? (
-          <button
-            type="button"
-            disabled={busy || !draft.trim()}
-            onClick={() => onMessage(draft)}
-            className="btn-ghost"
-          >
-            Send counter
-          </button>
-        ) : null}
+        <input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          className="control min-w-[240px] flex-1 px-3 py-2 text-sm"
+          aria-label="Buyer counter message"
+        />
+        <button
+          type="button"
+          disabled={busy || !draft.trim()}
+          onClick={() => onMessage(draft)}
+          className="btn-ghost"
+        >
+          Send counter
+        </button>
         <button
           type="button"
           disabled={busy}
@@ -225,16 +221,14 @@ export function NegotiationPanel({
         >
           Accept
         </button>
-        {!presentation ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onSimulate("TRAVEL")}
-            className="btn-quiet"
-          >
-            Simulate travel
-          </button>
-        ) : null}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onSimulate("TRAVEL")}
+          className="btn-quiet"
+        >
+          Simulate travel
+        </button>
       </div>
     </section>
   );

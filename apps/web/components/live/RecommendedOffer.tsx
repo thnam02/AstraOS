@@ -7,12 +7,10 @@ export function RecommendedOffer({
   offer,
   explanation,
   onWhyDifferent,
-  presentation = false,
 }: {
   offer: PublicScoredOffer;
   explanation: string[];
   onWhyDifferent?: () => void;
-  presentation?: boolean;
 }) {
   const reasons = conciseOfferReasons(explanation);
   return (
@@ -24,9 +22,7 @@ export function RecommendedOffer({
         <h2 className="mt-2 text-[22px] font-semibold tracking-tight">
           {offer.product_name}
         </h2>
-        {!presentation ? (
-          <p className="font-mono text-[11px] text-muted">{offer.sku}</p>
-        ) : null}
+        <p className="font-mono text-[11px] text-muted">{offer.sku}</p>
         <p className="mt-2 font-mono text-3xl font-semibold tabular-nums">
           {formatAudCents(offer.pricing.total_price_cents)}
         </p>

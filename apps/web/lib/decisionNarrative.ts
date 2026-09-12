@@ -147,10 +147,6 @@ export function negotiationConstraint(
   return null;
 }
 
-export function isPresentationMode(value: string | null | undefined): boolean {
-  return value === "1";
-}
-
 export const LEARN_STORY = [
   { id: "observe", label: "Observe", body: "Intent → Offer → Outcome" },
   { id: "learn", label: "Learn", body: "Response model" },

@@ -36,7 +36,6 @@ export function OptimisationPanel({
   showRecommendation = true,
   selectedOfferId,
   onSelectOffer,
-  presentation = false,
   productSummary,
 }: {
   optimisation: OptimisationResponse;
@@ -46,7 +45,6 @@ export function OptimisationPanel({
   showRecommendation?: boolean;
   selectedOfferId?: string | null;
   onSelectOffer?: (offerId: string) => void;
-  presentation?: boolean;
   productSummary?: string;
 }) {
   const rec = optimisation.recommended_offer;
@@ -99,7 +97,6 @@ export function OptimisationPanel({
         contribution, or the reverse.
       </p>
 
-      {!presentation ? (
       <div className="flex flex-wrap items-end gap-4">
         <label className="text-xs text-muted">
           Simulated buyer profile
@@ -129,7 +126,6 @@ export function OptimisationPanel({
           </dl>
         </Disclosure>
       </div>
-      ) : null}
 
       {showRecommendation && rec ? (
         <div className="border border-line px-4 py-4">
@@ -139,8 +135,7 @@ export function OptimisationPanel({
 
       <CounterfactualStory rows={optimisation.counterfactuals} />
 
-      {!presentation ? (
-        <Disclosure title="All counterfactual levers">
+      <Disclosure title="All counterfactual levers">
           <table className="w-full min-w-[640px] text-left text-xs">
             <thead>
               <tr className="border-b border-line text-muted">
@@ -170,8 +165,7 @@ export function OptimisationPanel({
               ))}
             </tbody>
           </table>
-        </Disclosure>
-      ) : null}
+      </Disclosure>
     </section>
   );
 }

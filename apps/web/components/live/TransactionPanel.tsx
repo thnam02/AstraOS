@@ -57,7 +57,6 @@ export function TransactionPanel({
   onDemoInventory,
   onDemoDelivery,
   onDemoMargin,
-  presentation = false,
 }: {
   negotiation: NegotiationResponse;
   transaction: AcceptProposalResponse | null;
@@ -67,7 +66,6 @@ export function TransactionPanel({
   onDemoInventory: (units: number) => void;
   onDemoDelivery: (available: boolean) => void;
   onDemoMargin: (rate: number) => void;
-  presentation?: boolean;
 }) {
   const offer = negotiation.proposal?.offer;
   const failed = Boolean(transaction && transaction.state !== "CONFIRMED");
@@ -190,37 +188,35 @@ export function TransactionPanel({
         </div>
       ) : null}
 
-      {!presentation && transaction?.timing ? (
+      {transaction?.timing ? (
         <p className="text-[11px] text-muted">
           {transaction.timing.total_transaction_ms.toFixed(0)} ms total
         </p>
       ) : null}
 
-      {!presentation ? (
-        <div>
-          <p className="eyebrow">Demo controls</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" disabled={busy} onClick={() => onDemoInventory(0)} className="btn-quiet">
-              Stock → 0
-            </button>
-            <button type="button" disabled={busy} onClick={() => onDemoInventory(14)} className="btn-quiet">
-              Stock → 14
-            </button>
-            <button type="button" disabled={busy} onClick={() => onDemoDelivery(false)} className="btn-quiet">
-              Same-day full
-            </button>
-            <button type="button" disabled={busy} onClick={() => onDemoDelivery(true)} className="btn-quiet">
-              Same-day available
-            </button>
-            <button type="button" disabled={busy} onClick={() => onDemoMargin(0.25)} className="btn-quiet">
-              Margin {formatRate(0.25)}
-            </button>
-            <button type="button" disabled={busy} onClick={() => onDemoMargin(0.15)} className="btn-quiet">
-              Margin {formatRate(0.15)}
-            </button>
-          </div>
+      <div>
+        <p className="eyebrow">Demo controls</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button type="button" disabled={busy} onClick={() => onDemoInventory(0)} className="btn-quiet">
+            Stock → 0
+          </button>
+          <button type="button" disabled={busy} onClick={() => onDemoInventory(14)} className="btn-quiet">
+            Stock → 14
+          </button>
+          <button type="button" disabled={busy} onClick={() => onDemoDelivery(false)} className="btn-quiet">
+            Same-day full
+          </button>
+          <button type="button" disabled={busy} onClick={() => onDemoDelivery(true)} className="btn-quiet">
+            Same-day available
+          </button>
+          <button type="button" disabled={busy} onClick={() => onDemoMargin(0.25)} className="btn-quiet">
+            Margin {formatRate(0.25)}
+          </button>
+          <button type="button" disabled={busy} onClick={() => onDemoMargin(0.15)} className="btn-quiet">
+            Margin {formatRate(0.15)}
+          </button>
         </div>
-      ) : null}
+      </div>
     </section>
   );
 }

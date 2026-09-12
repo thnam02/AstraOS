@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 import { MerchantPolicyDrawer } from "@/components/shared/MerchantPolicyDrawer";
 
@@ -12,20 +12,9 @@ const NAV_ITEMS = [
   { href: "/learn", label: "LEARN" },
 ] as const;
 
-function HeaderInner() {
+export function AppHeader() {
   const pathname = usePathname();
-  const router = useRouter();
-  const params = useSearchParams();
   const [rulesOpen, setRulesOpen] = useState(false);
-  const presentation = params.get("presentation") === "1";
-
-  function togglePresentation() {
-    const next = new URLSearchParams(params.toString());
-    if (presentation) next.delete("presentation");
-    else next.set("presentation", "1");
-    const query = next.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname);
-  }
 
   return (
     <>
@@ -60,9 +49,6 @@ function HeaderInner() {
             })}
           </nav>
           <div className="flex items-center gap-4">
-            <button type="button" className="btn-quiet" onClick={togglePresentation}>
-              {presentation ? "Exit presentation" : "Presentation"}
-            </button>
             <Link
               href="/catalogue"
               className={`text-xs tracking-[0.04em] ${
@@ -85,13 +71,5 @@ function HeaderInner() {
       </header>
       <MerchantPolicyDrawer open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </>
-  );
-}
-
-export function AppHeader() {
-  return (
-    <Suspense fallback={<header className="h-14 border-b border-line bg-surface" />}>
-      <HeaderInner />
-    </Suspense>
   );
 }

@@ -18,13 +18,11 @@ export function OfferExplorer({
   heroProduct,
   policySafe,
   pareto,
-  presentation = false,
 }: {
   construction: GenerateOffersResponse;
   heroProduct?: string;
   policySafe?: number;
   pareto?: number;
-  presentation?: boolean;
 }) {
   const [status, setStatus] = useState("FEASIBLE");
   const [productId, setProductId] = useState("");
@@ -138,7 +136,6 @@ export function OfferExplorer({
         </p>
       ) : null}
 
-      {!presentation ? (
       <div className="flex flex-wrap items-end gap-3 text-xs">
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">STATUS</span>
@@ -221,10 +218,7 @@ export function OfferExplorer({
           {busy ? "FILTERING…" : "FILTER"}
         </button>
       </div>
-      ) : null}
 
-      {!presentation ? (
-      <>
       <div className="overflow-x-auto">
         <table className="table-dense w-full min-w-[720px] text-left text-xs">
           <thead>
@@ -275,8 +269,6 @@ export function OfferExplorer({
       </p>
 
       {detail ? <OfferDetail detail={detail} onClose={() => setDetail(null)} /> : null}
-      </>
-      ) : null}
     </section>
   );
 }

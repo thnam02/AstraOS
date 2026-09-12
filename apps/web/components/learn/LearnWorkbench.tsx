@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   CartesianGrid,
@@ -17,7 +16,7 @@ import {
   getLearningOverview,
   trainLearningModels,
 } from "@/lib/api";
-import { isPresentationMode, LEARN_STORY } from "@/lib/decisionNarrative";
+import { LEARN_STORY } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
 import type {
   LearningOverview,
@@ -38,7 +37,6 @@ export function LearnWorkbench() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState(200);
-  const presentation = isPresentationMode(useSearchParams().get("presentation"));
 
   async function refresh() {
     setOverview(await getLearningOverview());
@@ -145,7 +143,6 @@ export function LearnWorkbench() {
         />
       </section>
 
-      {!presentation ? (
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs text-muted">
           Target rows
@@ -175,7 +172,6 @@ export function LearnWorkbench() {
           Train models
         </button>
       </div>
-      ) : null}
 
       {overview?.dataset?.metadata.audit ? (
         <section>

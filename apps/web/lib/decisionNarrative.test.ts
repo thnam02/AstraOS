@@ -4,7 +4,6 @@ import { describe, it } from "node:test";
 import {
   conciseOfferReasons,
   constructStory,
-  isPresentationMode,
   LEARN_STORY,
   matchScoreDisplay,
   negotiationConstraint,
@@ -58,13 +57,6 @@ describe("product-to-offer bridge", () => {
       negotiationConstraint({ constraints: { max_total_price_cents: 31500 } }),
       "TOTAL PRICE ≤ A$315",
     );
-  });
-});
-
-describe("presentation mode", () => {
-  it("is enabled only for presentation=1", () => {
-    assert.equal(isPresentationMode("1"), true);
-    assert.equal(isPresentationMode(null), false);
   });
 });
 

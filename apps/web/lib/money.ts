@@ -1,8 +1,9 @@
 export function formatAudCents(cents: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  }).format(cents / 100);
+  const amount = (cents / 100).toLocaleString("en-AU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `A$${amount}`;
 }
 
 export function formatRate(rate: number): string {

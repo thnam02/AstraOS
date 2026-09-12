@@ -6,10 +6,16 @@ import { ApiStatus } from "@/components/live/ApiStatus";
 import { NegotiationPanel } from "@/components/live/NegotiationPanel";
 import { OfferExplorer } from "@/components/live/OfferExplorer";
 import { OptimisationPanel } from "@/components/live/OptimisationPanel";
+import { TransactionPanel } from "@/components/live/TransactionPanel";
 import {
+  acceptProposal,
   createNegotiation,
+  getNegotiation,
   postNegotiationTurn,
   runOptimisation,
+  setDemoDeliveryCapacity,
+  setDemoInventory,
+  setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
 import { HERO_INTENT, contextLabel, fieldLabel } from "@/lib/intent";
@@ -18,6 +24,7 @@ import type {
   BuyerProfile,
   GenerateOffersResponse,
   MatchResponse,
+  AcceptProposalResponse,
   NegotiationResponse,
   OptimisationResponse,
   RankedProductMatch,
@@ -29,6 +36,8 @@ function processState(
   hasOffers: boolean,
   hasOpt: boolean,
   hasNego: boolean,
+  hasTxn: boolean,
+  txnComplete: boolean,
   id: string,
 ): string {
   if (!hasMatch) return "not started";
@@ -39,10 +48,14 @@ function processState(
     return hasOffers ? "next" : "not started";
   }
   if (id === "negotiate") {
-    if (hasNego) return "complete";
+    if (hasTxn || hasNego) return "complete";
     return hasOpt ? "next" : "locked";
   }
-  if (id === "transact") return hasNego ? "next" : "locked";
+  if (id === "transact") {
+    if (txnComplete) return "complete";
+    if (hasTxn) return "active";
+    return hasNego ? "next" : "locked";
+  }
   return "locked";
 }
 
@@ -68,8 +81,22 @@ export function LiveWorkbench() {
   const [negotiation, setNegotiation] = useState<NegotiationResponse | null>(
     null,
   );
+  const [transaction, setTransaction] = useState<AcceptProposalResponse | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function executeAcceptance(session: NegotiationResponse) {
+    if (!session.proposal) return;
+    const result = await acceptProposal(session.session_id, {
+      proposal_id: session.proposal.proposal_id,
+      idempotency_key:
+        globalThis.crypto?.randomUUID?.() ?? `web-${Date.now()}`,
+    });
+    setTransaction(result);
+    setNegotiation(await getNegotiation(session.session_id));
+  }
 
   async function run() {
     setBusy(true);
@@ -85,6 +112,7 @@ export function LiveWorkbench() {
       if (decided.construction) setOffers(decided.construction);
       if (decided.optimisation) setOptimisation(decided.optimisation);
       setNegotiation(decided);
+      setTransaction(null);
     } catch {
       setError("Negotiation failed. Is the API running?");
     } finally {
@@ -267,6 +295,8 @@ export function LiveWorkbench() {
                   Boolean(offers),
                   Boolean(optimisation),
                   Boolean(negotiation),
+                  Boolean(transaction),
+                  transaction?.state === "CONFIRMED",
                   id,
                 )}
               </span>
@@ -302,11 +332,17 @@ export function LiveWorkbench() {
               void (async () => {
                 setBusy(true);
                 try {
-                  setNegotiation(
-                    await postNegotiationTurn(negotiation.session_id, {
-                      message,
-                    }),
+                  const next = await postNegotiationTurn(
+                    negotiation.session_id,
+                    { message },
                   );
+                  setNegotiation(next);
+                  if (
+                    next.state === "READY_FOR_CHECKOUT" &&
+                    next.proposal
+                  ) {
+                    await executeAcceptance(next);
+                  }
                 } catch {
                   setError("Negotiation turn failed.");
                 } finally {
@@ -323,6 +359,85 @@ export function LiveWorkbench() {
                   );
                 } catch {
                   setError("Buyer simulation failed.");
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+          />
+        </div>
+      ) : null}
+      {negotiation ? (
+        <div className="xl:col-span-3">
+          <TransactionPanel
+            negotiation={negotiation}
+            transaction={transaction}
+            busy={busy}
+            onExecute={() => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  await executeAcceptance(negotiation);
+                } catch {
+                  setError("Acceptance failed.");
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+            onRecover={() => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  setNegotiation(await getNegotiation(negotiation.session_id));
+                  setTransaction(null);
+                } catch {
+                  setError("Could not reload the recovered proposal.");
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+            onDemoInventory={(units) => {
+              const sku = negotiation.proposal?.offer?.sku;
+              if (!sku) return;
+              void (async () => {
+                setBusy(true);
+                try {
+                  await setDemoInventory({ sku, units_available: units });
+                } catch {
+                  setError("Demo inventory update failed.");
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+            onDemoDelivery={(available) => {
+              const sku = negotiation.proposal?.offer?.sku;
+              if (!sku) return;
+              void (async () => {
+                setBusy(true);
+                try {
+                  await setDemoDeliveryCapacity({
+                    sku,
+                    delivery_code: "SAME_DAY",
+                    available,
+                  });
+                } catch {
+                  setError("Demo delivery update failed.");
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+            onDemoMargin={(rate) => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  await setDemoPolicy({ minimum_margin_rate: rate });
+                  window.dispatchEvent(new Event("astraos:policy-changed"));
+                } catch {
+                  setError("Demo policy update failed.");
                 } finally {
                   setBusy(false);
                 }

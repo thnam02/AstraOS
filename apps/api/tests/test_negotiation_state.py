@@ -31,6 +31,10 @@ def test_buyer_may_act() -> None:
 def test_accept_path() -> None:
     state = transition(S.MERCHANT_PROPOSAL_CREATED, S.BUYER_ACCEPTED)
     assert transition(state, S.READY_FOR_CHECKOUT) == S.READY_FOR_CHECKOUT
+    assert (
+        transition(S.READY_FOR_CHECKOUT, S.TRANSACTION_CONFIRMED)
+        == S.TRANSACTION_CONFIRMED
+    )
 
 
 def test_limit_from_open_states() -> None:

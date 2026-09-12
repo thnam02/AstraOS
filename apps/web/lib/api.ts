@@ -17,6 +17,8 @@ import type {
   DecisionResponse,
   OptimisationResponse,
   NegotiationResponse,
+  AcceptProposalResponse,
+  DemoStateResponse,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -199,6 +201,10 @@ export function runOptimisation(payload: {
   });
 }
 
+export function getNegotiation(sessionId: string): Promise<NegotiationResponse> {
+  return request<NegotiationResponse>(`/api/v1/negotiations/${sessionId}`);
+}
+
 export function createNegotiation(payload: {
   intent: string;
   parser_mode?: "rule_based" | "llm";
@@ -236,4 +242,62 @@ export function simulateNegotiationBuyer(
       body: JSON.stringify({ mode }),
     },
   );
+}
+
+export function acceptProposal(
+  sessionId: string,
+  payload: {
+    proposal_id: string;
+    idempotency_key: string;
+    generate_recovery?: boolean;
+  },
+): Promise<AcceptProposalResponse> {
+  return request<AcceptProposalResponse>(
+    `/api/v1/negotiations/${sessionId}/accept`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function getTransaction(
+  transactionId: string,
+): Promise<AcceptProposalResponse> {
+  return request<AcceptProposalResponse>(
+    `/api/v1/transactions/${transactionId}`,
+  );
+}
+
+export function setDemoInventory(payload: {
+  sku?: string;
+  variant_id?: string;
+  units_available: number;
+}): Promise<DemoStateResponse> {
+  return request<DemoStateResponse>("/api/v1/demo/inventory", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function setDemoDeliveryCapacity(payload: {
+  sku?: string;
+  variant_id?: string;
+  delivery_code?: string;
+  available: boolean;
+}): Promise<DemoStateResponse> {
+  return request<DemoStateResponse>("/api/v1/demo/delivery-capacity", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function setDemoPolicy(payload: {
+  minimum_margin_rate?: number;
+  maximum_discount_rate?: number;
+}): Promise<DemoStateResponse> {
+  return request<DemoStateResponse>("/api/v1/demo/policy", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

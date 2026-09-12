@@ -648,3 +648,79 @@ export type NegotiationResponse = {
   construction?: GenerateOffersResponse | null;
   optimisation?: OptimisationResponse | null;
 };
+
+export type RevalidationCheck = {
+  check: string;
+  status: "PASS" | "FAIL";
+  available_units?: number | null;
+  observed?: string | number | null;
+  message?: string | null;
+};
+
+export type AcceptProposalResponse = {
+  transaction_id: string;
+  state: string;
+  negotiation_state: string | null;
+  proposal_id: string;
+  offer_id: string | null;
+  revalidation: {
+    status: string;
+    checks: RevalidationCheck[];
+    failure_codes: string[];
+    current_state_snapshot: Record<string, unknown>;
+    validated_at: string | null;
+  } | null;
+  reservation: {
+    reservation_id: string;
+    status: string;
+    variant_id: string | null;
+    quantity: number | null;
+  } | null;
+  order: {
+    order_id: string;
+    order_number: string;
+    status: string;
+    sku: string;
+    product_name: string;
+    quantity: number;
+    product_price_cents: number;
+    delivery_charge_cents: number;
+    warranty_price_cents: number;
+    bundle_price_cents: number;
+    total_amount_cents: number;
+    currency: string;
+    delivery_code: string | null;
+    warranty_code: string | null;
+    bundle_code: string | null;
+    return_policy_code: string | null;
+    warranty_months: number | null;
+    payment_mode: string;
+    payment_status: string;
+    confirmation: Record<string, unknown>;
+    created_at: string | null;
+    confirmed_at: string | null;
+  } | null;
+  failure_codes: string[];
+  next_actions: string[];
+  recovery_proposal: MerchantProposal | null;
+  timing: {
+    revalidation_ms: number;
+    reservation_ms: number;
+    order_creation_ms: number;
+    total_transaction_ms: number;
+  } | null;
+  events: { type: string; at: string; state: string }[];
+  lineage: Record<string, unknown>;
+};
+
+export type DemoStateResponse = {
+  sku: string;
+  variant_id: string;
+  units_available: number;
+  units_reserved: number;
+  sellable_units: number;
+  delivery_code: string | null;
+  delivery_available: boolean | null;
+  minimum_margin_rate: number;
+  note: string;
+};

@@ -25,6 +25,7 @@ from app.decision.negotiation.models import (
     Actor,
     BuyerAction,
     BuyerTurnInput,
+    CounterConstraints,
     MerchantAction,
     MerchantOutcome,
     MerchantProposalDTO,
@@ -124,7 +125,13 @@ class NegotiationService:
             turn_count=0,
             max_turns=settings.max_negotiation_turns,
             expires_at=expires,
-            session_metadata={},
+            session_metadata={
+                "policy_snapshot": {
+                    "minimum_margin_rate": str(policy.minimum_margin_rate),
+                    "maximum_discount_rate": str(policy.maximum_discount_rate),
+                    "policy_id": str(policy.id),
+                }
+            },
         )
         row.turns = []
         row.proposals = []
@@ -205,6 +212,106 @@ class NegotiationService:
         if row is None:
             return None
         return await self._response(row)
+
+    async def recover_after_failure(
+        self,
+        session_id: uuid.UUID,
+        *,
+        failure_codes: list[str],
+    ) -> MerchantProposalDTO | None:
+        """Create a NEW proposal after a failed execution. Never mutates the old one."""
+        row = await self.rows.get(session_id)
+        if row is None:
+            return None
+        if State(row.current_state) != State.READY_FOR_CHECKOUT:
+            current = self._current_proposal(row)
+            return self._to_dto(row, current) if current else None
+
+        working = ShoppingIntent.model_validate(row.working_intent)
+        matched = await self.matching.match_from_intent(working, limit=8)
+        row.match_run_id = matched.run_id
+        construction = await self.offers.generate(
+            intent_text=None,
+            match_run_id=matched.run_id,
+            max_products=8,
+            preview_status="FEASIBLE",
+            preview_limit=40,
+            intent_override=working,
+        )
+        response, engine = await self.optimisation.evaluate(
+            construction.offer_run_id,
+            buyer_profile=row.buyer_profile,
+        )
+        assert isinstance(engine, EngineResult)
+        row.offer_run_id = construction.offer_run_id
+        row.optimisation_run_id = response.optimisation_run_id
+        current = self._current_proposal(row)
+        current_variant = None
+        if current and current.offer_snapshot:
+            current_variant = uuid.UUID(current.offer_snapshot["variant_id"])
+        found = search_counter(
+            engine.scored,
+            request=CounterConstraints(alternative_product_allowed=True),
+            current_variant_id=current_variant,
+        )
+        if found.offer is None:
+            return None
+        now = datetime.now(UTC)
+        expires = now + timedelta(seconds=settings.negotiation_ttl_seconds)
+        version = max((item.version for item in row.proposals), default=0) + 1
+        snapshot = to_public_scored(found.offer).model_dump(mode="json")
+        codes = [item.value for item in found.reason_codes]
+        codes.insert(0, "RECOVERY_AFTER_REVALIDATION_FAILURE")
+        explanation = [
+            "The accepted proposal could not be executed against live merchant state.",
+            f"Failure: {', '.join(failure_codes) or 'REVALIDATION_FAILED'}.",
+            "A new policy-safe proposal was generated. "
+            "The original offer was not changed.",
+            f"Recovery offer: {found.offer.product_name}.",
+        ]
+        proposal = self._proposal_row(
+            row,
+            version=version,
+            proposal_type=found.proposal_type,
+            outcome=found.outcome,
+            offer_id=found.offer.offer_id,
+            snapshot=snapshot,
+            codes=codes,
+            explanation=explanation,
+            next_acts=["ACCEPT", "REJECT", "COUNTER"],
+            expires=expires,
+            compromise=(found.compromise.model_dump() if found.compromise else None),
+            optimisation_run_id=response.optimisation_run_id,
+        )
+        self.session.add(proposal)
+        await self.session.flush()
+        row.current_proposal_id = proposal.id
+        row.current_offer_id = found.offer.offer_id
+        row.expires_at = expires
+        row.current_state = transition(
+            State.READY_FOR_CHECKOUT, State.MERCHANT_PROPOSAL_CREATED
+        ).value
+        self._event(row, "RECOVERY_PROPOSAL_GENERATED")
+        self.session.add(
+            self._turn(
+                row,
+                actor=Actor.MERCHANT_AGENT,
+                action=MerchantAction.PROPOSE.value,
+                message=None,
+                payload={
+                    "recovery": True,
+                    "failure_codes": failure_codes,
+                    "proposal_id": str(proposal.id),
+                },
+                offer_id=found.offer.offer_id,
+                proposal_id=proposal.id,
+            )
+        )
+        await self.session.commit()
+        loaded = await self.rows.get(row.id)
+        assert loaded is not None
+        created = next(item for item in loaded.proposals if item.id == proposal.id)
+        return self._to_dto(loaded, created)
 
     async def turn(
         self,

@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     offer_ttl_seconds: int = 300
     max_negotiation_turns: int = 5
     negotiation_ttl_seconds: int = 300
+    reservation_ttl_minutes: int = 10
+    honor_locked_proposal_price: bool = True
 
     @property
     def sqlalchemy_database_uri(self) -> str:

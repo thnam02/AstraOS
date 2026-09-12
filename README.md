@@ -8,13 +8,15 @@ AstraOS is a merchant-side decision engine for agentic commerce. It takes AI
 shopping intent, qualifies products against hard constraints, constructs
 commercial offers, enforces merchant policy, and selects a Pareto-efficient
 merchant response, then negotiates with a buyer agent using structured
-actions. Later stages add transactions and learning.
+actions. After a buyer accepts, AstraOS revalidates live merchant state,
+reserves inventory, and creates a local order snapshot. Later stages add
+Arena evaluation and learning.
 
 This repository is the technical foundation for UAVS Hackathon 2026.
 
 ## Current status
 
-**Stage 6 — B2A Buyer-Agent ↔ Merchant-Agent Negotiation**
+**Stage 7 — Proposal Acceptance + Transaction Loop**
 
 - Stage 0 — Scaffold — COMPLETE
 - Stage 1 — Domain model and merchant data — COMPLETE
@@ -23,6 +25,7 @@ This repository is the technical foundation for UAVS Hackathon 2026.
 - Stage 4 — Offer construction + dynamic bundling — COMPLETE
 - Stage 5 — Merchant economics + Pareto optimisation — COMPLETE
 - Stage 6 — B2A negotiation — COMPLETE
+- Stage 7 — Proposal acceptance + transaction loop — COMPLETE
 
 **Eligibility answers:** *Can this product satisfy the mandatory request?*
 
@@ -36,7 +39,8 @@ merchant construct around those products?*
 efficient trade-offs between simulated buyer utility and merchant contribution?*
 
 A product is not an offer. Stage 6 negotiates among policy-safe offers.
-It does not check out, take payment, or learn from outcomes.
+Stage 7 proves an accepted proposal is executable against live merchant
+state. It is not a payment processor, OMS, or ERP.
 
 **LLMs interpret negotiation language. AstraOS deterministic services
 control all commercial terms.**
@@ -405,6 +409,104 @@ Proposals are immutable. Max turns default to 5.
 `DETERMINISTIC_SIMULATION` is the test/demo buyer. `LLM_NEGOTIATION`
 may generate language; commercial terms still come from AstraOS.
 
+## What Stage 7 adds
+
+```
+Buyer Agent ACCEPT
+  → POST /api/v1/negotiations/{session_id}/accept
+  → revalidate live merchant state
+  → atomic inventory reservation
+  → local order snapshot
+  → TRANSACTION_CONFIRMED
+```
+
+**Acceptance is not final until revalidated.** Merchant stock, delivery
+capacity, price, warranty, bundle, returns, and policy may have changed
+since the proposal was created. A stale offer returns typed
+`REVALIDATION_FAILED` codes such as `OUT_OF_STOCK` or
+`DELIVERY_NO_LONGER_AVAILABLE`. AstraOS never silently rewrites the
+accepted proposal. Recovery, if requested, creates a **new** Stage 6
+proposal.
+
+### Transaction state machine
+
+`PENDING → REVALIDATING → READY_TO_RESERVE → RESERVING → RESERVED →
+CREATING_ORDER → CONFIRMED`
+
+Failures: `REVALIDATION_FAILED`, `RESERVATION_FAILED`, `ORDER_FAILED`,
+plus `CANCELLED` and `EXPIRED`. Lifecycle is stored as
+`transaction_state`, not inferred from timestamps.
+
+### Revalidation
+
+`TransactionRevalidationService` reloads current catalogue, inventory,
+options, and `MerchantPolicy`. It does not trust Stage 5 scores or
+client-submitted prices. Buyer Agents send `proposal_id` +
+`idempotency_key` only.
+
+Default price rule: locked proposal prices are honoured until
+`expires_at` (`honor_locked_proposal_price=true`). After expiry, accept
+fails with `PROPOSAL_EXPIRED` before reservation. Set the flag false to
+reject catalogue price drift as `PRICE_CHANGED`.
+
+### Inventory reservation
+
+`LocalInventoryReservationProvider` locks the inventory row
+(`SELECT … FOR UPDATE`), computes
+`available = units_available - units_reserved`, and increments reserved
+count atomically. Two buyers racing the last unit produce one
+`CONFIRMED` and one `OUT_OF_STOCK` / `RESERVATION_FAILED`.
+
+Reservation TTL is 10 minutes. For the MVP the reservation is consumed
+immediately when the order is created (`units_available` and
+`units_reserved` both decrease). If order creation fails, the
+reservation is released.
+
+### Idempotency
+
+`idempotency_key` is unique. A retried accept returns the same
+`transaction_id` and `order_id`. One proposal maps to at most one
+`CONFIRMED` transaction.
+
+### Commerce execution abstraction
+
+```
+InventoryReservationProvider  → LocalInventoryReservationProvider
+OrderProvider                 → LocalOrderProvider
+```
+
+AstraOS does not replace payment or retailer order infrastructure.
+The MVP local execution layer demonstrates the API integration
+boundary. Payment is `SIMULATED` / `NOT_REQUIRED_FOR_DEMO`. No funds
+move.
+
+### Order snapshot
+
+Orders store accepted commercial terms (product, delivery, warranty,
+bundle, returns, totals) as an immutable snapshot. Human-readable
+numbers look like `AST-2026-000128`.
+
+Lineage is preserved:
+
+`IntentRequest → Qualification/Match → OfferConstruction →
+Optimisation → NegotiationSession → MerchantProposal →
+CommerceTransaction → InventoryReservation → Order`
+
+### APIs
+
+- `POST /api/v1/negotiations/{session_id}/accept`
+- `GET /api/v1/transactions/{transaction_id}`
+- `GET /api/v1/orders/{order_id}`
+- `GET /api/v1/orders/by-number/{order_number}`
+- Demo-only live mutations: `/api/v1/demo/inventory`,
+  `/api/v1/demo/delivery-capacity`, `/api/v1/demo/policy`
+
+### Failure recovery
+
+Failed revalidation returns `next_actions: ["REQUEST_NEW_PROPOSAL"]`
+and may generate a fresh Stage 6 proposal. The original accepted offer
+is unchanged.
+
 ## Architecture
 
 ```
@@ -416,7 +518,8 @@ Decision logic lives under `apps/api/app/decision/intent/`,
 `apps/api/app/decision/offers/`, `apps/api/app/decision/economics/`,
 `apps/api/app/decision/policies/`, `apps/api/app/decision/utility/`,
 `apps/api/app/decision/pareto/`, `apps/api/app/decision/optimisation/`,
-and `apps/api/app/decision/negotiation/`.
+`apps/api/app/decision/negotiation/`, and
+`apps/api/app/decision/transaction/`.
 
 Money remains integer cents. The MVP scans active variants in the selected
 category. That is acceptable for a few hundred SKUs.
@@ -495,10 +598,13 @@ Without those values the API stays on the rule-based parser.
 - **Stage 4 — Offer construction + dynamic bundling** — COMPLETE
 - **Stage 5 — Merchant economics + Pareto optimisation** — COMPLETE
 - **Stage 6 — B2A Buyer-Agent ↔ Merchant-Agent Negotiation** — COMPLETE
-- **Stage 7 — Machine-Readable Proposal Acceptance + Transaction Loop**
-- **Stage 8 — Agent Arena + benchmark**
+- **Stage 7 — Machine-Readable Proposal Acceptance + Transaction Loop** — COMPLETE
+- **Stage 8 — Agent Arena + Synthetic Evaluation Benchmark**
 - **Stage 9 — Intent → Offer → Outcome learning**
 - **Stage 10 — Protocol adapter + demo hardening**
 
-Stage 6 does not implement checkout, payment, orders, inventory reservation,
-Arena, learning, or MCP/UCP/A2A.
+AstraOS does not replace payment or retailer order infrastructure.
+The MVP local execution layer demonstrates the API integration boundary.
+
+Stage 7 does not implement real payments, Stripe, shipping execution,
+warehouse logistics, refunds, Arena, learning models, or MCP/UCP/A2A.

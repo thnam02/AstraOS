@@ -1,4 +1,4 @@
-"""B2A negotiation HTTP routes. No checkout."""
+"""B2A negotiation HTTP routes, including proposal acceptance."""
 
 import uuid
 
@@ -12,7 +12,9 @@ from app.schemas.negotiation import (
     NegotiationResponse,
     SimulateBuyerRequest,
 )
+from app.schemas.transaction import AcceptProposalRequest, AcceptProposalResponse
 from app.services.negotiation import NegotiationError, NegotiationService
+from app.services.transaction import TransactionError, TransactionService
 
 router = APIRouter(prefix="/negotiations", tags=["negotiation"])
 
@@ -62,3 +64,20 @@ async def simulate_buyer_turn(
         return await service.simulate(session_id, payload)
     except NegotiationError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+def _transactions(db: AsyncSession = Depends(get_db)) -> TransactionService:
+    return TransactionService(db)
+
+
+@router.post("/{session_id}/accept", response_model=AcceptProposalResponse)
+async def accept_proposal(
+    session_id: uuid.UUID,
+    payload: AcceptProposalRequest,
+    service: TransactionService = Depends(_transactions),
+) -> AcceptProposalResponse:
+    try:
+        return await service.accept(session_id, payload)
+    except TransactionError as exc:
+        status = 404 if exc.code.value.endswith("NOT_FOUND") else 409
+        raise HTTPException(status_code=status, detail=exc.code.value) from exc

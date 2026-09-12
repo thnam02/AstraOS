@@ -1,5 +1,7 @@
 """AstraOS decision engine package.
 
-Stage 6 adds B2A negotiation. LLMs interpret language. Deterministic
-AstraOS services control all commercial terms.
+Stage 7 adds proposal acceptance and a local transaction execution
+boundary. Acceptance is not final until live merchant state is
+revalidated. LLMs interpret language. Deterministic AstraOS services
+control all commercial terms.
 """

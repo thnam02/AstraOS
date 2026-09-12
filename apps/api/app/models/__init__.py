@@ -2,6 +2,12 @@
 
 from app.db.base import Base
 from app.models.bundle import BundleOption, VariantBundleOption
+from app.models.commerce import (
+    CommerceTransaction,
+    InventoryReservation,
+    Order,
+    OrderNumberSequence,
+)
 from app.models.delivery import DeliveryOption, VariantDeliveryOption
 from app.models.embedding import VariantEmbedding
 from app.models.inventory import InventoryRecord
@@ -25,15 +31,19 @@ __all__ = [
     "AttributeEvidence",
     "Base",
     "BundleOption",
+    "CommerceTransaction",
     "DataSource",
     "DeliveryOption",
     "InventoryRecord",
+    "InventoryReservation",
     "MatchResult",
     "MatchRun",
     "Merchant",
     "MerchantProposal",
     "NegotiationSession",
     "NegotiationTurn",
+    "Order",
+    "OrderNumberSequence",
     "OfferCandidateRow",
     "OfferConstructionRun",
     "OptimisationRun",

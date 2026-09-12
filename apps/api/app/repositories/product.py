@@ -94,6 +94,15 @@ class ProductRepository:
         result = await self.session.scalars(stmt)
         return result.unique().one_or_none()
 
+    async def get_variant_by_sku(self, sku: str) -> ProductVariant | None:
+        stmt = (
+            select(ProductVariant)
+            .options(*_VARIANT_LOAD, selectinload(ProductVariant.product))
+            .where(ProductVariant.sku == sku)
+        )
+        result = await self.session.scalars(stmt)
+        return result.unique().one_or_none()
+
     async def get_variant(self, variant_id: uuid.UUID) -> ProductVariant | None:
         stmt = (
             select(ProductVariant)

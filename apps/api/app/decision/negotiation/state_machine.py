@@ -49,7 +49,10 @@ ALLOWED: dict[NegotiationState, frozenset[NegotiationState]] = {
     ),
     S.BUYER_ACCEPTED: frozenset({S.READY_FOR_CHECKOUT}),
     S.BUYER_REJECTED: frozenset(),
-    S.READY_FOR_CHECKOUT: frozenset({S.EXPIRED, S.CANCELLED}),
+    S.READY_FOR_CHECKOUT: frozenset(
+        {S.TRANSACTION_CONFIRMED, S.MERCHANT_PROPOSAL_CREATED, S.EXPIRED, S.CANCELLED}
+    ),
+    S.TRANSACTION_CONFIRMED: frozenset(),
     S.EXPIRED: frozenset(),
     S.CANCELLED: frozenset(),
     S.NEGOTIATION_LIMIT_REACHED: frozenset(),
@@ -70,6 +73,7 @@ TERMINAL = frozenset(
         S.CANCELLED,
         S.NEGOTIATION_LIMIT_REACHED,
         S.READY_FOR_CHECKOUT,
+        S.TRANSACTION_CONFIRMED,
     }
 )
 

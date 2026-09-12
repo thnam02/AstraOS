@@ -34,11 +34,12 @@ class Settings(BaseSettings):
     response_model_mode: str = "COLD_START"
     learning_artifacts_dir: str = "artifacts/models"
 
-    intent_parser_mode: str = "rule_based"
+    intent_parser_mode: str = "llm"
     llm_api_key: str = ""
     openai_api_key: str = ""
     llm_model: str = "gpt-4o-mini"
     llm_base_url: str = "https://api.openai.com/v1"
+    llm_max_retries: int = 1
     offer_ttl_seconds: int = 300
     max_negotiation_turns: int = 5
     negotiation_ttl_seconds: int = 300

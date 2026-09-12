@@ -15,7 +15,10 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 - `GET /health` — liveness
-- `GET /ready` — database, policy, seed, embeddings, adapter
+- `GET /ready` — database, policy, seed, embeddings, intent parser, adapter
+
+Demo default parser is `INTENT_PARSER_MODE=llm` with rule-based fallback.
+CI forces `rule_based`. Intent benchmark: `python -m app.eval.intent_benchmark`.
 - `GET /api/v1/agent/capabilities`
 - `POST /api/v1/agent/offers/request`
 - `POST /api/v1/agent/offers/counter`

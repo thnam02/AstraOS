@@ -18,13 +18,35 @@ then picks one with a declared rule.
 Discount is one lever. Same-day, warranty, bundle, and returns can be
 cheaper for the merchant and better for the intent. Policy still binds.
 
+**Does the LLM set prices?**
+No. The LLM only interprets buyer language into a typed ShoppingIntent.
+Pricing, policy, economics and offer selection are deterministic AstraOS
+services.
+
+**What happens if the LLM is unavailable?**
+AstraOS automatically falls back to the deterministic rule parser.
+`/ready` reports `requested_mode`, `provider_configured`, and
+`fallback_available` without making a live model call.
+
+**How do you know the parser is accurate?**
+AstraOS evaluates it against a frozen manually labelled intent benchmark
+(`intent_eval_v1`) and reports field-level precision/recall/F1 plus
+critical hard-constraint false positives and omissions.
+
+**Can prompt injection bypass merchant policy?**
+No. Buyer text never has authority over policy or commercial execution.
+Injection attempts are recorded as ambiguities. Eligibility, pricing, and
+selection remain deterministic.
+
 **Why use an LLM?**
-Optional language interpretation only. Commercial terms are applied by
-deterministic services. Default demo mode is rule-based.
+Language interpretation only. Commercial terms are applied by
+deterministic services. Demo default is `INTENT_PARSER_MODE=llm` with
+rule-based fallback. CI stays offline.
 
 **What if the LLM hallucinates?**
-Unsupported fields are rejected. Eligibility still uses hard constraints.
-Timeouts and validation failures fall back to the rule-based parser.
+Unsupported fields are rejected. Soft language is demoted. Eligibility
+still uses hard constraints. Timeouts and validation failures fall back
+to the rule-based parser.
 
 **How do you stop unsafe discounts?**
 Merchant policy (margin floor, max discount, subsidies). Prompt injection

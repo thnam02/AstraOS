@@ -246,6 +246,21 @@ export type ShoppingIntent = {
   parser_type: string;
   parser_version: string;
   status: "READY" | "NEEDS_CLARIFICATION" | "UNSUPPORTED";
+  parser_metadata?: {
+    parser_requested: string;
+    parser_used: string;
+    fallback_used: boolean;
+    fallback_reason: string | null;
+    provider: string | null;
+    model: string | null;
+    prompt_version: string | null;
+    schema_version: string | null;
+    repair_count: number;
+    latency_ms: number | null;
+    input_tokens: number | null;
+    output_tokens: number | null;
+    total_tokens: number | null;
+  } | null;
 };
 
 export type RankedProductMatch = {

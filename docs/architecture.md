@@ -6,6 +6,8 @@ Buyer Agent
 Agent Gateway   REST /api/v1/agent/*   optional MCP stdio
     ↓
 Intent Intelligence
+    Natural language → structured LLM extraction → schema validation
+    → canonical normalisation → faithfulness checks → ShoppingIntent
     ↓
 Eligibility
     ↓
@@ -24,6 +26,11 @@ Transaction
 
 Merchant systems / data sit below this stack: catalogue, inventory,
 delivery capacity, warranty/bundle/returns, evidence, and merchant policy.
+
+Demo default: `INTENT_PARSER_MODE=llm` (`intent-parser-v2`,
+`llm-extraction.v1`). The LLM never receives COGS, catalogue candidates,
+Pareto results, or merchant policy. Commercial authority stays in the
+deterministic services. Offline / CI mode remains `rule_based`.
 
 ## Protocol layer
 
@@ -56,7 +63,7 @@ The learned score is experimental and trained on synthetic Arena labels.
 
 | Dependency | If unavailable |
 | --- | --- |
-| LLM parser | Rule-based intent / negotiation interpreter |
+| LLM parser | Structured extraction with one repair, then rule-based fallback |
 | Embedding provider | Cached embeddings, then local hashing vectors |
 | Learned model | Cold-start utility |
 | MCP | REST `/api/v1/agent/*` |

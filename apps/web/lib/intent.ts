@@ -22,6 +22,9 @@ export function fieldLabel(field: string): string {
     weight: "Weight",
     delivery: "Delivery",
     warranty: "Warranty",
+    durability: "Durability",
+    repairability: "Repairability",
+    sustainability: "Sustainability",
   };
   return labels[field] ?? field.replace(/_/g, " ");
 }

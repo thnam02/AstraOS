@@ -41,7 +41,7 @@ import type {
 
 export function LiveWorkbench() {
   const [text, setText] = useState(HERO_INTENT);
-  const [parserMode, setParserMode] = useState<"rule_based" | "llm">("rule_based");
+  const [parserMode, setParserMode] = useState<"rule_based" | "llm">("llm");
   const [profile, setProfile] = useState<BuyerProfile>("INTENT_ADAPTED");
   const [result, setResult] = useState<MatchResponse | null>(null);
   const [offers, setOffers] = useState<GenerateOffersResponse | null>(null);
@@ -160,8 +160,9 @@ export function LiveWorkbench() {
     return (
       <div className="mx-auto max-w-xl py-16 text-center">
         <p className="eyebrow">AstraOS Live</p>
-        <p className="mt-3 text-lg">
-          Transforming buyer intent into a merchant offer…
+        <p className="mt-3 text-lg">Understanding buyer intent…</p>
+        <p className="mt-2 text-sm text-muted">
+          Then qualifying, matching, and constructing a merchant offer.
         </p>
       </div>
     );
@@ -210,14 +211,26 @@ export function LiveWorkbench() {
           rows={4}
           className="control w-full px-3 py-2 text-sm leading-6"
         />
-        <button
-          type="button"
-          onClick={() => void run()}
-          disabled={!text.trim()}
-          className="btn-primary"
-        >
-          Run AstraOS
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={parserMode}
+            onChange={(event) =>
+              setParserMode(event.target.value as "rule_based" | "llm")
+            }
+            className="control px-2 py-1 text-xs"
+          >
+            <option value="llm">LLM parser</option>
+            <option value="rule_based">Rule-based parser</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => void run()}
+            disabled={!text.trim()}
+            className="btn-primary"
+          >
+            Run AstraOS
+          </button>
+        </div>
         {error ? <ErrorState message={error} /> : null}
       </div>
     );
@@ -432,26 +445,52 @@ export function LiveWorkbench() {
         </aside>
       </div>
       <Drawer open={inspect} title="Inspect decision" onClose={() => setInspect(false)}>
-        <pre className="overflow-x-auto text-[11px] text-muted">
-          {JSON.stringify(
-            {
-              intent: result?.intent,
-              qualification: result?.qualification,
-              top_match: topMatch,
-              construction: offers?.summary,
-              optimisation: optimisation?.summary,
-              selected_offer: proposalOffer,
-              run_ids: {
-                match: result?.run_id,
-                offer: offers?.offer_run_id,
-                optimisation: optimisation?.optimisation_run_id,
-                negotiation: negotiation?.session_id,
+        <div className="space-y-4 text-sm">
+          <section>
+            <p className="eyebrow">Parser</p>
+            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              {Object.entries({
+                parser_requested: result?.intent.parser_metadata?.parser_requested,
+                parser_used: result?.intent.parser_metadata?.parser_used ?? result?.intent.parser_type,
+                provider: result?.intent.parser_metadata?.provider,
+                model: result?.intent.parser_metadata?.model,
+                prompt_version: result?.intent.parser_metadata?.prompt_version,
+                schema_version: result?.intent.parser_metadata?.schema_version,
+                fallback_used: result?.intent.parser_metadata?.fallback_used ?? false,
+                fallback_reason: result?.intent.parser_metadata?.fallback_reason,
+                repair_count: result?.intent.parser_metadata?.repair_count ?? 0,
+                latency_ms: result?.intent.parser_metadata?.latency_ms,
+                input_tokens: result?.intent.parser_metadata?.input_tokens,
+                output_tokens: result?.intent.parser_metadata?.output_tokens,
+                total_tokens: result?.intent.parser_metadata?.total_tokens,
+              }).map(([key, value]) => (
+                <div key={key} className="contents">
+                  <dt className="text-muted">{key}</dt>
+                  <dd>{value === null || value === undefined || value === "" ? "—" : String(value)}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+          <pre className="overflow-x-auto text-[11px] text-muted">
+            {JSON.stringify(
+              {
+                qualification: result?.qualification,
+                top_match: topMatch,
+                construction: offers?.summary,
+                optimisation: optimisation?.summary,
+                selected_offer: proposalOffer,
+                run_ids: {
+                  match: result?.run_id,
+                  offer: offers?.offer_run_id,
+                  optimisation: optimisation?.optimisation_run_id,
+                  negotiation: negotiation?.session_id,
+                },
               },
-            },
-            null,
-            2,
-          )}
-        </pre>
+              null,
+              2,
+            )}
+          </pre>
+        </div>
       </Drawer>
     </div>
   );

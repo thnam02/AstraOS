@@ -37,19 +37,20 @@ bundle, and returns — under merchant policy.
 ## Architecture
 
 ```
-EXTERNAL BUYER AGENT
-        │
-        ├── REST  /api/v1/agent/*
-        └── MCP   python -m app.agent.mcp_server
-        ▼
-AGENT COMMERCE ADAPTER   (translation only)
-        ▼
-CANONICAL ASTRAOS SERVICES
-Intent → Qualification → Semantic Matching → Offer Construction
+Natural Language
+      ↓
+LLM Interpretation        (structured JSON, validated)
+      ↓
+Validated ShoppingIntent
+      ↓
+Deterministic AstraOS Engine
+Qualification → Semantic Matching → Offer Construction
   → Economics / Policy → Pareto Optimisation → Negotiation → Transaction
-        ▼
-MACHINE-READABLE RESPONSE
 ```
+
+The LLM interprets buyer language only. It does not set prices, qualify
+products, choose offers, or override merchant policy. If the LLM is
+unavailable, AstraOS falls back to the deterministic rule parser.
 
 The protocol adapter contains no pricing, eligibility, matching, Pareto,
 or policy logic.
@@ -163,7 +164,9 @@ behaviour, or production sales impact.
 - No warehouse logistics
 - Learned model is experimental / synthetic
 - MCP is optional; REST is the guaranteed interface
-- LLM parser is optional; rule-based fallback is default
+- Demo default is the structured LLM parser (`INTENT_PARSER_MODE=llm`)
+  with automatic rule-based fallback. CI and offline tests stay
+  `rule_based`.
 
 ## Future production path
 
@@ -185,5 +188,13 @@ repository.
 | `make demo-hero` | Hero request → counter → accept |
 
 Internet is not required for the core deterministic flow, Arena, LEARN
-inspection, or transaction simulation. Optional LLM parsing needs
-`INTENT_PARSER_MODE=llm` and an API key.
+inspection, or transaction simulation. Demo LLM parsing needs
+`INTENT_PARSER_MODE=llm` and `LLM_API_KEY` (or `OPENAI_API_KEY`). Without
+a key, the same API still runs via the rule-based fallback.
+
+Intent evaluation (frozen labelled set):
+
+```bash
+cd apps/api && python -m app.eval.intent_benchmark --rule-only
+cd apps/api && python -m app.eval.intent_benchmark --llm --out ../../artifacts/eval/intent-rule-vs-llm-v1.json
+```

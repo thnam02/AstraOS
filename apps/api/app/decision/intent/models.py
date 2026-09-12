@@ -143,6 +143,24 @@ class UnsupportedSemanticNeed(BaseModel):
     reason: str = "unsupported_semantic_need"
 
 
+class ParserMetadata(BaseModel):
+    """Technical parser provenance. Never contains secrets or chain-of-thought."""
+
+    parser_requested: str
+    parser_used: str
+    fallback_used: bool = False
+    fallback_reason: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    prompt_version: str | None = None
+    schema_version: str | None = None
+    repair_count: int = 0
+    latency_ms: float | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+
+
 class ShoppingIntent(BaseModel):
     """Structured buyer request produced by an IntentParser."""
 
@@ -162,9 +180,12 @@ class ShoppingIntent(BaseModel):
     parser_type: str
     parser_version: str
     status: IntentStatus = IntentStatus.READY
+    parser_metadata: ParserMetadata | None = None
 
 
 SUPPORTED_CONSTRAINT_FIELDS = {item.value for item in ConstraintField}
 SUPPORTED_OPERATORS = {item.value for item in ConstraintOperator}
 PARSER_VERSION_RULE = "rule_based.v2"
 PARSER_VERSION_LLM = "llm.v2"
+PROMPT_VERSION = "intent-parser-v2"
+EXTRACTION_SCHEMA_VERSION = "llm-extraction.v1"

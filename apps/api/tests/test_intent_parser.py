@@ -192,7 +192,9 @@ async def test_animal_leather_is_unsupported_not_satisfied() -> None:
 async def test_parser_is_deterministic() -> None:
     first = await parse_intent(HERO_INTENT)
     second = await parse_intent(HERO_INTENT)
-    assert first.model_dump() == second.model_dump()
+    left = first.model_dump(exclude={"parser_metadata"})
+    right = second.model_dump(exclude={"parser_metadata"})
+    assert left == right
 
 
 @pytest.mark.asyncio

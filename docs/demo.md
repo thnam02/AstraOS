@@ -1,10 +1,9 @@
 # 3-minute AstraOS demo
 
 Reset first: `make reset-demo` (or `python -m app.cli reset-demo`).
-Open http://localhost:3000. Parser: **Rule-based**. No API key required.
-
-If the LLM option is selected and the key is missing, AstraOS falls back
-to the deterministic parser. Say that out loud and continue.
+Open http://localhost:3000. Parser default: **LLM**, with automatic
+rule-based fallback. If `LLM_API_KEY` is missing, say that AstraOS fell
+back to the deterministic parser and continue. Do not stop the demo.
 
 ## 0:00 — LIVE
 

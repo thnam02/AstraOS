@@ -89,15 +89,20 @@ async def evaluate_readiness(session: AsyncSession) -> ReadyResponse:
         degraded.append("learned_model_artifact_missing")
 
     llm = bool(settings.llm_api_key or settings.openai_api_key)
+    requested = (settings.intent_parser_mode or "llm").strip().lower()
     checks.append(
         ReadinessCheck(
-            name="llm_parser",
+            name="intent_parser",
             ok=True,
-            detail="configured" if llm else "rule-based fallback",
+            detail=(
+                f"requested_mode={requested}; "
+                f"provider_configured={'true' if llm else 'false'}; "
+                "fallback_available=true"
+            ),
             required=False,
         )
     )
-    if not llm:
+    if requested == "llm" and not llm:
         degraded.append("llm_unavailable")
 
     checks.append(

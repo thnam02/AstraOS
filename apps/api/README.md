@@ -2,7 +2,8 @@
 
 FastAPI service for AstraOS.
 
-Stage 5 selects a Pareto-efficient merchant response from the Stage 4 offer space.
+Stage 6 negotiates policy-safe proposals. LLMs interpret language; AstraOS
+controls commercial terms.
 
 - `POST /api/v1/intent/analyse` — structured deep intent
 - `POST /api/v1/intent/qualify` — Stage 2 qualification (preserved)
@@ -12,6 +13,8 @@ Stage 5 selects a Pareto-efficient merchant response from the Stage 4 offer spac
 - `GET /api/v1/offers/{id}` — one offer + proof
 - `POST /api/v1/optimisation/run` — economics, policy, utility, Pareto
 - `POST /api/v1/decision/run` — full intent → recommendation trace
+- `POST /api/v1/negotiations` — open a B2A session
+- `POST /api/v1/negotiations/{id}/turns` — buyer accept / reject / counter
 
 ```bash
 make migrate

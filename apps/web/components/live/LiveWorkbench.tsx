@@ -3,15 +3,22 @@
 import { useEffect, useState, type ReactNode } from "react";
 
 import { ApiStatus } from "@/components/live/ApiStatus";
+import { NegotiationPanel } from "@/components/live/NegotiationPanel";
 import { OfferExplorer } from "@/components/live/OfferExplorer";
 import { OptimisationPanel } from "@/components/live/OptimisationPanel";
-import { runDecision, runOptimisation } from "@/lib/api";
+import {
+  createNegotiation,
+  postNegotiationTurn,
+  runOptimisation,
+  simulateNegotiationBuyer,
+} from "@/lib/api";
 import { HERO_INTENT, contextLabel, fieldLabel } from "@/lib/intent";
 import { formatAudCents } from "@/lib/money";
 import type {
   BuyerProfile,
   GenerateOffersResponse,
   MatchResponse,
+  NegotiationResponse,
   OptimisationResponse,
   RankedProductMatch,
   ShoppingIntent,
@@ -21,6 +28,7 @@ function processState(
   hasMatch: boolean,
   hasOffers: boolean,
   hasOpt: boolean,
+  hasNego: boolean,
   id: string,
 ): string {
   if (!hasMatch) return "not started";
@@ -30,7 +38,11 @@ function processState(
     if (hasOpt) return "complete";
     return hasOffers ? "next" : "not started";
   }
-  if (id === "negotiate") return hasOpt ? "next" : "locked";
+  if (id === "negotiate") {
+    if (hasNego) return "complete";
+    return hasOpt ? "next" : "locked";
+  }
+  if (id === "transact") return hasNego ? "next" : "locked";
   return "locked";
 }
 
@@ -53,6 +65,9 @@ export function LiveWorkbench() {
   const [optimisation, setOptimisation] = useState<OptimisationResponse | null>(
     null,
   );
+  const [negotiation, setNegotiation] = useState<NegotiationResponse | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,17 +75,18 @@ export function LiveWorkbench() {
     setBusy(true);
     setError(null);
     try {
-      const decided = await runDecision({
+      const decided = await createNegotiation({
         intent: text,
         parser_mode: parserMode,
         buyer_profile: profile,
         max_products: 8,
       });
-      setResult(decided.match);
-      setOffers(decided.construction);
-      setOptimisation(decided.optimisation);
+      if (decided.match) setResult(decided.match);
+      if (decided.construction) setOffers(decided.construction);
+      if (decided.optimisation) setOptimisation(decided.optimisation);
+      setNegotiation(decided);
     } catch {
-      setError("Decision failed. Is the API running?");
+      setError("Negotiation failed. Is the API running?");
     } finally {
       setBusy(false);
     }
@@ -155,7 +171,7 @@ export function LiveWorkbench() {
           disabled={busy || !text.trim()}
           className="rounded-[6px] bg-ink px-4 py-2 text-xs font-medium tracking-[0.12em] text-surface disabled:opacity-40"
         >
-          {busy ? "OPTIMISING…" : "UNDERSTAND → OPTIMISE"}
+          {busy ? "NEGOTIATING…" : "UNDERSTAND → NEGOTIATE"}
         </button>
         {error ? <p className="text-sm text-danger">{error}</p> : null}
         <ApiStatus />
@@ -250,6 +266,7 @@ export function LiveWorkbench() {
                   Boolean(result),
                   Boolean(offers),
                   Boolean(optimisation),
+                  Boolean(negotiation),
                   id,
                 )}
               </span>
@@ -273,6 +290,44 @@ export function LiveWorkbench() {
             profile={profile}
             onProfile={(next) => void rerunOptimisation(next)}
             busy={busy}
+          />
+        </div>
+      ) : null}
+      {negotiation ? (
+        <div className="xl:col-span-3">
+          <NegotiationPanel
+            negotiation={negotiation}
+            busy={busy}
+            onMessage={(message) => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  setNegotiation(
+                    await postNegotiationTurn(negotiation.session_id, {
+                      message,
+                    }),
+                  );
+                } catch {
+                  setError("Negotiation turn failed.");
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+            onSimulate={(mode) => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  setNegotiation(
+                    await simulateNegotiationBuyer(negotiation.session_id, mode),
+                  );
+                } catch {
+                  setError("Buyer simulation failed.");
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
           />
         </div>
       ) : null}

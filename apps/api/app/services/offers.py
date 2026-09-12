@@ -65,12 +65,15 @@ class OfferConstructionService:
         max_products: int = 8,
         preview_status: str = "FEASIBLE",
         preview_limit: int = 50,
+        intent_override: ShoppingIntent | None = None,
     ) -> GenerateOffersResponse:
         started = time.perf_counter()
         match_started = time.perf_counter()
         ranked, intent, resolved_match_id = await self._load_matches(
             intent_text, match_run_id, parser_mode, max_products
         )
+        if intent_override is not None:
+            intent = intent_override
         matching_load_ms = (time.perf_counter() - match_started) * 1000
 
         dim_started = time.perf_counter()

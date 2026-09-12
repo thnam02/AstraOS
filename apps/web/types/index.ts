@@ -594,3 +594,57 @@ export type DecisionResponse = {
   construction: GenerateOffersResponse;
   optimisation: OptimisationResponse;
 };
+
+export type MerchantProposal = {
+  proposal_id: string;
+  negotiation_session_id: string;
+  version: number;
+  proposal_type: string;
+  outcome: string;
+  offer_id: string | null;
+  offer: PublicScoredOffer | null;
+  reason_codes: string[];
+  explanation: string[];
+  next_allowed_actions: string[];
+  compromise: Record<string, number | string> | null;
+  expires_at: string | null;
+  created_at: string | null;
+};
+
+export type NegotiationTurn = {
+  turn_id: string;
+  turn_number: number;
+  actor: string;
+  raw_message: string | null;
+  structured_action: string;
+  structured_payload: Record<string, unknown>;
+  related_offer_id: string | null;
+  created_at: string;
+};
+
+export type NegotiationResponse = {
+  session_id: string;
+  state: string;
+  proposal: MerchantProposal | null;
+  previous_proposal: MerchantProposal | null;
+  turns: NegotiationTurn[];
+  proposals: MerchantProposal[];
+  commercial: {
+    minimum_margin_rate: number;
+    maximum_discount_rate: number;
+    inventory_units: number | null;
+    expires_at: string | null;
+    current_sku: string | null;
+  } | null;
+  timing: {
+    message_interpretation_ms: number;
+    delta_application_ms: number;
+    reoptimisation_ms: number;
+    proposal_generation_ms: number;
+    total_turn_ms: number;
+  } | null;
+  events: { type: string; at: string; state: string }[];
+  match?: MatchResponse | null;
+  construction?: GenerateOffersResponse | null;
+  optimisation?: OptimisationResponse | null;
+};

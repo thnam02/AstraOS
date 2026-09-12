@@ -58,6 +58,18 @@ class OptimisationService:
         buyer_profile: str = "INTENT_ADAPTED",
         alpha: float = DEFAULT_ALPHA,
     ) -> OptimisationResponse:
+        response, _engine = await self.evaluate(
+            offer_run_id, buyer_profile=buyer_profile, alpha=alpha
+        )
+        return response
+
+    async def evaluate(
+        self,
+        offer_run_id: uuid.UUID,
+        *,
+        buyer_profile: str = "INTENT_ADAPTED",
+        alpha: float = DEFAULT_ALPHA,
+    ) -> tuple[OptimisationResponse, object]:
         started = time.perf_counter()
         construction = await self.offers.get_run(offer_run_id)
         if construction is None:
@@ -110,7 +122,7 @@ class OptimisationService:
         response.timing.total_optimisation_ms = round(
             (time.perf_counter() - started) * 1000, 2
         )
-        return response
+        return response, result
 
     async def get_run(self, run_id: uuid.UUID) -> OptimisationResponse | None:
         row = await self.runs.get(run_id)

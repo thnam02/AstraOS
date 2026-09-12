@@ -69,7 +69,34 @@ class SemanticMatchingService:
         started = time.perf_counter()
         intent = await parse_intent(text, parser_mode)
         parse_ms = (time.perf_counter() - started) * 1000
+        return await self._match_intent(
+            intent, raw_text=text, parse_ms=parse_ms, limit=limit, started=started
+        )
 
+    async def match_from_intent(
+        self,
+        intent: ShoppingIntent,
+        *,
+        limit: int = 10,
+    ) -> MatchResponse:
+        started = time.perf_counter()
+        return await self._match_intent(
+            intent,
+            raw_text=intent.raw_text,
+            parse_ms=0.0,
+            limit=limit,
+            started=started,
+        )
+
+    async def _match_intent(
+        self,
+        intent: ShoppingIntent,
+        *,
+        raw_text: str,
+        parse_ms: float,
+        limit: int,
+        started: float,
+    ) -> MatchResponse:
         qualify_started = time.perf_counter()
         variants = await self.products.list_active_variants(category=intent.category)
         snapshots = [variant_to_snapshot(row) for row in variants]
@@ -106,7 +133,7 @@ class SemanticMatchingService:
             total_ms=round(total_ms, 2),
         )
         top = ranked[:limit]
-        run = await self._persist(text, intent, results, top, summary, timing)
+        run = await self._persist(raw_text, intent, results, top, summary, timing)
         logger.info(
             "match_completed run_id=%s parser=%s checked=%s eligible=%s "
             "matched=%s parse_ms=%.2f qualify_ms=%.2f embed_ms=%.2f "

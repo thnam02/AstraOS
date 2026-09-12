@@ -7,13 +7,14 @@ Merchant-side offer intelligence for AI commerce.
 AstraOS is a merchant-side decision engine for agentic commerce. It takes AI
 shopping intent, qualifies products against hard constraints, constructs
 commercial offers, enforces merchant policy, and selects a Pareto-efficient
-merchant response. Later stages add negotiation, transactions, and learning.
+merchant response, then negotiates with a buyer agent using structured
+actions. Later stages add transactions and learning.
 
 This repository is the technical foundation for UAVS Hackathon 2026.
 
 ## Current status
 
-**Stage 5 — Merchant Economics + Pareto Optimisation**
+**Stage 6 — B2A Buyer-Agent ↔ Merchant-Agent Negotiation**
 
 - Stage 0 — Scaffold — COMPLETE
 - Stage 1 — Domain model and merchant data — COMPLETE
@@ -21,6 +22,7 @@ This repository is the technical foundation for UAVS Hackathon 2026.
 - Stage 3 — Deep intent intelligence + semantic matching — COMPLETE
 - Stage 4 — Offer construction + dynamic bundling — COMPLETE
 - Stage 5 — Merchant economics + Pareto optimisation — COMPLETE
+- Stage 6 — B2A negotiation — COMPLETE
 
 **Eligibility answers:** *Can this product satisfy the mandatory request?*
 
@@ -33,8 +35,13 @@ merchant construct around those products?*
 **Optimisation answers:** *Among policy-safe configurations, which ones are
 efficient trade-offs between simulated buyer utility and merchant contribution?*
 
-A product is not an offer. Stage 5 selects on the frontier. It does not
-negotiate, accept, or check out.
+A product is not an offer. Stage 6 negotiates among policy-safe offers.
+It does not check out, take payment, or learn from outcomes.
+
+**LLMs interpret negotiation language. AstraOS deterministic services
+control all commercial terms.**
+
+The Buyer Agent is an external evaluator/client. It is not the product.
 
 The buyer-side score is **Simulated Buyer Utility** — a transparent cold-start
 simulation. It is not P(win), purchase probability, or reverse-engineered
@@ -213,6 +220,10 @@ coverage, then price, then SKU. Merchant economics are not mixed in.
 | GET | `/api/v1/optimisation/runs/{id}/frontier` | Frontier view |
 | GET | `/api/v1/optimisation/runs/{id}/counterfactuals` | Counterfactual view |
 | POST | `/api/v1/decision/run` | Intent → match → construct → optimise |
+| POST | `/api/v1/negotiations` | Open a session + initial proposal |
+| POST | `/api/v1/negotiations/{id}/turns` | Buyer ACCEPT / REJECT / COUNTER |
+| GET | `/api/v1/negotiations/{id}` | Session, turns, immutable proposals |
+| POST | `/api/v1/negotiations/{id}/simulate-buyer` | Transparent buyer simulator |
 
 `POST /api/v1/match` body:
 
@@ -352,6 +363,48 @@ efficiency is Δutility per intervention dollar, not ROI.
 If no offer is policy-safe, AstraOS returns `NO_POLICY_SAFE_OFFER` and will not
 invent a deal.
 
+## What Stage 6 adds
+
+```
+Buyer request
+  → Stage 2–5 pipeline
+  → immutable MerchantProposal
+  → buyer ACCEPT / REJECT / COUNTER
+  → NegotiationDelta over the original ShoppingIntent
+  → rematch / reconstruct / reoptimise only as needed
+  → ACCEPT_BUYER_COUNTER | COUNTEROFFER | ALTERNATIVE_PRODUCT | DECLINE
+```
+
+The Buyer Agent is an evaluation client. AstraOS is the merchant agent.
+
+State is explicit (`CREATED` → `MERCHANT_PROPOSAL_CREATED` →
+`BUYER_COUNTERED` → `MERCHANT_COUNTER_CREATED` / `READY_FOR_CHECKOUT`).
+Chat text is not the source of truth.
+
+The interpreter classifies ACCEPT / REJECT / COUNTER / CLARIFICATION and
+extracts constraints. It never sets a price.
+
+`NegotiationDelta` updates only what the buyer changed. Original hard
+constraints (ANC, same-day, …) stay mandatory unless explicitly relaxed.
+
+Counteroffer search reuses Stage 4–5 engines, then:
+
+1. Accept if a policy-safe offer meets the new request on the current SKU
+2. Else offer an already-matched alternative SKU (labelled)
+3. Else return the closest policy-safe compromise
+4. Else decline — never invent a deal
+
+Compromise score (lower is closer):
+
+```
+0.40·price_gap + 0.25·delivery_gap + 0.15·warranty_gap
++ 0.10·bundle_gap + 0.10·returns_gap
+```
+
+Proposals are immutable. Max turns default to 5.
+`DETERMINISTIC_SIMULATION` is the test/demo buyer. `LLM_NEGOTIATION`
+may generate language; commercial terms still come from AstraOS.
+
 ## Architecture
 
 ```
@@ -362,7 +415,8 @@ Decision logic lives under `apps/api/app/decision/intent/`,
 `apps/api/app/decision/eligibility/`, `apps/api/app/decision/retrieval/`,
 `apps/api/app/decision/offers/`, `apps/api/app/decision/economics/`,
 `apps/api/app/decision/policies/`, `apps/api/app/decision/utility/`,
-`apps/api/app/decision/pareto/`, and `apps/api/app/decision/optimisation/`.
+`apps/api/app/decision/pareto/`, `apps/api/app/decision/optimisation/`,
+and `apps/api/app/decision/negotiation/`.
 
 Money remains integer cents. The MVP scans active variants in the selected
 category. That is acceptable for a few hundred SKUs.
@@ -440,11 +494,11 @@ Without those values the API stays on the rule-based parser.
 - **Stage 3 — Deep intent intelligence + semantic matching** — COMPLETE
 - **Stage 4 — Offer construction + dynamic bundling** — COMPLETE
 - **Stage 5 — Merchant economics + Pareto optimisation** — COMPLETE
-- **Stage 6 — B2A Buyer-Agent ↔ Merchant-Agent Negotiation**
-- **Stage 7 — Transaction loop**
+- **Stage 6 — B2A Buyer-Agent ↔ Merchant-Agent Negotiation** — COMPLETE
+- **Stage 7 — Machine-Readable Proposal Acceptance + Transaction Loop**
 - **Stage 8 — Agent Arena + benchmark**
 - **Stage 9 — Intent → Offer → Outcome learning**
 - **Stage 10 — Protocol adapter + demo hardening**
 
-Stage 5 does not implement B2A negotiation, checkout, orders, Arena,
-Intent → Offer → Outcome learning, or MCP/UCP.
+Stage 6 does not implement checkout, payment, orders, inventory reservation,
+Arena, learning, or MCP/UCP/A2A.

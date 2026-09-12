@@ -3,6 +3,7 @@
 from app.services.catalogue import CatalogueService
 from app.services.decision import DecisionService
 from app.services.matching import SemanticMatchingService
+from app.services.negotiation import NegotiationService
 from app.services.offers import OfferConstructionService
 from app.services.optimisation import OptimisationService
 from app.services.policy import MerchantPolicyService, PolicyValidationError
@@ -13,6 +14,7 @@ __all__ = [
     "DecisionService",
     "IntentQualificationService",
     "MerchantPolicyService",
+    "NegotiationService",
     "OfferConstructionService",
     "OptimisationService",
     "PolicyValidationError",

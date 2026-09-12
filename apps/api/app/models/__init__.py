@@ -7,6 +7,11 @@ from app.models.embedding import VariantEmbedding
 from app.models.inventory import InventoryRecord
 from app.models.match import MatchResult, MatchRun
 from app.models.merchant import Merchant
+from app.models.negotiation import (
+    MerchantProposal,
+    NegotiationSession,
+    NegotiationTurn,
+)
 from app.models.offer import OfferCandidateRow, OfferConstructionRun
 from app.models.optimisation import OptimisationRun
 from app.models.policy import MerchantPolicy
@@ -26,6 +31,9 @@ __all__ = [
     "MatchResult",
     "MatchRun",
     "Merchant",
+    "MerchantProposal",
+    "NegotiationSession",
+    "NegotiationTurn",
     "OfferCandidateRow",
     "OfferConstructionRun",
     "OptimisationRun",

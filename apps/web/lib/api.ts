@@ -16,6 +16,7 @@ import type {
   BuyerProfile,
   DecisionResponse,
   OptimisationResponse,
+  NegotiationResponse,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -196,4 +197,43 @@ export function runOptimisation(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function createNegotiation(payload: {
+  intent: string;
+  parser_mode?: "rule_based" | "llm";
+  buyer_profile?: BuyerProfile;
+  max_products?: number;
+}): Promise<NegotiationResponse> {
+  return request<NegotiationResponse>("/api/v1/negotiations", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function postNegotiationTurn(
+  sessionId: string,
+  payload: {
+    message?: string;
+    action?: string;
+    constraints?: Record<string, unknown>;
+  },
+): Promise<NegotiationResponse> {
+  return request<NegotiationResponse>(`/api/v1/negotiations/${sessionId}/turns`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function simulateNegotiationBuyer(
+  sessionId: string,
+  mode: "BUDGET" | "URGENT" | "ASSURANCE" | "BALANCED" | "TRAVEL",
+): Promise<NegotiationResponse> {
+  return request<NegotiationResponse>(
+    `/api/v1/negotiations/${sessionId}/simulate-buyer`,
+    {
+      method: "POST",
+      body: JSON.stringify({ mode }),
+    },
+  );
 }

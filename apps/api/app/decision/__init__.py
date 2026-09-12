@@ -1,5 +1,5 @@
 """AstraOS decision engine package.
 
-Stage 5 adds merchant economics, simulated buyer utility, and Pareto
-selection on top of Stage 4 offer construction.
+Stage 6 adds B2A negotiation. LLMs interpret language. Deterministic
+AstraOS services control all commercial terms.
 """

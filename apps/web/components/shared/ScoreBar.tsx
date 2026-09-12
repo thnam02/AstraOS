@@ -2,32 +2,45 @@ export function ScoreBar({
   value,
   label,
   large = false,
+  display,
+  suffix,
 }: {
   value: number;
   label?: string;
   large?: boolean;
+  display?: string;
+  suffix?: string;
 }) {
   const pct = Math.round(value * 100);
+  const shown = display ?? String(pct);
   return (
     <div>
       {label ? (
         <div className="flex items-baseline justify-between gap-3">
-          <span className="text-xs text-muted">{label}</span>
+          <span className="text-xs text-muted" title="How strongly the product itself aligns with buyer context and preferences.">
+            {label}
+          </span>
           <span
             className={`font-mono tabular-nums ${
-              large ? "text-3xl font-semibold" : "text-sm font-medium"
+              large ? "text-4xl font-semibold" : "text-sm font-medium"
             }`}
           >
-            {pct}
+            {shown}
+            {suffix ? (
+              <span className="ml-1 text-xs font-normal text-muted">{suffix}</span>
+            ) : null}
           </span>
         </div>
       ) : (
         <p
           className={`font-mono tabular-nums ${
-            large ? "text-3xl font-semibold" : "text-sm font-medium"
+            large ? "text-4xl font-semibold" : "text-sm font-medium"
           }`}
         >
-          {pct}
+          {shown}
+          {suffix ? (
+            <span className="ml-1 text-xs font-normal text-muted">{suffix}</span>
+          ) : null}
         </p>
       )}
       <div

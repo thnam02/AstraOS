@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { ApiStatus } from "@/components/live/ApiStatus";
+import { DecisionBridge } from "@/components/live/DecisionBridge";
 import { IntentPanel } from "@/components/live/IntentPanel";
 import { MatchList } from "@/components/live/MatchList";
 import { NegotiationPanel } from "@/components/live/NegotiationPanel";
@@ -12,6 +14,7 @@ import { ProcessRail, type LiveStage } from "@/components/live/ProcessRail";
 import { QualificationInspect } from "@/components/live/QualificationInspect";
 import { RecommendedOffer } from "@/components/live/RecommendedOffer";
 import { TransactionPanel } from "@/components/live/TransactionPanel";
+import { Drawer } from "@/components/shared/Drawer";
 import { EmptyState, ErrorState } from "@/components/shared/EmptyState";
 import { StatStrip } from "@/components/shared/StatStrip";
 import {
@@ -25,6 +28,7 @@ import {
   setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
+import { isPresentationMode, productsDiffer, SCENARIOS } from "@/lib/decisionNarrative";
 import { HERO_INTENT } from "@/lib/intent";
 import type {
   BuyerProfile,
@@ -33,6 +37,7 @@ import type {
   AcceptProposalResponse,
   NegotiationResponse,
   OptimisationResponse,
+  PublicScoredOffer,
 } from "@/types";
 
 export function LiveWorkbench() {
@@ -53,11 +58,28 @@ export function LiveWorkbench() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stage, setStage] = useState<LiveStage>("understand");
+  const [inspect, setInspect] = useState(false);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
+  const presentation = isPresentationMode(useSearchParams().get("presentation"));
 
+  const selectedFromChart = useMemo(() => {
+    if (!selectedOfferId || !optimisation) return null;
+    return (
+      optimisation.pareto_offers.find((item) => item.offer_id === selectedOfferId) ??
+      (optimisation.recommended_offer?.offer_id === selectedOfferId
+        ? optimisation.recommended_offer
+        : null)
+    );
+  }, [optimisation, selectedOfferId]);
   const proposalOffer =
-    negotiation?.proposal?.offer ?? optimisation?.recommended_offer ?? null;
+    selectedFromChart ??
+    negotiation?.proposal?.offer ??
+    optimisation?.recommended_offer ??
+    null;
   const proposalWhy =
     negotiation?.proposal?.explanation ?? optimisation?.explanation ?? [];
+  const topMatch = result?.semantic_matching.matches[0] ?? null;
+  const differ = productsDiffer(topMatch, proposalOffer);
 
   const flags = {
     hasMatch: Boolean(result),
@@ -84,14 +106,14 @@ export function LiveWorkbench() {
     setNegotiation(await getNegotiation(session.session_id));
   }
 
-  async function run() {
+  async function run(nextText = text, nextProfile = profile) {
     setBusy(true);
     setError(null);
     try {
       const decided = await createNegotiation({
-        intent: text,
+        intent: nextText,
         parser_mode: parserMode,
-        buyer_profile: profile,
+        buyer_profile: nextProfile,
         max_products: 8,
       });
       if (decided.match) setResult(decided.match);
@@ -99,6 +121,7 @@ export function LiveWorkbench() {
       if (decided.optimisation) setOptimisation(decided.optimisation);
       setNegotiation(decided);
       setTransaction(null);
+      setSelectedOfferId(null);
       setStage("match");
     } catch {
       setError("Negotiation failed. Is the API running?");
@@ -135,68 +158,130 @@ export function LiveWorkbench() {
     return () => window.removeEventListener("astraos:policy-changed", onPolicy);
   }, [offers, profile]);
 
+  if (!result && busy) {
+    return (
+      <div className="mx-auto max-w-xl py-16 text-center">
+        <p className="eyebrow">AstraOS Live</p>
+        <p className="mt-3 text-lg">
+          Transforming buyer intent into a merchant offer…
+        </p>
+      </div>
+    );
+  }
+
+  if (!result && !busy) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-5 py-10">
+        <p className="eyebrow">AstraOS Live</p>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Merchant-side intelligence for autonomous buyers
+        </h1>
+        <p className="text-sm text-muted">
+          Select a scenario to see AstraOS transform buyer intent into a
+          merchant offer. Product ranking and offer optimisation are different
+          decisions.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {SCENARIOS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="btn-ghost"
+              onClick={() => {
+                setText(item.intent);
+                setProfile(item.profile);
+                void run(item.intent, item.profile);
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="btn-quiet"
+            onClick={() => {
+              setText(HERO_INTENT);
+            }}
+          >
+            Custom intent
+          </button>
+        </div>
+        <textarea
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          rows={4}
+          className="control w-full px-3 py-2 text-sm leading-6"
+        />
+        <button
+          type="button"
+          onClick={() => void run()}
+          disabled={!text.trim()}
+          className="btn-primary"
+        >
+          Run AstraOS
+        </button>
+        {error ? <ErrorState message={error} /> : null}
+      </div>
+    );
+  }
+
+  const centerWide = stage === "optimise" || stage === "negotiate" || stage === "transact";
+
   return (
     <div className="space-y-4">
-      <section className="panel space-y-3">
+      <section className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="eyebrow">Buyer Agent request</p>
-            <textarea
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              rows={3}
-              className="control mt-2 w-full resize-y px-3 py-2 text-sm leading-6"
-            />
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setText(HERO_INTENT)}
-                className="cursor-pointer text-xs text-muted hover:text-ink"
-              >
-                Example request
-              </button>
-              <select
-                value={parserMode}
-                onChange={(event) =>
-                  setParserMode(event.target.value as "rule_based" | "llm")
-                }
-                className="control px-2 py-1 text-xs"
-              >
-                <option value="rule_based">Rule-based parser</option>
-                <option value="llm">LLM parser</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => void run()}
-                disabled={busy || !text.trim()}
-                className="btn-primary"
-              >
-                {busy ? "Running…" : "Run AstraOS"}
-              </button>
-            </div>
+            <p className="eyebrow">Buyer mission</p>
+            <p className="mt-1 max-w-3xl text-sm leading-6">“{text}”</p>
+            {!presentation ? (
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <select
+                  value={parserMode}
+                  onChange={(event) =>
+                    setParserMode(event.target.value as "rule_based" | "llm")
+                  }
+                  className="control px-2 py-1 text-xs"
+                >
+                  <option value="rule_based">Rule-based parser</option>
+                  <option value="llm">LLM parser</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => void run()}
+                  disabled={busy || !text.trim()}
+                  className="btn-primary"
+                >
+                  {busy ? "Running…" : "Run AstraOS"}
+                </button>
+              </div>
+            ) : null}
           </div>
-          <ApiStatus />
+          {!presentation ? <ApiStatus /> : null}
         </div>
         {error ? <ErrorState message={error} /> : null}
         <ProcessRail active={stage} flags={flags} onSelect={setStage} />
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)_300px]">
-        <aside className="panel">
-          <p className="eyebrow">Intent understanding</p>
+      <div
+        className={`grid gap-6 ${
+          centerWide
+            ? "xl:grid-cols-[minmax(180px,0.18fr)_minmax(0,0.57fr)_minmax(260px,0.25fr)]"
+            : "xl:grid-cols-[minmax(200px,0.2fr)_minmax(0,0.55fr)_minmax(280px,0.25fr)]"
+        }`}
+      >
+        <aside>
+          <p className="eyebrow">Buyer intent</p>
           {result ? (
             <div className="mt-3">
               <IntentPanel intent={result.intent} />
             </div>
           ) : (
-            <p className="mt-3 text-sm text-muted">
-              Run a request to extract mandatory constraints, context, and
-              priorities.
-            </p>
+            <p className="mt-3 text-sm text-muted">Extracting structured intent…</p>
           )}
         </aside>
 
-        <section className="panel min-w-0 space-y-4">
+        <section className="min-w-0 space-y-4">
           <StageView
             stage={stage}
             result={result}
@@ -304,6 +389,13 @@ export function LiveWorkbench() {
                 }
               })();
             }}
+            selectedOfferId={selectedOfferId}
+            onSelectOffer={setSelectedOfferId}
+            presentation={presentation}
+            topMatchName={topMatch?.product_name}
+            matchCount={result?.semantic_matching.matches.length}
+            proposal={proposalOffer}
+            optimisationSummary={optimisation?.summary}
             onDemoMargin={(rate) => {
               void (async () => {
                 setBusy(true);
@@ -320,17 +412,53 @@ export function LiveWorkbench() {
           />
         </section>
 
-        <aside className="panel h-fit xl:sticky xl:top-20">
+        <aside className="panel-decision h-fit xl:sticky xl:top-20">
           {proposalOffer ? (
-            <RecommendedOffer offer={proposalOffer} explanation={proposalWhy} />
+            <RecommendedOffer
+              offer={proposalOffer}
+              explanation={proposalWhy}
+              presentation={presentation}
+              onWhyDifferent={
+                differ ? () => setStage("match") : undefined
+              }
+            />
           ) : (
             <EmptyState
-              title="Current decision"
-              body="AstraOS will place the recommended merchant response here after a run."
+              title="Selected commercial offer"
+              body="The merchant response appears here after optimisation."
             />
           )}
+          <button
+            type="button"
+            className="btn-quiet mt-4"
+            onClick={() => setInspect(true)}
+          >
+            Inspect decision
+          </button>
         </aside>
       </div>
+      <Drawer open={inspect} title="Inspect decision" onClose={() => setInspect(false)}>
+        <pre className="overflow-x-auto text-[11px] text-muted">
+          {JSON.stringify(
+            {
+              intent: result?.intent,
+              qualification: result?.qualification,
+              top_match: topMatch,
+              construction: offers?.summary,
+              optimisation: optimisation?.summary,
+              selected_offer: proposalOffer,
+              run_ids: {
+                match: result?.run_id,
+                offer: offers?.offer_run_id,
+                optimisation: optimisation?.optimisation_run_id,
+                negotiation: negotiation?.session_id,
+              },
+            },
+            null,
+            2,
+          )}
+        </pre>
+      </Drawer>
     </div>
   );
 }
@@ -354,6 +482,13 @@ function StageView({
   onDemoInventory,
   onDemoDelivery,
   onDemoMargin,
+  selectedOfferId,
+  onSelectOffer,
+  presentation,
+  optimisationSummary,
+  topMatchName,
+  matchCount,
+  proposal,
 }: {
   stage: LiveStage;
   result: MatchResponse | null;
@@ -365,6 +500,13 @@ function StageView({
   busy: boolean;
   parserMode: "rule_based" | "llm";
   intentText: string;
+  selectedOfferId: string | null;
+  onSelectOffer: (offerId: string) => void;
+  presentation: boolean;
+  optimisationSummary?: OptimisationResponse["summary"];
+  topMatchName?: string;
+  matchCount?: number;
+  proposal: PublicScoredOffer | null;
   onProfile: (profile: BuyerProfile) => void;
   onMessage: (message: string) => void;
   onSimulate: (mode: "TRAVEL" | "BUDGET") => void;
@@ -410,7 +552,9 @@ function StageView({
             { label: "Unknown", value: result.qualification.uncertain },
           ]}
         />
-        <QualificationInspect intentText={intentText} parserMode={parserMode} />
+        {!presentation ? (
+          <QualificationInspect intentText={intentText} parserMode={parserMode} />
+        ) : null}
         <p className="text-xs text-muted">
           Semantic ranking runs only on eligible SKUs.
         </p>
@@ -430,17 +574,30 @@ function StageView({
     return (
       <div className="space-y-4">
         <div>
-          <p className="eyebrow">Top match</p>
+          <p className="eyebrow">Product decision</p>
           <h2 className="mt-1 text-xl font-semibold tracking-tight">
-            Product ranking
+            Standalone product ranking
           </h2>
+          <p className="mt-1 text-xs text-muted">
+            What product best fits the buyer’s needs — not yet a commercial offer.
+          </p>
         </div>
         <MatchList matches={result.semantic_matching.matches} />
-        <p className="text-xs text-muted">
-          {result.timing.total_ms.toFixed(0)} ms · parse{" "}
-          {result.timing.intent_parse_ms.toFixed(0)} · qualify{" "}
-          {result.timing.qualification_ms.toFixed(0)}
-        </p>
+        {proposal && offers ? (
+          <DecisionBridge
+            topMatch={result.semantic_matching.matches[0] ?? null}
+            construction={offers}
+            optimisation={optimisation}
+            offer={proposal}
+          />
+        ) : null}
+        {!presentation ? (
+          <p className="text-xs text-muted">
+            {result.timing.total_ms.toFixed(0)} ms · parse{" "}
+            {result.timing.intent_parse_ms.toFixed(0)} · qualify{" "}
+            {result.timing.qualification_ms.toFixed(0)}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -458,6 +615,9 @@ function StageView({
       <OfferExplorer
         construction={offers}
         heroProduct={result?.semantic_matching.matches[0]?.product_name}
+        policySafe={optimisationSummary?.policy_safe}
+        pareto={optimisationSummary?.pareto_efficient}
+        presentation={presentation}
       />
     );
   }
@@ -478,6 +638,14 @@ function StageView({
         onProfile={onProfile}
         busy={busy}
         showRecommendation={false}
+        selectedOfferId={selectedOfferId}
+        onSelectOffer={onSelectOffer}
+        presentation={presentation}
+        productSummary={
+          topMatchName
+            ? `${matchCount ?? 0} products ranked · top ${topMatchName}`
+            : undefined
+        }
       />
     );
   }
@@ -497,6 +665,7 @@ function StageView({
         busy={busy}
         onMessage={onMessage}
         onSimulate={onSimulate}
+        presentation={presentation}
       />
     );
   }
@@ -520,6 +689,7 @@ function StageView({
         onDemoInventory={onDemoInventory}
         onDemoDelivery={onDemoDelivery}
         onDemoMargin={onDemoMargin}
+        presentation={presentation}
       />
     );
   }

@@ -71,21 +71,20 @@ export function IntentPanel({ intent }: { intent: ShoppingIntent }) {
       {intent.desired_outcomes.length ? (
         <section>
           <p className="eyebrow">Desired outcomes</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {intent.desired_outcomes.map((item) => (
-              <Chip key={item.label}>{contextLabel(item.label)}</Chip>
-            ))}
-          </div>
+          <p className="mt-2 text-sm leading-6">
+            {intent.desired_outcomes.map((item) => contextLabel(item.label)).join(" · ")}
+          </p>
         </section>
       ) : null}
 
       {intent.tradeoffs.length ? (
         <section>
           <p className="eyebrow">Trade-off</p>
-          <div className="mt-2 space-y-1 text-sm">
+          <div className="mt-2 space-y-2 text-sm">
             {intent.tradeoffs.map((item) => (
               <p key={`${item.preferred_dimension}-${item.over_dimension}`}>
-                {fieldLabel(item.preferred_dimension)} {">"}{" "}
+                {fieldLabel(item.preferred_dimension)}
+                <span className="mx-2 text-muted">{">"}</span>
                 {item.over_dimension === "price"
                   ? "lowest possible price"
                   : fieldLabel(item.over_dimension)}

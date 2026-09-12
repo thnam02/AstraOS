@@ -50,7 +50,7 @@ export function StrategyCard({
         </div>
         {selected ? (
           <span className="text-[11px] font-medium tracking-[0.06em] text-success">
-            SELECTED
+            WON
           </span>
         ) : null}
       </div>

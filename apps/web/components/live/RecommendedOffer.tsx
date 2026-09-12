@@ -1,43 +1,79 @@
 import { Disclosure } from "@/components/shared/Disclosure";
+import { conciseOfferReasons, commercialLevers } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
 import type { PublicScoredOffer } from "@/types";
 
 export function RecommendedOffer({
   offer,
   explanation,
+  onWhyDifferent,
+  presentation = false,
 }: {
   offer: PublicScoredOffer;
   explanation: string[];
+  onWhyDifferent?: () => void;
+  presentation?: boolean;
 }) {
+  const reasons = conciseOfferReasons(explanation);
   return (
     <article className="space-y-4">
       <div>
-        <p className="eyebrow">AstraOS response</p>
-        <h2 className="mt-2 text-xl font-semibold tracking-tight">
+        <p className="eyebrow" title="Complete commercial configuration selected by AstraOS.">
+          Selected commercial offer
+        </p>
+        <h2 className="mt-2 text-[22px] font-semibold tracking-tight">
           {offer.product_name}
         </h2>
-        <p className="font-mono text-[11px] text-muted">{offer.sku}</p>
-        <p className="mt-2 font-mono text-2xl font-semibold tabular-nums">
+        {!presentation ? (
+          <p className="font-mono text-[11px] text-muted">{offer.sku}</p>
+        ) : null}
+        <p className="mt-2 font-mono text-3xl font-semibold tabular-nums">
           {formatAudCents(offer.pricing.total_price_cents)}
         </p>
-        <p className="mt-1 text-sm text-muted">
-          {offer.delivery.name} · {offer.warranty.months}-month warranty ·{" "}
-          {offer.bundle?.name ?? "No bundle"}
-        </p>
+        <ul className="mt-2 space-y-0.5 text-sm">
+          {commercialLevers(offer).map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
       </div>
 
-      <dl className="space-y-2 text-sm">
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted">Buyer fit</dt>
-          <dd className="font-mono tabular-nums">{offer.buyer_utility.toFixed(2)}</dd>
+      <div className="space-y-1 text-sm">
+        <p className="text-xs text-muted">Product</p>
+        <p>
+          {offer.product_name}{" "}
+          <span className="font-mono tabular-nums text-muted">
+            match {Math.round(offer.product_fit * 100)} / 100
+          </span>
+        </p>
+        <p className="pt-2 text-xs text-muted">Commercial enhancements</p>
+        <p>{commercialLevers(offer).join(" · ")}</p>
+      </div>
+
+      <dl className="space-y-2">
+        <div>
+          <dt
+            className="eyebrow"
+            title="Transparent cold-start score for the complete offer configuration."
+          >
+            Simulated buyer utility
+          </dt>
+          <dd className="font-mono text-3xl font-semibold tabular-nums">
+            {offer.buyer_utility.toFixed(2)}
+          </dd>
+          <p className="text-[11px] text-muted">Cold-start score — not purchase probability.</p>
         </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted">Merchant contribution</dt>
+        <div className="flex justify-between gap-3 text-sm">
+          <dt
+            className="text-muted"
+            title="Estimated contribution from the complete commercial offer."
+          >
+            Merchant contribution
+          </dt>
           <dd className="font-mono tabular-nums">
             {formatAudCents(offer.contribution_margin_cents)}
           </dd>
         </div>
-        <div className="flex justify-between gap-3">
+        <div className="flex justify-between gap-3 text-sm">
           <dt className="text-muted">Intervention cost</dt>
           <dd className="font-mono tabular-nums">
             {formatAudCents(offer.incremental_intervention_cost_cents)}
@@ -45,11 +81,11 @@ export function RecommendedOffer({
         </div>
       </dl>
 
-      {explanation.length ? (
+      {reasons.length ? (
         <div>
           <p className="eyebrow">Why this offer</p>
-          <ul className="mt-2 space-y-1.5 text-sm">
-            {explanation.map((reason) => (
+          <ul className="mt-2 space-y-1 text-sm">
+            {reasons.map((reason) => (
               <li key={reason} className="flex gap-2">
                 <span className="text-success">✓</span>
                 <span>{reason}</span>
@@ -59,19 +95,26 @@ export function RecommendedOffer({
         </div>
       ) : null}
 
-      {offer.utility_trace.components.length ? (
-        <Disclosure title="Inspect proof">
-          <ul className="space-y-1 text-xs text-muted">
-            {offer.utility_trace.components.map((item) => (
-              <li key={item.component}>
-                {item.component}: {item.fit.toFixed(2)} × {item.weight.toFixed(2)} ={" "}
-                {item.weighted.toFixed(4)}
-              </li>
-            ))}
-            <li>total {offer.utility_trace.total.toFixed(4)}</li>
-          </ul>
-        </Disclosure>
-      ) : null}
+      <div className="flex flex-wrap gap-3">
+        {onWhyDifferent ? (
+          <button type="button" className="btn-quiet" onClick={onWhyDifferent}>
+            Why this product instead of #1?
+          </button>
+        ) : null}
+        {offer.utility_trace.components.length ? (
+          <Disclosure title="Inspect proof">
+            <ul className="space-y-1 text-xs text-muted">
+              {offer.utility_trace.components.map((item) => (
+                <li key={item.component}>
+                  {item.component}: {item.fit.toFixed(2)} × {item.weight.toFixed(2)} ={" "}
+                  {item.weighted.toFixed(4)}
+                </li>
+              ))}
+              <li>total {offer.utility_trace.total.toFixed(4)}</li>
+            </ul>
+          </Disclosure>
+        ) : null}
+      </div>
     </article>
   );
 }

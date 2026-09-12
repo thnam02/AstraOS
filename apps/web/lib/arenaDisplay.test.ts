@@ -253,6 +253,12 @@ describe("winner and comparison", () => {
   });
 });
 
+describe("arena winner", () => {
+  it("states that AstraOS won the simulated mission", () => {
+    assert.equal(headline(hero).title, "AstraOS won this simulated mission");
+  });
+});
+
 describe("strategy titles", () => {
   it("uses human-readable names", () => {
     assert.equal(strategyTitle("DEFAULT"), "Default Merchant");

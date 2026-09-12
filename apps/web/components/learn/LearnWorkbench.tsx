@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   CartesianGrid,
@@ -16,6 +17,7 @@ import {
   getLearningOverview,
   trainLearningModels,
 } from "@/lib/api";
+import { isPresentationMode, LEARN_STORY } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
 import type {
   LearningOverview,
@@ -23,7 +25,7 @@ import type {
 } from "@/types";
 
 const DISCLAIMER =
-  "This model is trained on simulated buyer-agent outcomes and is included to demonstrate AstraOS's learning architecture. It should not be interpreted as a real-world conversion model.";
+  "Trained on simulated buyer-agent outcomes — not a real conversion model.";
 
 function metric(value: number | undefined): string {
   if (value == null || Number.isNaN(value)) return "—";
@@ -36,6 +38,7 @@ export function LearnWorkbench() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState(200);
+  const presentation = isPresentationMode(useSearchParams().get("presentation"));
 
   async function refresh() {
     setOverview(await getLearningOverview());
@@ -95,26 +98,39 @@ export function LearnWorkbench() {
 
   return (
     <div className="space-y-8">
-      <p className="border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
-        {DISCLAIMER}
-      </p>
-      <p className="text-xs text-muted">
-        Judge demo: inspect the pre-trained synthetic model. Do not train live
-        unless asked.
-      </p>
+      <div>
+        <p className="eyebrow">Learn</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+          Observe → Learn → Improve
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          Transaction outcomes feed a response model that can improve future
+          offer decisions. Current weights are trained only on synthetic Arena
+          selections.
+        </p>
+      </div>
 
-      <ol className="grid gap-2 text-sm md:grid-cols-5">
-        {(overview?.maturity ?? []).map((item) => (
-          <li key={item.id} className="border border-line bg-surface p-3">
-            <p className="text-[11px] tracking-[0.12em] text-muted">{item.state}</p>
-            <p className="mt-1 font-medium">{item.label}</p>
+      <ol className="grid gap-4 text-sm md:grid-cols-3">
+        {LEARN_STORY.map((item) => (
+          <li key={item.id}>
+            <p className="eyebrow">{item.label}</p>
+            <p className="mt-1">{item.body}</p>
           </li>
         ))}
       </ol>
 
-      <div className="text-sm leading-7 text-muted">
-        INTENT → OFFER → BUYER AGENT → OUTCOME → LEARNING DATA → RESPONSE MODEL
-      </div>
+      <p className="text-xs text-warning" title={DISCLAIMER}>
+        {DISCLAIMER}
+      </p>
+
+      <ol className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        {(overview?.maturity ?? []).map((item) => (
+          <li key={item.id}>
+            <span className="text-xs text-muted">{item.state}</span>{" "}
+            {item.label}
+          </li>
+        ))}
+      </ol>
 
       <section className="grid gap-4 md:grid-cols-4">
         <Stat
@@ -129,6 +145,7 @@ export function LearnWorkbench() {
         />
       </section>
 
+      {!presentation ? (
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs text-muted">
           Target rows
@@ -158,6 +175,7 @@ export function LearnWorkbench() {
           Train models
         </button>
       </div>
+      ) : null}
 
       {overview?.dataset?.metadata.audit ? (
         <section>

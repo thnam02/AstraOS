@@ -2,6 +2,7 @@
 
 import { Disclosure } from "@/components/shared/Disclosure";
 import { StatStrip } from "@/components/shared/StatStrip";
+import { counterfactualStory } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
 import type { BuyerProfile, OptimisationResponse } from "@/types";
 
@@ -33,12 +34,20 @@ export function OptimisationPanel({
   onProfile,
   busy,
   showRecommendation = true,
+  selectedOfferId,
+  onSelectOffer,
+  presentation = false,
+  productSummary,
 }: {
   optimisation: OptimisationResponse;
   profile: BuyerProfile;
   onProfile: (profile: BuyerProfile) => void;
   busy: boolean;
   showRecommendation?: boolean;
+  selectedOfferId?: string | null;
+  onSelectOffer?: (offerId: string) => void;
+  presentation?: boolean;
+  productSummary?: string;
 }) {
   const rec = optimisation.recommended_offer;
   const weights = optimisation.buyer_model.weights;
@@ -50,6 +59,9 @@ export function OptimisationPanel({
         <h2 className="mt-1 text-xl font-semibold tracking-tight">
           Pareto frontier
         </h2>
+        {productSummary ? (
+          <p className="mt-1 text-xs text-muted">{productSummary}</p>
+        ) : null}
         <div className="mt-3">
           <StatStrip
             items={[
@@ -77,18 +89,17 @@ export function OptimisationPanel({
         </div>
       ) : null}
 
-      <ParetoChart points={optimisation.plot_points} />
+      <ParetoChart
+        points={optimisation.plot_points}
+        selectedOfferId={selectedOfferId}
+        onSelect={onSelectOffer}
+      />
       <p className="text-sm text-muted">
-        Offers on the frontier cannot improve buyer fit without sacrificing
-        merchant contribution, or improve contribution without sacrificing
-        buyer fit.
-      </p>
-      <p className="text-[11px] text-muted">
-        Muted = dominated · black = Pareto-efficient · green = AstraOS response.
-        Bubble size is intervention cost. Buyer utility is a cold-start
-        simulation, not a purchase probability.
+        Frontier offers cannot improve buyer fit without sacrificing merchant
+        contribution, or the reverse.
       </p>
 
+      {!presentation ? (
       <div className="flex flex-wrap items-end gap-4">
         <label className="text-xs text-muted">
           Simulated buyer profile
@@ -118,6 +129,7 @@ export function OptimisationPanel({
           </dl>
         </Disclosure>
       </div>
+      ) : null}
 
       {showRecommendation && rec ? (
         <div className="border border-line px-4 py-4">
@@ -125,68 +137,86 @@ export function OptimisationPanel({
         </div>
       ) : null}
 
-      <div>
-          <p className="text-[11px] tracking-[0.14em] text-muted">
-            WHAT SHOULD THE MERCHANT CHANGE?
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Single-lever counterfactuals from the conceptual baseline. Not a
-            recommended ranking.
-          </p>
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-line text-[11px] tracking-[0.08em] text-muted">
-                  <th className="py-2 font-medium">Intervention</th>
-                  <th className="py-2 font-medium">Utility</th>
-                  <th className="py-2 font-medium">Δ U</th>
-                  <th className="py-2 font-medium">Contribution</th>
-                  <th className="py-2 font-medium">Δ C</th>
-                  <th className="py-2 font-medium">Cost</th>
-                  <th className="py-2 font-medium">Status</th>
+      <CounterfactualStory rows={optimisation.counterfactuals} />
+
+      {!presentation ? (
+        <Disclosure title="All counterfactual levers">
+          <table className="w-full min-w-[640px] text-left text-xs">
+            <thead>
+              <tr className="border-b border-line text-muted">
+                <th className="py-2 font-medium">Intervention</th>
+                <th className="py-2 font-medium">Utility</th>
+                <th className="py-2 font-medium">Δ U</th>
+                <th className="py-2 font-medium">Contribution</th>
+                <th className="py-2 font-medium">Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {optimisation.counterfactuals.map((row) => (
+                <tr key={`${row.lever}-${row.label}-${row.offer_id}`} className="border-b border-line">
+                  <td className="py-2">{row.label}</td>
+                  <td className="py-2 tabular-nums">{row.buyer_utility.toFixed(3)}</td>
+                  <td className="py-2 tabular-nums">
+                    {row.delta_utility >= 0 ? "+" : ""}
+                    {row.delta_utility.toFixed(3)}
+                  </td>
+                  <td className="py-2 tabular-nums">
+                    {formatAudCents(row.contribution_margin_cents)}
+                  </td>
+                  <td className="py-2 tabular-nums">
+                    {formatAudCents(row.incremental_intervention_cost_cents)}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {optimisation.counterfactuals.map((row) => {
-                  const highlight =
-                    row.lever === "delivery" && row.delivery_code === "SAME_DAY";
-                  return (
-                    <tr
-                      key={`${row.lever}-${row.label}-${row.offer_id}`}
-                      className={`border-b border-line ${highlight ? "bg-canvas" : ""}`}
-                    >
-                      <td className="py-2">{row.label}</td>
-                      <td className="py-2 tabular-nums">{row.buyer_utility.toFixed(3)}</td>
-                      <td className="py-2 tabular-nums">
-                        {row.delta_utility >= 0 ? "+" : ""}
-                        {row.delta_utility.toFixed(3)}
-                      </td>
-                      <td className="py-2 tabular-nums">
-                        {formatAudCents(row.contribution_margin_cents)}
-                      </td>
-                      <td className="py-2 tabular-nums">
-                        {formatAudCents(row.delta_contribution_cents)}
-                      </td>
-                      <td className="py-2 tabular-nums">
-                        {formatAudCents(row.incremental_intervention_cost_cents)}
-                      </td>
-                      <td className="py-2">
-                        {row.policy_safe ? "safe" : "blocked"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-3 text-[11px] text-muted">
-            {optimisation.timing.total_optimisation_ms.toFixed(0)} ms ·
-            economics {optimisation.timing.economics_ms.toFixed(0)} ·
-            policy {optimisation.timing.policy_filter_ms.toFixed(0)} ·
-            utility {optimisation.timing.utility_ms.toFixed(0)} ·
-            pareto {optimisation.timing.pareto_ms.toFixed(0)}
-          </p>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </Disclosure>
+      ) : null}
     </section>
+  );
+}
+
+function CounterfactualStory({
+  rows,
+}: {
+  rows: OptimisationResponse["counterfactuals"];
+}) {
+  const story = counterfactualStory(rows);
+  if (!story) return null;
+  return (
+    <div className="bg-canvas px-4 py-3 text-sm">
+      <p className="eyebrow">Discount vs delivery</p>
+      <div className="mt-2 grid gap-3 md:grid-cols-3">
+        <div>
+          <p className="text-xs text-muted">Baseline</p>
+          <p className="font-mono tabular-nums">
+            {formatAudCents(story.baseline.total_price_cents)} ·{" "}
+            {story.baseline.delivery_code.replaceAll("_", " ").toLowerCase()} ·
+            fit {story.baseline.buyer_utility.toFixed(2)} ·{" "}
+            {formatAudCents(story.baseline.contribution_margin_cents)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted">Option A — discount</p>
+          <p className="font-mono tabular-nums">
+            Fit {story.discount.delta_utility >= 0 ? "+" : ""}
+            {story.discount.delta_utility.toFixed(2)} · cost{" "}
+            {formatAudCents(story.discount.incremental_intervention_cost_cents)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted">Option B — faster delivery</p>
+          <p className="font-mono tabular-nums">
+            Fit {story.delivery.delta_utility >= 0 ? "+" : ""}
+            {story.delivery.delta_utility.toFixed(2)} · cost{" "}
+            {formatAudCents(story.delivery.incremental_intervention_cost_cents)}
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 text-sm">
+        AstraOS chooses {story.choosesDelivery ? "faster delivery" : "discount"}.
+        More buyer-fit gain per unit of merchant sacrifice.
+      </p>
+    </div>
   );
 }

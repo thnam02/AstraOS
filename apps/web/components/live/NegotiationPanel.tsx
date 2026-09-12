@@ -3,18 +3,19 @@
 import { useState } from "react";
 
 import { Disclosure } from "@/components/shared/Disclosure";
+import { negotiationConstraint } from "@/lib/decisionNarrative";
 import { formatAudCents, formatRate } from "@/lib/money";
-import type { MerchantProposal, NegotiationResponse } from "@/types";
+import type { MerchantProposal, NegotiationResponse, NegotiationTurn } from "@/types";
 
-function offerLine(proposal: MerchantProposal | null): string {
+function offerTerms(proposal: MerchantProposal | null): string[] {
   const offer = proposal?.offer;
-  if (!offer) return "No commercial proposal";
+  if (!offer) return [];
   return [
-    offer.product_name,
     formatAudCents(offer.pricing.total_price_cents),
     offer.delivery.name,
-    `${offer.warranty.months}m warranty`,
-  ].join(" · ");
+    `${offer.warranty.months}-month warranty`,
+    offer.bundle?.name ?? "No bundle",
+  ];
 }
 
 function Delta({
@@ -28,18 +29,15 @@ function Delta({
   const a = previous.offer;
   const b = current.offer;
   const price = b.pricing.total_price_cents - a.pricing.total_price_cents;
-  const contrib =
-    b.contribution_margin_cents - a.contribution_margin_cents;
+  const contrib = b.contribution_margin_cents - a.contribution_margin_cents;
   const utility = b.buyer_utility - a.buyer_utility;
   return (
-    <div className="border border-line px-4 py-3 text-sm">
-      <p className="text-[11px] tracking-[0.14em] text-muted">
-        PROPOSAL DELTA
-      </p>
+    <div className="text-sm">
+      <p className="eyebrow">Proposal delta</p>
       <p className="mt-2">
         Price {formatAudCents(a.pricing.total_price_cents)} →{" "}
         {formatAudCents(b.pricing.total_price_cents)}{" "}
-        {price ? `(${price > 0 ? "+" : ""}${formatAudCents(price)})` : "—"}
+        {price ? `(${price > 0 ? "+" : ""}${formatAudCents(price)})` : ""}
       </p>
       <p>
         Delivery {a.delivery.name} → {b.delivery.name}
@@ -53,11 +51,70 @@ function Delta({
         {contrib ? `(${contrib > 0 ? "+" : ""}${formatAudCents(contrib)})` : ""}
       </p>
       <p>
-        Simulated utility {a.buyer_utility.toFixed(3)} →{" "}
-        {b.buyer_utility.toFixed(3)} ({utility >= 0 ? "+" : ""}
-        {utility.toFixed(3)})
+        Buyer utility {a.buyer_utility.toFixed(2)} → {b.buyer_utility.toFixed(2)}{" "}
+        ({utility >= 0 ? "+" : ""}
+        {utility.toFixed(2)})
       </p>
     </div>
+  );
+}
+
+function ProtocolTurn({
+  turn,
+  proposal,
+}: {
+  turn: NegotiationTurn;
+  proposal: MerchantProposal | null;
+}) {
+  const buyer = turn.actor === "BUYER" || turn.actor === "BUYER_AGENT";
+  const constraint = negotiationConstraint(turn.structured_payload);
+  const action = turn.structured_action.replaceAll("_", " ");
+  const related = proposal?.offer && proposal.offer_id === turn.related_offer_id
+    ? proposal
+    : proposal;
+
+  return (
+    <article className="grid gap-4 md:grid-cols-[140px_minmax(0,1fr)]">
+      <div>
+        <p className="eyebrow">{buyer ? "Buyer agent" : "AstraOS"}</p>
+        <p className="mt-1 text-xs uppercase tracking-[0.08em] text-muted">
+          {action}
+        </p>
+      </div>
+      <div className="space-y-2 text-sm">
+        {turn.raw_message ? (
+          <p>
+            <span className="text-xs text-muted">Natural request </span>
+            “{turn.raw_message}”
+          </p>
+        ) : null}
+        {constraint ? (
+          <p>
+            <span className="text-xs text-muted">Parsed constraint </span>
+            <span className="font-mono tabular-nums">{constraint}</span>
+          </p>
+        ) : null}
+        {!buyer && related?.offer ? (
+          <div>
+            <p className="text-xs text-muted">Counteroffer</p>
+            <p className="mt-1 font-medium">{related.offer.product_name}</p>
+            <p className="font-mono tabular-nums">{offerTerms(related).join(" · ")}</p>
+            {related.reason_codes.length ? (
+              <p className="mt-1 text-xs text-muted">
+                {related.reason_codes.join(" · ").replaceAll("_", " ")}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {Object.keys(turn.structured_payload ?? {}).length ? (
+          <Disclosure title="Structured payload">
+            <pre className="overflow-x-auto text-[11px] text-muted">
+              {JSON.stringify(turn.structured_payload, null, 2)}
+            </pre>
+          </Disclosure>
+        ) : null}
+      </div>
+    </article>
   );
 }
 
@@ -66,106 +123,73 @@ export function NegotiationPanel({
   busy,
   onMessage,
   onSimulate,
+  presentation = false,
 }: {
   negotiation: NegotiationResponse;
   busy: boolean;
   onMessage: (message: string) => void;
   onSimulate: (mode: "TRAVEL" | "BUDGET") => void;
+  presentation?: boolean;
 }) {
   const [draft, setDraft] = useState("Can you get this below A$315?");
   const commercial = negotiation.commercial;
+  const turns = negotiation.turns.filter(
+    (turn) => turn.structured_action !== "SESSION_OPENED",
+  );
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">Negotiate</p>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight text-ink">
-            Machine-to-machine exchange
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            LLMs interpret language. Deterministic AstraOS services control
-            every commercial term.
-          </p>
-        </div>
-        <p className="font-mono text-[11px] text-muted">
-          {negotiation.state}
+      <div>
+        <p className="eyebrow">Negotiate</p>
+        <h2 className="mt-1 text-xl font-semibold tracking-tight">
+          Protocol exchange
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Language is interpreted. Deterministic services control commercial terms.
         </p>
       </div>
 
-      {commercial ? (
-        <div className="grid gap-3 border border-line px-4 py-3 text-sm sm:grid-cols-4">
+      {!presentation && commercial ? (
+        <dl className="grid gap-3 text-sm sm:grid-cols-4">
           <div>
-            <p className="text-[11px] text-muted">MIN MARGIN</p>
-            <p className="tabular-nums">{formatRate(commercial.minimum_margin_rate)}</p>
+            <dt className="text-xs text-muted">Min margin</dt>
+            <dd className="tabular-nums">{formatRate(commercial.minimum_margin_rate)}</dd>
           </div>
           <div>
-            <p className="text-[11px] text-muted">MAX DISCOUNT</p>
-            <p className="tabular-nums">
-              {formatRate(commercial.maximum_discount_rate)}
-            </p>
+            <dt className="text-xs text-muted">Max discount</dt>
+            <dd className="tabular-nums">{formatRate(commercial.maximum_discount_rate)}</dd>
           </div>
           <div>
-            <p className="text-[11px] text-muted">INVENTORY</p>
-            <p className="tabular-nums">{commercial.inventory_units ?? "—"}</p>
+            <dt className="text-xs text-muted">Inventory</dt>
+            <dd className="tabular-nums">{commercial.inventory_units ?? "—"}</dd>
           </div>
           <div>
-            <p className="text-[11px] text-muted">EXPIRES</p>
-            <p className="font-mono text-[11px]">
-              {commercial.expires_at
-                ? new Date(commercial.expires_at).toLocaleTimeString()
-                : "—"}
-            </p>
+            <dt className="text-xs text-muted">State</dt>
+            <dd className="font-mono text-xs">{negotiation.state}</dd>
           </div>
-        </div>
+        </dl>
       ) : null}
 
-      <ol className="space-y-3">
-        {negotiation.turns.map((turn) => (
-          <li key={turn.turn_id} className="border border-line px-4 py-3">
-            <div className="flex justify-between gap-3 text-[11px] tracking-[0.12em] text-muted">
-              <span>
-                {turn.actor} · {turn.structured_action}
-              </span>
-              <span>#{turn.turn_number}</span>
-            </div>
-            {turn.raw_message ? (
-              <p className="mt-2 text-sm">{turn.raw_message}</p>
-            ) : (
-              <p className="mt-2 text-sm text-muted">
-                {turn.structured_action.replaceAll("_", " ")}
-              </p>
-            )}
-            {Object.keys(turn.structured_payload ?? {}).length ? (
-              <div className="mt-2">
-                <Disclosure title="Structured payload">
-                  <pre className="overflow-x-auto text-[11px] text-muted">
-                    {JSON.stringify(turn.structured_payload, null, 2)}
-                  </pre>
-                </Disclosure>
-              </div>
-            ) : null}
+      <ol className="space-y-5">
+        {turns.map((turn) => (
+          <li key={turn.turn_id}>
+            <ProtocolTurn turn={turn} proposal={negotiation.proposal} />
+            <p className="mt-3 text-center text-muted" aria-hidden>
+              ↓
+            </p>
           </li>
         ))}
       </ol>
 
-      {negotiation.proposal ? (
-        <div className="border border-line px-4 py-4">
-          <p className="text-[11px] tracking-[0.14em] text-muted">
-            {negotiation.proposal.proposal_type} #{negotiation.proposal.version}
+      {negotiation.proposal?.offer ? (
+        <div className="bg-canvas px-4 py-3">
+          <p className="eyebrow">Current merchant counteroffer</p>
+          <p className="mt-1 text-lg font-semibold">
+            {negotiation.proposal.offer.product_name}
           </p>
-          <p className="mt-2 text-sm font-medium">
-            {offerLine(negotiation.proposal)}
+          <p className="font-mono text-sm tabular-nums">
+            {offerTerms(negotiation.proposal).join(" · ")}
           </p>
-          <p className="mt-2 text-[11px] text-muted">
-            {negotiation.proposal.outcome} ·{" "}
-            {negotiation.proposal.reason_codes.join(" · ")}
-          </p>
-          <ul className="mt-3 space-y-1 text-sm">
-            {negotiation.proposal.explanation.map((line) => (
-              <li key={line}>✓ {line}</li>
-            ))}
-          </ul>
         </div>
       ) : null}
 
@@ -175,35 +199,42 @@ export function NegotiationPanel({
       />
 
       <div className="flex flex-wrap gap-2">
-        <input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          className="control min-w-[240px] flex-1 px-3 py-2 text-sm"
-        />
-        <button
-          type="button"
-          disabled={busy || !draft.trim()}
-          onClick={() => onMessage(draft)}
-          className="btn-primary"
-        >
-          SEND TURN
-        </button>
+        {!presentation ? (
+          <input
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            className="control min-w-[240px] flex-1 px-3 py-2 text-sm"
+            aria-label="Buyer counter message"
+          />
+        ) : null}
+        {!presentation ? (
+          <button
+            type="button"
+            disabled={busy || !draft.trim()}
+            onClick={() => onMessage(draft)}
+            className="btn-ghost"
+          >
+            Send counter
+          </button>
+        ) : null}
         <button
           type="button"
           disabled={busy}
           onClick={() => onMessage("I'll take it.")}
-          className="btn-ghost"
+          className="btn-primary"
         >
-          ACCEPT
+          Accept
         </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => onSimulate("TRAVEL")}
-          className="btn-ghost"
-        >
-          SIMULATE TRAVEL
-        </button>
+        {!presentation ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onSimulate("TRAVEL")}
+            className="btn-quiet"
+          >
+            Simulate travel
+          </button>
+        ) : null}
       </div>
     </section>
   );

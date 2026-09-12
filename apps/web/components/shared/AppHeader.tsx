@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 import { MerchantPolicyDrawer } from "@/components/shared/MerchantPolicyDrawer";
 
@@ -12,49 +12,62 @@ const NAV_ITEMS = [
   { href: "/learn", label: "LEARN" },
 ] as const;
 
-export function AppHeader() {
+function HeaderInner() {
   const pathname = usePathname();
+  const router = useRouter();
+  const params = useSearchParams();
   const [rulesOpen, setRulesOpen] = useState(false);
+  const presentation = params.get("presentation") === "1";
+
+  function togglePresentation() {
+    const next = new URLSearchParams(params.toString());
+    if (presentation) next.delete("presentation");
+    else next.set("presentation", "1");
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  }
 
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
-          <Link
-            href="/"
-            className="text-sm font-semibold tracking-[0.08em] text-ink"
-          >
+        <div className="mx-auto flex h-14 w-full max-w-[1480px] items-center justify-between px-6">
+          <Link href="/" className="text-sm font-semibold tracking-[0.1em]">
             ASTRAOS
           </Link>
-          <div className="flex items-center gap-2">
-            <nav className="flex items-center gap-1" aria-label="Primary">
-              {NAV_ITEMS.map((item) => {
-                const isActive =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href);
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`rounded-[6px] px-3 py-1.5 text-xs font-medium tracking-[0.06em] transition-colors ${
-                      isActive
-                        ? "bg-ink text-surface"
-                        : "text-muted hover:bg-canvas hover:text-ink"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
+          <nav className="flex items-center gap-5" aria-label="Primary">
+            {NAV_ITEMS.map((item) => {
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`text-xs font-medium tracking-[0.08em] ${
+                    isActive ? "text-ink" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {item.label}
+                  {isActive ? (
+                    <span className="mt-1 block h-px bg-ink" />
+                  ) : (
+                    <span className="mt-1 block h-px bg-transparent" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="flex items-center gap-4">
+            <button type="button" className="btn-quiet" onClick={togglePresentation}>
+              {presentation ? "Exit presentation" : "Presentation"}
+            </button>
             <Link
               href="/catalogue"
-              className={`rounded-[6px] px-3 py-1.5 text-xs font-medium tracking-[0.06em] ${
+              className={`text-xs tracking-[0.04em] ${
                 pathname.startsWith("/catalogue")
-                  ? "bg-canvas text-ink"
+                  ? "text-ink"
                   : "text-muted hover:text-ink"
               }`}
             >
@@ -63,7 +76,7 @@ export function AppHeader() {
             <button
               type="button"
               onClick={() => setRulesOpen(true)}
-              className="btn-ghost"
+              className="btn-quiet"
             >
               Merchant Rules
             </button>
@@ -72,5 +85,13 @@ export function AppHeader() {
       </header>
       <MerchantPolicyDrawer open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </>
+  );
+}
+
+export function AppHeader() {
+  return (
+    <Suspense fallback={<header className="h-14 border-b border-line bg-surface" />}>
+      <HeaderInner />
+    </Suspense>
   );
 }

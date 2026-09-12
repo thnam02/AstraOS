@@ -16,9 +16,15 @@ import type {
 export function OfferExplorer({
   construction,
   heroProduct,
+  policySafe,
+  pareto,
+  presentation = false,
 }: {
   construction: GenerateOffersResponse;
   heroProduct?: string;
+  policySafe?: number;
+  pareto?: number;
+  presentation?: boolean;
 }) {
   const [status, setStatus] = useState("FEASIBLE");
   const [productId, setProductId] = useState("");
@@ -87,32 +93,27 @@ export function OfferExplorer({
         </p>
       </div>
 
-      <div className="space-y-2 border border-line px-4 py-3 text-sm">
-        <p>
-          <span className="font-mono font-semibold tabular-nums">{matched}</span>{" "}
-          matched products
+      <div className="bg-canvas px-4 py-4 text-sm">
+        <p className="eyebrow">Product matching complete</p>
+        <p className="mt-2 font-mono text-2xl font-semibold tabular-nums">
+          {matched} products
         </p>
-        <p className="text-muted">↓</p>
-        <p>
-          <span className="font-mono font-semibold tabular-nums">
-            {construction.summary.generated_candidates.toLocaleString()}
-          </span>{" "}
-          commercial configurations
+        <p className="mt-3 text-muted">↓ constructing commercial options</p>
+        <p className="mt-3 font-mono text-sm tabular-nums">
+          {matched} × {dims.price_options} price × {dims.delivery_options} delivery ×{" "}
+          {dims.warranty_options} warranty × {dims.bundle_options} bundle ×{" "}
+          {dims.return_options} returns
         </p>
-        <p className="text-xs text-muted">
-          Price {dims.price_options} · Delivery {dims.delivery_options} · Warranty{" "}
-          {dims.warranty_options} · Bundle {dims.bundle_options} · Returns{" "}
-          {dims.return_options}
-          {perSku ? ` · ${perSku.toLocaleString()} / SKU` : ""}
+        <p className="mt-3 font-mono text-2xl font-semibold tabular-nums">
+          {construction.summary.generated_candidates.toLocaleString()}
         </p>
-        <p className="text-muted">↓</p>
-        <p>
-          <span className="font-mono font-semibold tabular-nums">
-            {construction.summary.feasible_candidates.toLocaleString()}
-          </span>{" "}
-          feasible offers
+        <p className="text-xs text-muted">candidate offers · this is no longer a recommender</p>
+        <p className="mt-3 text-sm">
+          {construction.summary.feasible_candidates.toLocaleString()} feasible
+          {policySafe != null ? ` · ${policySafe.toLocaleString()} policy-safe` : ""}
+          {pareto != null ? ` · ${pareto} Pareto-efficient` : ""}
         </p>
-        <p className="text-xs text-muted">Example matched product: {featured}</p>
+        <p className="mt-1 text-xs text-muted">{featured}</p>
       </div>
 
       <StatStrip
@@ -137,6 +138,7 @@ export function OfferExplorer({
         </p>
       ) : null}
 
+      {!presentation ? (
       <div className="flex flex-wrap items-end gap-3 text-xs">
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">STATUS</span>
@@ -219,7 +221,10 @@ export function OfferExplorer({
           {busy ? "FILTERING…" : "FILTER"}
         </button>
       </div>
+      ) : null}
 
+      {!presentation ? (
+      <>
       <div className="overflow-x-auto">
         <table className="table-dense w-full min-w-[720px] text-left text-xs">
           <thead>
@@ -270,6 +275,8 @@ export function OfferExplorer({
       </p>
 
       {detail ? <OfferDetail detail={detail} onClose={() => setDetail(null)} /> : null}
+      </>
+      ) : null}
     </section>
   );
 }

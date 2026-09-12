@@ -149,12 +149,10 @@ export function LiveWorkbench() {
   }, [offers, profile]);
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(260px,0.9fr)_minmax(380px,1.2fr)_minmax(280px,1fr)]">
-      <section className="space-y-5">
+    <div className="grid gap-5 xl:grid-cols-[minmax(260px,0.9fr)_minmax(380px,1.2fr)_minmax(280px,1fr)]">
+      <section className="panel space-y-5">
         <div className="space-y-2">
-          <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-            BUYER AGENT REQUEST
-          </p>
+          <p className="eyebrow">Buyer Agent request</p>
           <h1 className="text-2xl font-semibold tracking-tight text-ink">
             Deep intent intake
           </h1>
@@ -169,13 +167,13 @@ export function LiveWorkbench() {
           value={text}
           onChange={(event) => setText(event.target.value)}
           rows={11}
-          className="w-full resize-y rounded-[6px] border border-line bg-surface px-3 py-3 text-sm leading-6 text-ink outline-none focus:border-ink"
+          className="control w-full resize-y px-3 py-3 text-sm leading-6"
         />
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => setText(HERO_INTENT)}
-            className="text-xs font-medium tracking-[0.08em] text-muted hover:text-ink"
+            className="cursor-pointer text-xs font-medium tracking-[0.08em] text-muted hover:text-ink"
           >
             Example request
           </button>
@@ -187,7 +185,7 @@ export function LiveWorkbench() {
             onChange={(event) =>
               setParserMode(event.target.value as "rule_based" | "llm")
             }
-            className="rounded-[6px] border border-line bg-surface px-2 py-1 text-xs text-ink"
+            className="control px-2 py-1 text-xs"
           >
             <option value="rule_based">Rule-based</option>
             <option value="llm">LLM</option>
@@ -197,7 +195,7 @@ export function LiveWorkbench() {
           type="button"
           onClick={() => void run()}
           disabled={busy || !text.trim()}
-          className="rounded-[6px] bg-ink px-4 py-2 text-xs font-medium tracking-[0.12em] text-surface disabled:opacity-40"
+          className="btn-primary"
         >
           {busy ? "NEGOTIATING…" : "UNDERSTAND → NEGOTIATE"}
         </button>
@@ -212,11 +210,9 @@ export function LiveWorkbench() {
         <ApiStatus />
       </section>
 
-      <section className="space-y-6">
+      <section className="panel space-y-5">
         <div>
-          <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-            ASTRAOS UNDERSTANDING
-          </p>
+          <p className="eyebrow">AstraOS understanding</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
             Qualify, match, construct
           </h2>
@@ -229,10 +225,8 @@ export function LiveWorkbench() {
         ) : (
           <>
             <DeepIntent intent={result.intent} />
-            <div className="border border-line bg-surface px-4 py-4 text-sm">
-              <p className="text-[11px] tracking-[0.14em] text-muted">
-                QUALIFICATION
-              </p>
+            <div className="border border-line bg-canvas px-4 py-4 text-sm">
+              <p className="eyebrow">Qualification</p>
               <p className="mt-2 tabular-nums">
                 {result.qualification.variants_checked} checked ·{" "}
                 {result.qualification.eligible} eligible ·{" "}
@@ -248,11 +242,9 @@ export function LiveWorkbench() {
         )}
       </section>
 
-      <aside className="space-y-6">
+      <aside className="panel space-y-5">
         <div>
-          <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-            BEST PRODUCT MATCHES
-          </p>
+          <p className="eyebrow">Best product matches</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
             Semantic fit
           </h2>
@@ -286,7 +278,7 @@ export function LiveWorkbench() {
             hasProposal={Boolean(negotiation?.proposal)}
           />
         ) : null}
-        <ol className="space-y-2">
+        <ol className="space-y-1">
           {(
             [
               "understand",
@@ -298,25 +290,34 @@ export function LiveWorkbench() {
               "transact",
               "learn",
             ] as const
-          ).map((id) => (
-            <li
-              key={id}
-              className="flex items-center justify-between border-b border-line py-2 text-sm"
-            >
-              <span className="tracking-[0.08em] uppercase text-ink">{id}</span>
-              <span className="text-[11px] tracking-[0.08em] text-muted">
-                {processState(
-                  Boolean(result),
-                  Boolean(offers),
-                  Boolean(optimisation),
-                  Boolean(negotiation),
-                  Boolean(transaction),
-                  transaction?.state === "CONFIRMED",
-                  id,
-                )}
-              </span>
-            </li>
-          ))}
+          ).map((id) => {
+            const state = processState(
+              Boolean(result),
+              Boolean(offers),
+              Boolean(optimisation),
+              Boolean(negotiation),
+              Boolean(transaction),
+              transaction?.state === "CONFIRMED",
+              id,
+            );
+            return (
+              <li
+                key={id}
+                className={`flex items-center justify-between border-l-2 px-3 py-2 text-sm ${
+                  state === "complete" || state === "active"
+                    ? "border-ink bg-canvas"
+                    : state === "next"
+                      ? "border-warning/60 bg-warning/5"
+                      : "border-line"
+                }`}
+              >
+                <span className="uppercase text-ink">{id}</span>
+                <span className="text-[11px] tracking-[0.08em] text-muted">
+                  {state}
+                </span>
+              </li>
+            );
+          })}
         </ol>
       </aside>
 
@@ -493,16 +494,16 @@ function DecisionTrace({
   ].filter((item): item is string => item != null);
   if (!rows.length) return null;
   return (
-    <div className="border border-line bg-surface px-4 py-3 text-sm">
-      <p className="text-[11px] tracking-[0.14em] text-muted">DECISION TRACE</p>
-      <p className="mt-2 tabular-nums">{rows.join(" → ")}</p>
+    <div className="border border-line bg-canvas px-4 py-3 text-sm">
+      <p className="eyebrow">Decision trace</p>
+      <p className="mt-2 font-mono text-xs tabular-nums leading-5">{rows.join(" → ")}</p>
     </div>
   );
 }
 
 function DeepIntent({ intent }: { intent: ShoppingIntent }) {
   return (
-    <div className="space-y-4 border border-line bg-surface px-4 py-4">
+    <div className="space-y-4 border border-line bg-canvas px-4 py-4">
       <Section title="MANDATORY">
         {intent.hard_constraints.map((item) => (
           <p key={item.id} className="text-sm">
@@ -570,7 +571,7 @@ function DeepIntent({ intent }: { intent: ShoppingIntent }) {
 
 function MatchCard({ match }: { match: RankedProductMatch }) {
   return (
-    <article className="border border-line bg-surface px-4 py-4">
+    <article className="border border-line bg-canvas px-4 py-4">
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-sm font-medium tracking-[0.06em] uppercase">
           #{match.rank} {match.product_name}
@@ -627,7 +628,7 @@ function Section({
 }) {
   return (
     <div>
-      <p className="text-[11px] tracking-[0.14em] text-muted">{title}</p>
+      <p className="eyebrow">{title}</p>
       <div className="mt-2 space-y-1">{children}</div>
     </div>
   );

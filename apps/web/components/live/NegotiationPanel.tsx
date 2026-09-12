@@ -75,12 +75,10 @@ export function NegotiationPanel({
   const commercial = negotiation.commercial;
 
   return (
-    <section className="space-y-5 border border-line bg-surface px-5 py-5">
+    <section className="panel space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-            MACHINE-TO-MACHINE EXCHANGE
-          </p>
+          <p className="eyebrow">Machine-to-machine exchange</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
             Negotiate
           </h2>
@@ -169,13 +167,13 @@ export function NegotiationPanel({
         <input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          className="min-w-[240px] flex-1 border border-line bg-surface px-3 py-2 text-sm"
+          className="control min-w-[240px] flex-1 px-3 py-2 text-sm"
         />
         <button
           type="button"
           disabled={busy || !draft.trim()}
           onClick={() => onMessage(draft)}
-          className="border border-ink px-3 py-2 text-xs tracking-[0.12em]"
+          className="btn-primary"
         >
           SEND TURN
         </button>
@@ -183,7 +181,7 @@ export function NegotiationPanel({
           type="button"
           disabled={busy}
           onClick={() => onMessage("I'll take it.")}
-          className="border border-line px-3 py-2 text-xs tracking-[0.12em]"
+          className="btn-ghost"
         >
           ACCEPT
         </button>
@@ -191,7 +189,7 @@ export function NegotiationPanel({
           type="button"
           disabled={busy}
           onClick={() => onSimulate("TRAVEL")}
-          className="border border-line px-3 py-2 text-xs tracking-[0.12em]"
+          className="btn-ghost"
         >
           SIMULATE TRAVEL
         </button>

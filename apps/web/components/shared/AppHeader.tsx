@@ -18,16 +18,16 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="border-b border-line bg-surface">
+      <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
           <Link
             href="/"
-            className="text-sm font-semibold tracking-[0.18em] text-ink"
+            className="text-sm font-semibold tracking-[0.08em] text-ink"
           >
             ASTRAOS
           </Link>
-          <div className="flex items-center gap-6">
-            <nav className="flex items-center gap-5">
+          <div className="flex items-center gap-2">
+            <nav className="flex items-center gap-1" aria-label="Primary">
               {NAV_ITEMS.map((item) => {
                 const isActive =
                   item.href === "/"
@@ -38,8 +38,11 @@ export function AppHeader() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`text-xs font-medium tracking-[0.14em] ${
-                      isActive ? "text-ink" : "text-muted hover:text-ink"
+                    aria-current={isActive ? "page" : undefined}
+                    className={`rounded-[6px] px-3 py-1.5 text-xs font-medium tracking-[0.06em] transition-colors ${
+                      isActive
+                        ? "bg-ink text-surface"
+                        : "text-muted hover:bg-canvas hover:text-ink"
                     }`}
                   >
                     {item.label}
@@ -49,9 +52,9 @@ export function AppHeader() {
             </nav>
             <Link
               href="/catalogue"
-              className={`text-xs font-medium tracking-[0.14em] ${
+              className={`rounded-[6px] px-3 py-1.5 text-xs font-medium tracking-[0.06em] ${
                 pathname.startsWith("/catalogue")
-                  ? "text-ink"
+                  ? "bg-canvas text-ink"
                   : "text-muted hover:text-ink"
               }`}
             >
@@ -60,7 +63,7 @@ export function AppHeader() {
             <button
               type="button"
               onClick={() => setRulesOpen(true)}
-              className="text-xs font-medium tracking-[0.14em] text-muted hover:text-ink"
+              className="btn-ghost"
             >
               RULES
             </button>

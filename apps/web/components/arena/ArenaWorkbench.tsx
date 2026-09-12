@@ -191,17 +191,21 @@ export function ArenaWorkbench() {
       <p className="border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
         {DISCLAIMER}
       </p>
-      <div className="flex gap-3 text-xs tracking-[0.14em]">
+      <div className="flex gap-1">
         <button
           type="button"
-          className={mode === "duel" ? "text-ink" : "text-muted"}
+          className={`rounded-[6px] px-3 py-1.5 text-xs tracking-[0.06em] ${
+            mode === "duel" ? "bg-ink text-surface" : "btn-ghost"
+          }`}
           onClick={() => setMode("duel")}
         >
           LIVE DUEL
         </button>
         <button
           type="button"
-          className={mode === "benchmark" ? "text-ink" : "text-muted"}
+          className={`rounded-[6px] px-3 py-1.5 text-xs tracking-[0.06em] ${
+            mode === "benchmark" ? "bg-ink text-surface" : "btn-ghost"
+          }`}
           onClick={() => setMode("benchmark")}
         >
           BENCHMARK
@@ -215,7 +219,7 @@ export function ArenaWorkbench() {
               <button
                 key={item.id}
                 type="button"
-                className="border border-line px-3 py-1 text-xs"
+                className="btn-ghost"
                 onClick={() => {
                   setIntent(item.intent);
                   setProfile(item.profile);
@@ -226,13 +230,13 @@ export function ArenaWorkbench() {
             ))}
           </div>
           <textarea
-            className="h-28 w-full border border-line bg-surface p-3 text-sm"
+            className="control h-28 w-full p-3 text-sm"
             value={intent}
             onChange={(event) => setIntent(event.target.value)}
           />
           <div className="flex flex-wrap items-center gap-3">
             <select
-              className="border border-line bg-surface px-2 py-1 text-sm"
+              className="control px-2 py-1 text-sm"
               value={profile}
               onChange={(event) =>
                 setProfile(event.target.value as BuyerProfile)
@@ -247,7 +251,7 @@ export function ArenaWorkbench() {
             </select>
             <button
               type="button"
-              className="border border-ink bg-ink px-3 py-1 text-xs text-surface"
+              className="btn-primary"
               onClick={() => void onDuel()}
               disabled={busy}
             >
@@ -310,7 +314,7 @@ export function ArenaWorkbench() {
             <label className="text-xs text-muted">
               Missions
               <input
-                className="ml-2 w-24 border border-line px-2 py-1"
+                className="control ml-2 w-24 px-2 py-1"
                 type="number"
                 min={8}
                 max={2000}
@@ -323,7 +327,7 @@ export function ArenaWorkbench() {
             <label className="text-xs text-muted">
               Seed
               <input
-                className="ml-2 w-24 border border-line px-2 py-1"
+                className="control ml-2 w-24 px-2 py-1"
                 type="number"
                 value={seed}
                 onChange={(event) => setSeed(Number(event.target.value))}
@@ -331,7 +335,7 @@ export function ArenaWorkbench() {
             </label>
             <button
               type="button"
-              className="border border-ink bg-ink px-3 py-1 text-xs text-surface"
+              className="btn-primary"
               onClick={() => void onBenchmark()}
               disabled={busy}
             >

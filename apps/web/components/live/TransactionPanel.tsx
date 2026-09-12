@@ -65,12 +65,10 @@ export function TransactionPanel({
   const confirmed = transaction?.state === "CONFIRMED";
 
   return (
-    <section className="space-y-5 border border-line bg-surface px-5 py-5">
+    <section className="panel space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-            MACHINE TRANSACTION BOUNDARY
-          </p>
+          <p className="eyebrow">Machine transaction boundary</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
             Transact
           </h2>
@@ -177,7 +175,7 @@ export function TransactionPanel({
             type="button"
             disabled={busy}
             onClick={onRecover}
-            className="mt-3 border border-ink px-3 py-2 text-xs tracking-[0.12em]"
+            className="btn-ghost mt-3"
           >
             GENERATE NEW PROPOSAL
           </button>
@@ -195,7 +193,7 @@ export function TransactionPanel({
             type="button"
             disabled={busy}
             onClick={onExecute}
-            className="mt-3 bg-ink px-3 py-2 text-xs tracking-[0.12em] text-surface"
+            className="btn-primary mt-3"
           >
             {busy ? "EXECUTING…" : "EXECUTE ACCEPTANCE"}
           </button>
@@ -220,7 +218,7 @@ export function TransactionPanel({
             type="button"
             disabled={busy}
             onClick={() => onDemoInventory(0)}
-            className="border border-line px-3 py-2 text-[11px] tracking-[0.08em]"
+            className="btn-ghost text-[11px]"
           >
             STOCK → 0
           </button>
@@ -228,7 +226,7 @@ export function TransactionPanel({
             type="button"
             disabled={busy}
             onClick={() => onDemoInventory(14)}
-            className="border border-line px-3 py-2 text-[11px] tracking-[0.08em]"
+            className="btn-ghost text-[11px]"
           >
             STOCK → 14
           </button>
@@ -236,7 +234,7 @@ export function TransactionPanel({
             type="button"
             disabled={busy}
             onClick={() => onDemoDelivery(false)}
-            className="border border-line px-3 py-2 text-[11px] tracking-[0.08em]"
+            className="btn-ghost text-[11px]"
           >
             SAME-DAY → FULL
           </button>
@@ -244,7 +242,7 @@ export function TransactionPanel({
             type="button"
             disabled={busy}
             onClick={() => onDemoDelivery(true)}
-            className="border border-line px-3 py-2 text-[11px] tracking-[0.08em]"
+            className="btn-ghost text-[11px]"
           >
             SAME-DAY → AVAILABLE
           </button>
@@ -252,7 +250,7 @@ export function TransactionPanel({
             type="button"
             disabled={busy}
             onClick={() => onDemoMargin(0.25)}
-            className="border border-line px-3 py-2 text-[11px] tracking-[0.08em]"
+            className="btn-ghost text-[11px]"
           >
             MARGIN {formatRate(0.25)}
           </button>
@@ -260,7 +258,7 @@ export function TransactionPanel({
             type="button"
             disabled={busy}
             onClick={() => onDemoMargin(0.15)}
-            className="border border-line px-3 py-2 text-[11px] tracking-[0.08em]"
+            className="btn-ghost text-[11px]"
           >
             MARGIN {formatRate(0.15)}
           </button>

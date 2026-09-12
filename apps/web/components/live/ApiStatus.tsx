@@ -8,21 +8,25 @@ import type { ConnectionStatus } from "@/types";
 
 export function ApiStatus() {
   const [status, setStatus] = useState<ConnectionStatus>("loading");
+  const [degraded, setDegraded] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
 
     getReady()
       .then((payload) => {
-        if (!cancelled) {
-          setStatus(
-            payload.status === "not_ready" ? "unavailable" : "connected",
-          );
+        if (cancelled) return;
+        setDegraded(payload.degraded_mode ?? []);
+        if (payload.status === "not_ready") {
+          setStatus("unavailable");
+        } else {
+          setStatus("connected");
         }
       })
       .catch(() => {
         if (!cancelled) {
           setStatus("unavailable");
+          setDegraded([]);
         }
       });
 
@@ -32,11 +36,14 @@ export function ApiStatus() {
   }, []);
 
   return (
-    <section className="w-full max-w-xs rounded-[6px] border border-line bg-surface p-4">
-      <p className="mb-3 text-xs font-medium tracking-[0.14em] text-muted">
-        API STATUS
-      </p>
+    <section className="panel max-w-xs p-4">
+      <p className="eyebrow mb-3">API status</p>
       <StatusBadge status={status} />
+      {degraded.length ? (
+        <p className="mt-2 text-xs leading-5 text-muted">
+          Degraded: {degraded.join(", ").replaceAll("_", " ")}
+        </p>
+      ) : null}
     </section>
   );
 }

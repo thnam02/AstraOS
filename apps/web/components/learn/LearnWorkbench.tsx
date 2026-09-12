@@ -133,7 +133,7 @@ export function LearnWorkbench() {
         <label className="text-xs text-muted">
           Target rows
           <input
-            className="ml-2 w-24 border border-line px-2 py-1"
+            className="control ml-2 w-24 px-2 py-1"
             type="number"
             min={40}
             max={5000}
@@ -143,7 +143,7 @@ export function LearnWorkbench() {
         </label>
         <button
           type="button"
-          className="border border-ink bg-ink px-3 py-1 text-xs text-surface"
+          className="btn-primary"
           onClick={() => void onGenerate()}
           disabled={busy}
         >
@@ -151,7 +151,7 @@ export function LearnWorkbench() {
         </button>
         <button
           type="button"
-          className="border border-line px-3 py-1 text-xs"
+          className="btn-ghost"
           onClick={() => void onTrain()}
           disabled={busy || !overview?.dataset}
         >

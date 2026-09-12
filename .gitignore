@@ -24,6 +24,7 @@ out/
 .DS_Store
 .idea/
 .vscode/
+.cursor/skills/
 
 # Docker
 postgres-data/

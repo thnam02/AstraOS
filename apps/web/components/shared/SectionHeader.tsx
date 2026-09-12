@@ -10,7 +10,7 @@ export function SectionHeader({
   return (
     <header className="space-y-2">
       {eyebrow ? (
-        <p className="text-xs font-medium tracking-[0.14em] text-muted uppercase">
+        <p className="eyebrow">
           {eyebrow}
         </p>
       ) : null}

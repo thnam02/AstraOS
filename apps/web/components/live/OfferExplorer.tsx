@@ -72,11 +72,9 @@ export function OfferExplorer({
   const featured = heroProduct ?? products[0]?.[1] ?? "Matched product";
 
   return (
-    <section className="space-y-5 border border-line bg-surface px-5 py-5">
+    <section className="panel space-y-5">
       <div>
-        <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-          OFFER SPACE
-        </p>
+        <p className="eyebrow">Offer space</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
           One product, many possible offers
         </h2>
@@ -221,7 +219,7 @@ export function OfferExplorer({
           type="button"
           onClick={() => void applyFilters()}
           disabled={busy}
-          className="border border-ink px-3 py-1 tracking-[0.08em]"
+          className="btn-ghost"
         >
           {busy ? "FILTERING…" : "FILTER"}
         </button>

@@ -9,7 +9,7 @@ export function PageContainer({
 }) {
   return (
     <main
-      className={`mx-auto w-full px-6 py-8 ${wide ? "max-w-7xl" : "max-w-5xl"}`}
+      className={`mx-auto w-full px-6 py-6 ${wide ? "max-w-7xl" : "max-w-5xl"}`}
     >
       {children}
     </main>

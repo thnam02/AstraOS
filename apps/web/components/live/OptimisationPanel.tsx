@@ -38,9 +38,9 @@ export function OptimisationPanel({
   const weights = optimisation.buyer_model.weights;
 
   return (
-    <section className="space-y-5 border border-line bg-surface px-5 py-5">
+    <section className="panel space-y-5">
       <div>
-        <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
+        <p className="eyebrow">
           PARETO FRONTIER
         </p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
@@ -99,7 +99,7 @@ export function OptimisationPanel({
                   onProfile(event.target.value as BuyerProfile)
                 }
                 disabled={busy}
-                className="mt-1 w-full border border-line bg-surface px-2 py-1 text-sm text-ink"
+                className="control mt-1 w-full px-2 py-1 text-sm"
               >
                 {PROFILES.map((item) => (
                   <option key={item.id} value={item.id}>

@@ -9,12 +9,27 @@ from app.decision.optimisation.objective import MerchantObjectiveConfig, preset
 
 ArenaObjectiveMode = Literal["GROWTH", "BALANCED", "MARGIN"]
 
-DEFAULT_STRATEGIES: tuple[StrategyName, ...] = (
+ABLATION_STRATEGIES: tuple[StrategyName, ...] = (
+    "DEFAULT",
+    "ALWAYS_DISCOUNT",
+    "SEMANTIC_ONLY",
+    "ASTRAOS",
+)
+EXTENDED_STRATEGIES: tuple[StrategyName, ...] = (
     "DEFAULT",
     "ALWAYS_DISCOUNT",
     "CHEAPEST_ELIGIBLE",
+    "SEMANTIC_ONLY",
     "ASTRAOS",
 )
+DEFAULT_STRATEGIES: tuple[StrategyName, ...] = ABLATION_STRATEGIES
+STRATEGY_VERSIONS: dict[str, str] = {
+    "DEFAULT": "v1",
+    "ALWAYS_DISCOUNT": "v1",
+    "CHEAPEST_ELIGIBLE": "v1",
+    "SEMANTIC_ONLY": "v1",
+    "ASTRAOS": "v1",
+}
 
 SEGMENT_SHARES: dict[str, float] = {
     "budget": 0.20,

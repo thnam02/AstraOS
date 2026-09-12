@@ -264,6 +264,7 @@ describe("strategy titles", () => {
     assert.equal(strategyTitle("DEFAULT"), "Default Merchant");
     assert.equal(strategyTitle("ALWAYS_DISCOUNT"), "Always Discount");
     assert.equal(strategyTitle("CHEAPEST_ELIGIBLE"), "Cheapest Eligible");
+    assert.equal(strategyTitle("SEMANTIC_ONLY"), "Semantic Only");
     assert.equal(strategyTitle("ASTRAOS"), "AstraOS");
   });
 });

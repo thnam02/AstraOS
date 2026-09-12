@@ -150,7 +150,7 @@ class ArenaService:
                             item.model_dump(mode="json") for item in result.responses
                         ],
                         selection=result.selection.model_dump(mode="json"),
-                        explanation={},
+                        explanation=result.explanation,
                         events=[],
                         run_metadata={"source": "benchmark"},
                         benchmark_run_id=row.id,
@@ -199,6 +199,7 @@ class ArenaService:
             timing=dict(summary.get("timing") or {}),
             config=row.config,
             disclaimer=ARENA_DISCLAIMER,
+            ablation=dict(summary.get("ablation") or {}),
         )
 
     async def export_benchmark(

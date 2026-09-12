@@ -15,7 +15,11 @@ from app.decision.arena import (
     BUYER_MODEL_VERSION,
     STRATEGY_SET_VERSION,
 )
-from app.decision.arena.config import ArenaBenchmarkConfig, ArenaDuelRequest
+from app.decision.arena.config import (
+    STRATEGY_VERSIONS,
+    ArenaBenchmarkConfig,
+    ArenaDuelRequest,
+)
 from app.decision.arena.context import ArenaCatalogueCache, ArenaContextBuilder
 from app.decision.arena.explanation import explain_selection
 from app.decision.arena.metrics import summarize
@@ -88,13 +92,14 @@ async def run_mission(
             "BUYER_SELECTION_MADE",
             selected_strategy=selection.selected_strategy,
         )
+    explanation = explain_selection(context, responses, selection)
     result = ArenaMissionResult(
         mission=mission,
         responses=responses,
         selection=selection,
         runtime_ms=round((time.perf_counter() - started) * 1000, 2),
+        explanation=explanation,
     )
-    explanation = explain_selection(context, responses, selection)
     return result, {
         "context": context,
         "explanation": explanation,
@@ -157,6 +162,17 @@ async def run_benchmark(
     cache = ArenaCatalogueCache()
     await cache.load(session)
     objective = config.merchant_objective()
+    policy = cache.policy
+    policy_snapshot = {
+        "version": "policy.v1",
+        "policy_id": str(policy.id) if policy is not None else None,
+        "minimum_margin_rate": (
+            float(policy.minimum_margin_rate) if policy is not None else None
+        ),
+        "maximum_discount_rate": (
+            float(policy.maximum_discount_rate) if policy is not None else None
+        ),
+    }
     results: list[ArenaMissionResult] = []
     per_strategy: dict[str, list[float]] = {name: [] for name in config.strategies}
     for mission in missions:
@@ -196,11 +212,18 @@ async def run_benchmark(
             "buyer_model_version": BUYER_MODEL_VERSION,
             "utility_version": UTILITY_VERSION,
             "strategy_set_version": STRATEGY_SET_VERSION,
+            "strategy_versions": {
+                name: STRATEGY_VERSIONS.get(name, "v1")
+                for name in config.strategies
+            },
             "transaction_simulation": (
                 "disabled_for_bulk; offer-selection only. "
                 "Merchant inventory is snapshotted and never consumed."
             ),
             "merchant_objective": objective.snapshot(),
+            "catalogue_snapshot": cache.inventory_fingerprint,
+            "merchant_policy_snapshot": policy_snapshot,
+            "segment_shares": dict(config.segment_shares),
         },
         timing=timing,
     )

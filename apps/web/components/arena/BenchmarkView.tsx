@@ -117,8 +117,10 @@ export function BenchmarkView({
               <th className="py-2 font-medium">Strategy</th>
               <th className="py-2 font-medium">Selection</th>
               <th className="py-2 font-medium">Contribution / opportunity</th>
-              <th className="py-2 font-medium">Avg intervention</th>
+              <th className="py-2 font-medium">Buyer utility</th>
+              <th className="py-2 font-medium">Intervention cost</th>
               <th className="py-2 font-medium">No offer</th>
+              <th className="py-2 font-medium">Policy violations</th>
             </tr>
           </thead>
           <tbody>
@@ -131,13 +133,17 @@ export function BenchmarkView({
                 <td>
                   {formatAudCents(row.contribution_per_opportunity_cents)}
                 </td>
+                <td>{row.avg_buyer_utility?.toFixed(2) ?? "—"}</td>
                 <td>{formatAudCents(row.avg_intervention_cost_cents ?? 0)}</td>
                 <td>{pct(row.no_offer_rate)}</td>
+                <td>{pct(row.policy_violation_rate)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <AblationWaterfall benchmark={benchmark} />
 
       <div>
         <p className="eyebrow">Performance by buyer type</p>
@@ -182,6 +188,38 @@ export function BenchmarkView({
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AblationWaterfall({
+  benchmark,
+}: {
+  benchmark: ArenaBenchmarkResponse;
+}) {
+  const byName = Object.fromEntries(
+    benchmark.strategy_metrics.map((row) => [row.strategy_name, row]),
+  );
+  const def = byName.DEFAULT;
+  const semantic = byName.SEMANTIC_ONLY;
+  const astra = byName.ASTRAOS;
+  if (!def || !semantic || !astra) return null;
+  const first = semantic.contribution_per_opportunity_cents - def.contribution_per_opportunity_cents;
+  const second = astra.contribution_per_opportunity_cents - semantic.contribution_per_opportunity_cents;
+  return (
+    <div>
+      <p className="eyebrow">Ablation · contribution per opportunity</p>
+      <ul className="mt-2 space-y-1 text-sm">
+        <li>Default {formatAudCents(def.contribution_per_opportunity_cents)}</li>
+        <li className="text-muted">
+          → Semantic Only {formatAudCents(semantic.contribution_per_opportunity_cents)}{" "}
+          ({formatAudCents(first)})
+        </li>
+        <li className="text-muted">
+          → AstraOS {formatAudCents(astra.contribution_per_opportunity_cents)}{" "}
+          ({formatAudCents(second)})
+        </li>
+      </ul>
     </div>
   );
 }

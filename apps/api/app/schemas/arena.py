@@ -90,6 +90,7 @@ class ArenaBenchmarkResponse(BaseModel):
     timing: dict[str, float]
     config: dict[str, Any]
     disclaimer: str = ARENA_DISCLAIMER
+    ablation: dict[str, Any] = Field(default_factory=dict)
 
 
 def selection_to_api(selection: BuyerSelection) -> ArenaBuyerSelection:

@@ -1,5 +1,6 @@
 """Transparent selection narrative. Not a black-box attribution model."""
 
+from app.decision.arena.ablation import loss_category, win_category
 from app.decision.arena.models import ArenaContext, BuyerSelection, StrategyResponse
 from app.decision.utility.profiles import PROFILE_LABELS
 
@@ -24,6 +25,10 @@ def explain_selection(
     )
     discount = next(
         (item for item in responses if item.strategy_name == "ALWAYS_DISCOUNT"),
+        None,
+    )
+    semantic = next(
+        (item for item in responses if item.strategy_name == "SEMANTIC_ONLY"),
         None,
     )
     reasons: list[str] = []
@@ -90,6 +95,8 @@ def explain_selection(
                 "The simulated buyer chose the highest transparent utility "
                 "under the declared weights."
             )
+    compare = semantic or default
+    component_deltas = _component_deltas(winner, compare)
     return {
         "profile_id": context.buyer_profile,
         "profile_label": PROFILE_LABELS.get(
@@ -97,10 +104,58 @@ def explain_selection(
         ),
         "weights": weights,
         "reasons": reasons,
+        "win_category": win_category(winner, semantic, default, discount),
+        "loss_category": loss_category(
+            _selection_result(context, responses, selection)
+        ),
+        "component_deltas": component_deltas,
         "winner_trace": winner.utility_trace.model_dump()
         if winner and winner.utility_trace
         else None,
         "default_trace": default.utility_trace.model_dump()
         if default and default.utility_trace
         else None,
+        "semantic_trace": semantic.utility_trace.model_dump()
+        if semantic and semantic.utility_trace
+        else None,
     }
+
+
+def _component_deltas(
+    winner: StrategyResponse | None, baseline: StrategyResponse | None
+) -> list[dict[str, float | str]]:
+    if winner is None or baseline is None:
+        return []
+    if winner.utility_trace is None or baseline.utility_trace is None:
+        return []
+    base = {item.component: item.weighted for item in baseline.utility_trace.components}
+    rows: list[dict[str, float | str]] = []
+    for item in winner.utility_trace.components:
+        rows.append(
+            {
+                "component": item.component,
+                "winner": item.weighted,
+                "baseline": base.get(item.component, 0.0),
+                "delta": round(item.weighted - base.get(item.component, 0.0), 4),
+            }
+        )
+    net = (winner.buyer_utility or 0) - (baseline.buyer_utility or 0)
+    rows.append(
+        {
+            "component": "net",
+            "winner": winner.buyer_utility or 0,
+            "baseline": baseline.buyer_utility or 0,
+            "delta": round(net, 4),
+        }
+    )
+    return rows
+
+
+def _selection_result(context, responses, selection):
+    from app.decision.arena.models import ArenaMissionResult
+
+    return ArenaMissionResult(
+        mission=context.mission,
+        responses=responses,
+        selection=selection,
+    )

@@ -1,22 +1,26 @@
 import {
   comparisonRows,
+  findStrategy,
+  merchantEconomicsLine,
   selectedStrategy,
   strongestBaseline,
   strategyTitle,
-  tradeOffSummary,
 } from "@/lib/arenaDisplay";
 import type { ArenaRunResponse } from "@/types";
 
 export function StrategyComparison({ duel }: { duel: ArenaRunResponse }) {
   const winner = selectedStrategy(duel);
-  const baseline = strongestBaseline(duel);
+  const semantic = findStrategy(duel, "SEMANTIC_ONLY");
+  const baseline =
+    winner?.strategy_name === "ASTRAOS" && semantic && semantic.offer_id
+      ? semantic
+      : strongestBaseline(duel);
   if (!winner || !baseline) return null;
   const rows = comparisonRows(baseline, winner);
-  const summary = tradeOffSummary(winner, baseline);
 
   return (
     <section className="panel space-y-3">
-      <p className="eyebrow">AstraOS vs strongest baseline</p>
+      <p className="eyebrow">Merchant result</p>
       <h2 className="text-lg font-semibold tracking-tight">
         {strategyTitle(baseline.strategy_name)} · {strategyTitle(winner.strategy_name)}
       </h2>
@@ -44,11 +48,7 @@ export function StrategyComparison({ duel }: { duel: ArenaRunResponse }) {
           </tbody>
         </table>
       </div>
-      <p className="text-sm">
-        AstraOS gained {summary.fitDelta} buyer fit while preserving{" "}
-        {summary.contributionDelta} merchant contribution relative to{" "}
-        {summary.baselineName}.
-      </p>
+      <p className="text-sm">{merchantEconomicsLine(winner, baseline)}</p>
     </section>
   );
 }

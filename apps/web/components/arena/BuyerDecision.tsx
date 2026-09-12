@@ -1,4 +1,5 @@
 import {
+  componentDeltaLines,
   componentNote,
   primaryDecisionSentence,
   profileLabel,
@@ -58,8 +59,26 @@ export function BuyerDecision({ duel }: { duel: ArenaRunResponse }) {
         </ul>
       </div>
       <div>
-        <p className="eyebrow">Why it won</p>
+        <p className="eyebrow">Why the simulated buyer preferred this offer</p>
         <ul className="mt-2 space-y-1 text-sm">
+          {componentDeltaLines(duel)
+            .filter((row) => row.component !== "net")
+            .map((row) => (
+              <li key={row.component} className="flex justify-between gap-3">
+                <span>{row.component} fit</span>
+                <span className="font-mono tabular-nums">{row.signed}</span>
+              </li>
+            ))}
+          {componentDeltaLines(duel)
+            .filter((row) => row.component === "net")
+            .map((row) => (
+              <li key="net" className="flex justify-between gap-3 font-medium">
+                <span>Net simulated buyer utility</span>
+                <span className="font-mono tabular-nums">{row.signed}</span>
+              </li>
+            ))}
+        </ul>
+        <ul className="mt-3 space-y-1 text-sm">
           {winnerReasons(duel).map((line) => (
             <li key={line} className="flex gap-2">
               <span className="text-success">✓</span>

@@ -11,12 +11,12 @@ export const STRATEGY_META: Record<
 > = {
   DEFAULT: {
     title: "Default Merchant",
-    subtitle: "Base commercial configuration",
+    subtitle: "Standard product + standard terms",
     tooltip: "What happens if the retailer simply exposes its standard offer?",
   },
   ALWAYS_DISCOUNT: {
     title: "Always Discount",
-    subtitle: "Price-first intervention",
+    subtitle: "Price-first merchant strategy",
     tooltip: "What happens if the retailer's primary lever is price?",
   },
   CHEAPEST_ELIGIBLE: {
@@ -25,9 +25,15 @@ export const STRATEGY_META: Record<
     tooltip:
       "What happens if the retailer optimises for the lowest valid buyer price?",
   },
+  SEMANTIC_ONLY: {
+    title: "Semantic Only",
+    subtitle: "Best semantic product + standard terms",
+    tooltip:
+      "What happens if the retailer only improves product matching and keeps default terms?",
+  },
   ASTRAOS: {
     title: "AstraOS",
-    subtitle: "Multi-dimensional offer optimisation",
+    subtitle: "Whole-offer commercial optimisation",
     tooltip:
       "What happens if the retailer optimises across the entire offer vector?",
   },
@@ -182,6 +188,8 @@ export type OfferDiff = {
   warrantyChanged: boolean;
   bundleChanged: boolean;
   priceChanged: boolean;
+  productChanged: boolean;
+  returnsChanged: boolean;
 };
 
 export function offerDiff(
@@ -194,6 +202,8 @@ export function offerDiff(
       warrantyChanged: false,
       bundleChanged: false,
       priceChanged: false,
+      productChanged: false,
+      returnsChanged: false,
     };
   }
   return {
@@ -203,7 +213,46 @@ export function offerDiff(
     priceChanged:
       current.total_customer_price_cents !==
       reference.total_customer_price_cents,
+    productChanged: current.sku !== reference.sku,
+    returnsChanged: (current.returns ?? "") !== (reference.returns ?? ""),
   };
+}
+
+export function findStrategy(
+  duel: ArenaRunResponse,
+  name: string,
+): ArenaStrategyResponse | null {
+  return (
+    duel.strategies.find((item) => item.response.strategy_name === name)
+      ?.response ?? null
+  );
+}
+
+export function componentDeltaLines(
+  duel: ArenaRunResponse,
+): { component: string; delta: number; signed: string }[] {
+  const rows = duel.explanation.component_deltas ?? [];
+  return rows.map((row) => ({
+    component: row.component,
+    delta: row.delta,
+    signed: signedDelta(row.delta, 2),
+  }));
+}
+
+export function merchantEconomicsLine(
+  winner: ArenaStrategyResponse,
+  baseline: ArenaStrategyResponse,
+): string {
+  const fit = (winner.buyer_utility ?? 0) - (baseline.buyer_utility ?? 0);
+  const contrib =
+    (winner.merchant_contribution_cents ?? 0) -
+    (baseline.merchant_contribution_cents ?? 0);
+  const winnerName = strategyTitle(winner.strategy_name);
+  const baseName = strategyTitle(baseline.strategy_name);
+  if (contrib >= 0) {
+    return `${winnerName} gained ${signedDelta(fit)} simulated buyer utility while preserving ${moneyDelta(contrib)} contribution vs ${baseName}.`;
+  }
+  return `${winnerName} sacrificed ${moneyDelta(contrib)} contribution for ${signedDelta(fit)} simulated buyer utility vs ${baseName}.`;
 }
 
 export function winnerReasons(

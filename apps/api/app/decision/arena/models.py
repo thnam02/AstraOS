@@ -68,6 +68,10 @@ class StrategyResponse(BaseModel):
     used_max_discount: bool = False
     is_cheapest_in_space: bool = False
     runtime_ms: float = 0
+    status: str = "VALID"
+    selectable: bool = False
+    strategy_version: str = "v1"
+    commercial_intervention_count: int = 0
 
 
 class BuyerSelection(BaseModel):
@@ -116,6 +120,7 @@ class ArenaMissionResult(BaseModel):
     responses: list[StrategyResponse]
     selection: BuyerSelection
     runtime_ms: float = 0
+    explanation: dict[str, Any] = Field(default_factory=dict)
 
 
 class StrategyMetrics(BaseModel):
@@ -133,6 +138,9 @@ class StrategyMetrics(BaseModel):
     transaction_completion_rate: float
     avg_utility_vs_default: float | None = None
     intervention_efficiency: float | None = None
+    avg_customer_price_cents: float | None = None
+    avg_commercial_interventions: float | None = None
+    no_purchase_involvement_rate: float = 0.0
 
 
 class SegmentMetrics(BaseModel):
@@ -144,6 +152,8 @@ class SegmentMetrics(BaseModel):
     selection_rate: float
     avg_buyer_utility: float | None = None
     avg_contribution_cents: float | None = None
+    contribution_per_opportunity_cents: float = 0.0
+    avg_intervention_cost_cents: float | None = None
 
 
 class PairwiseRow(BaseModel):
@@ -151,7 +161,10 @@ class PairwiseRow(BaseModel):
     right: str
     left_wins: float
     right_wins: float
+    ties: float = 0.0
     no_purchase_or_other: float
+    both_valid: int = 0
+    denominator: str = "both_valid_offers"
 
 
 class ArenaBenchmarkSummary(BaseModel):
@@ -165,3 +178,4 @@ class ArenaBenchmarkSummary(BaseModel):
     timing: dict[str, float] = Field(default_factory=dict)
     disclaimer: str = ARENA_DISCLAIMER
     config: dict[str, Any] = Field(default_factory=dict)
+    ablation: dict[str, Any] = Field(default_factory=dict)

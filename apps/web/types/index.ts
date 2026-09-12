@@ -973,6 +973,10 @@ export type ArenaStrategyResponse = {
   used_pareto: boolean;
   used_max_discount: boolean;
   is_cheapest_in_space: boolean;
+  status?: string;
+  selectable?: boolean;
+  strategy_version?: string;
+  commercial_intervention_count?: number;
 };
 
 export type ArenaRunResponse = {
@@ -993,6 +997,14 @@ export type ArenaRunResponse = {
     profile_label?: string;
     weights?: Record<string, number>;
     reasons?: string[];
+    win_category?: string | null;
+    loss_category?: string | null;
+    component_deltas?: {
+      component: string;
+      winner: number;
+      baseline: number;
+      delta: number;
+    }[];
   };
   disclaimer: string;
   created_at: string;
@@ -1011,6 +1023,8 @@ export type ArenaStrategyMetrics = {
   policy_violation_rate: number;
   no_offer_rate: number;
   transaction_completion_rate: number;
+  avg_customer_price_cents?: number | null;
+  avg_commercial_interventions?: number | null;
 };
 
 export type ArenaSegmentMetrics = {
@@ -1022,6 +1036,8 @@ export type ArenaSegmentMetrics = {
   selection_rate: number;
   avg_buyer_utility: number | null;
   avg_contribution_cents: number | null;
+  contribution_per_opportunity_cents?: number;
+  avg_intervention_cost_cents?: number | null;
 };
 
 export type ArenaBenchmarkCreated = {
@@ -1049,9 +1065,14 @@ export type ArenaBenchmarkResponse = {
       right: string;
       left_wins: number;
       right_wins: number;
+      ties?: number;
       no_purchase_or_other: number;
+      both_valid?: number;
+      denominator?: string;
     }[];
+    ablation?: Record<string, unknown>;
   };
+  ablation?: Record<string, unknown>;
   strategy_metrics: ArenaStrategyMetrics[];
   segment_metrics: ArenaSegmentMetrics[];
   pairwise: {

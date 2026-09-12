@@ -380,6 +380,7 @@ export function setDemoPolicy(payload: {
 export function runArenaDuel(payload: {
   intent: string;
   buyer_profile?: BuyerProfile;
+  strategies?: string[];
 }): Promise<ArenaRunResponse> {
   return request<ArenaRunResponse>("/api/v1/arena/run", {
     method: "POST",

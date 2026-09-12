@@ -17,6 +17,9 @@ import {
   runArenaDuel,
 } from "@/lib/api";
 import {
+  bundleLabel,
+  deliveryLabel,
+  findStrategy,
   headline,
   moneyDelta,
   qualitativePriorities,
@@ -24,6 +27,7 @@ import {
   signedDelta,
   strongestBaseline,
   validResponses,
+  warrantyLabel,
 } from "@/lib/arenaDisplay";
 import { formatAudCents } from "@/lib/money";
 import type {
@@ -31,6 +35,20 @@ import type {
   ArenaRunResponse,
   BuyerProfile,
 } from "@/types";
+
+const ABLATION_STRATEGIES = [
+  "DEFAULT",
+  "ALWAYS_DISCOUNT",
+  "SEMANTIC_ONLY",
+  "ASTRAOS",
+] as const;
+const EXTENDED_STRATEGIES = [
+  "DEFAULT",
+  "ALWAYS_DISCOUNT",
+  "CHEAPEST_ELIGIBLE",
+  "SEMANTIC_ONLY",
+  "ASTRAOS",
+] as const;
 
 const ARENA_HERO =
   "I need ANC headphones under A$350 for a long-haul flight. Delivered today. Comfort and reliability matter more than getting the cheapest option.";
@@ -74,6 +92,7 @@ export function ArenaWorkbench() {
   const [seed, setSeed] = useState(2026);
   const [benchmark, setBenchmark] = useState<ArenaBenchmarkResponse | null>(null);
   const [inspect, setInspect] = useState(false);
+  const [moreStrategies, setMoreStrategies] = useState(false);
 
   const preset = PRESETS.find((item) => item.id === scenario);
   const custom = scenario === "custom";
@@ -92,7 +111,15 @@ export function ArenaWorkbench() {
     setBusy(true);
     setError(null);
     try {
-      setDuel(await runArenaDuel({ intent, buyer_profile: profile }));
+      setDuel(
+        await runArenaDuel({
+          intent,
+          buyer_profile: profile,
+          strategies: moreStrategies
+            ? [...EXTENDED_STRATEGIES]
+            : [...ABLATION_STRATEGIES],
+        }),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Arena run failed");
     } finally {
@@ -167,8 +194,8 @@ export function ArenaWorkbench() {
           </button>
         </div>
         <p className="text-xs text-muted">
-          Synthetic evaluation. Buyer selection uses a transparent simulated
-          utility model, not observed real-world sales uplift.
+          SYNTHETIC EVALUATION. Buyer selection uses a transparent simulated
+          utility model. Results are not observed real-world sales uplift.
         </p>
       </div>
 
@@ -176,8 +203,8 @@ export function ArenaWorkbench() {
         <div className="space-y-4">
           <section className="panel space-y-3">
             <p className="text-sm text-muted">
-              Same buyer. Same catalogue. Same merchant rules. Different merchant
-              strategies.
+              SAME BUYER · SAME MERCHANT · SAME RULES. Only strategy differs:
+              Default → Always Discount → Semantic Only → AstraOS.
             </p>
             <div className="flex flex-wrap items-end gap-3">
               <label className="text-xs text-muted">
@@ -226,6 +253,14 @@ export function ArenaWorkbench() {
                   </button>
                 ))}
               </div>
+              <label className="flex items-center gap-2 text-xs text-muted">
+                <input
+                  type="checkbox"
+                  checked={moreStrategies}
+                  onChange={(event) => setMoreStrategies(event.target.checked)}
+                />
+                More strategies
+              </label>
               <button
                 type="button"
                 className="btn-primary"
@@ -281,8 +316,7 @@ export function ArenaWorkbench() {
               <div className="border border-line bg-canvas px-4 py-3">
                 <p className="eyebrow">Controlled experiment</p>
                 <p className="mt-1 text-sm">
-                  Same intent · same catalogue · same inventory · same merchant
-                  policy · same buyer model. Only strategy differs.
+                  Same buyer · same merchant · same rules. Only strategy differs.
                 </p>
               </div>
 
@@ -352,6 +386,8 @@ export function ArenaWorkbench() {
                 </div>
               </div>
 
+              <SemanticOfferDelta duel={duel} />
+
               <div className="grid gap-4 xl:grid-cols-2">
                 <BuyerDecision duel={duel} />
                 <StrategyComparison duel={duel} />
@@ -377,8 +413,8 @@ export function ArenaWorkbench() {
             </div>
           ) : (
             <p className="text-sm text-muted">
-              Run a duel to compare Default, Always Discount, Cheapest Eligible,
-              and AstraOS against the same merchant state.
+              Run a duel to compare Default, Always Discount, Semantic Only, and
+              AstraOS against the same merchant state.
             </p>
           )}
         </div>
@@ -453,6 +489,54 @@ export function ArenaWorkbench() {
         duel={duel}
         onClose={() => setInspect(false)}
       />
+    </div>
+  );
+}
+
+function SemanticOfferDelta({ duel }: { duel: ArenaRunResponse }) {
+  const semantic = findStrategy(duel, "SEMANTIC_ONLY");
+  const astraos = findStrategy(duel, "ASTRAOS");
+  if (!semantic || !astraos) return null;
+  const sameProduct = semantic.sku === astraos.sku;
+  return (
+    <section className="panel space-y-3">
+      <p className="eyebrow">What changed · Semantic Only vs AstraOS</p>
+      <p className="text-xs text-muted">
+        Semantic search finds a product. AstraOS builds the commercial response.
+        {sameProduct ? " Same product; offer terms differ." : " Product also changed."}
+      </p>
+      <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-start">
+        <OfferSnapshot title="Semantic Only" response={semantic} />
+        <p className="self-center text-center text-xs text-muted">↓</p>
+        <OfferSnapshot title="AstraOS" response={astraos} />
+      </div>
+    </section>
+  );
+}
+
+function OfferSnapshot({
+  title,
+  response,
+}: {
+  title: string;
+  response: NonNullable<ReturnType<typeof findStrategy>>;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-medium tracking-[0.06em]">{title}</p>
+      <h3 className="mt-1 text-base font-semibold">
+        {response.product_name ?? "No offer"}
+      </h3>
+      <p className="font-mono text-sm tabular-nums">
+        {response.total_customer_price_cents != null
+          ? formatAudCents(response.total_customer_price_cents)
+          : "—"}
+      </p>
+      <ul className="mt-2 space-y-0.5 text-sm text-muted">
+        <li>{deliveryLabel(response.delivery, response.delivery_days)}</li>
+        <li>{warrantyLabel(response.warranty, response.warranty_months)}</li>
+        <li>{bundleLabel(response.bundle)}</li>
+      </ul>
     </div>
   );
 }

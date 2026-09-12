@@ -75,10 +75,27 @@ async def test_cheapest_is_actually_cheapest(hero_context) -> None:
 async def test_semantic_only_does_not_use_pareto(hero_context) -> None:
     response = get_strategy("SEMANTIC_ONLY").generate_response(hero_context)
     assert response.used_pareto is False
+    assert response.used_max_discount is False
     default = get_strategy("DEFAULT").generate_response(hero_context)
     assert response.sku == default.sku
     assert response.delivery == default.delivery
     assert response.warranty == default.warranty
+    if response.offer_id is None:
+        return
+    offer = next(item for item in hero_context.offers if item.id == response.offer_id)
+    assert is_conceptual_baseline(offer)
+    assert hero_context.matches
+    assert response.sku == hero_context.matches[0].sku
+    if (
+        hero_context.recommended_offer_id is not None
+        and response.offer_id != hero_context.recommended_offer_id
+    ):
+        assert response.offer_id != hero_context.recommended_offer_id
+    astraos = get_strategy("ASTRAOS").generate_response(hero_context)
+    if astraos.offer_id is not None and not is_conceptual_baseline(
+        next(item for item in hero_context.offers if item.id == astraos.offer_id)
+    ):
+        assert response.offer_id != astraos.offer_id
 
 
 @pytest.mark.asyncio
@@ -110,7 +127,8 @@ async def test_hero_duel_is_synthetic(db_session: AsyncSession) -> None:
     result = payload["result"]
     assert payload["disclaimer"].startswith("Synthetic evaluation")
     names = {item.strategy_name for item in result.responses}
-    assert {"DEFAULT", "ALWAYS_DISCOUNT", "CHEAPEST_ELIGIBLE", "ASTRAOS"} <= names
+    assert {"DEFAULT", "ALWAYS_DISCOUNT", "SEMANTIC_ONLY", "ASTRAOS"} <= names
+    assert "CHEAPEST_ELIGIBLE" not in names
     astra = next(item for item in result.responses if item.strategy_name == "ASTRAOS")
     default = next(item for item in result.responses if item.strategy_name == "DEFAULT")
     assert astra.used_pareto is True

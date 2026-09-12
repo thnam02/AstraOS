@@ -59,7 +59,7 @@ def test_same_seed_and_objective_is_reproducible(client: TestClient) -> None:
     }
     assert a["DEFAULT"] == b["DEFAULT"]
     assert a["ALWAYS_DISCOUNT"] == b["ALWAYS_DISCOUNT"]
-    assert a["CHEAPEST_ELIGIBLE"] == b["CHEAPEST_ELIGIBLE"]
+    assert a["SEMANTIC_ONLY"] == b["SEMANTIC_ONLY"]
     assert a["ASTRAOS"] == b["ASTRAOS"]
 
 
@@ -94,6 +94,6 @@ def test_changing_objective_can_change_astraos_only(client: TestClient) -> None:
     }
     assert b["DEFAULT"] == g["DEFAULT"]
     assert b["ALWAYS_DISCOUNT"] == g["ALWAYS_DISCOUNT"]
-    assert b["CHEAPEST_ELIGIBLE"] == g["CHEAPEST_ELIGIBLE"]
+    assert b["SEMANTIC_ONLY"] == g["SEMANTIC_ONLY"]
     # AstraOS may stay on the same efficient offer; that is valid.
     assert "ASTRAOS" in b and "ASTRAOS" in g

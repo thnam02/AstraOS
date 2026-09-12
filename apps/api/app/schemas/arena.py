@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from app.decision.arena import ARENA_DISCLAIMER
-from app.decision.arena.config import DEFAULT_STRATEGIES
+from app.decision.arena.config import DEFAULT_STRATEGIES, ArenaObjectiveMode
 from app.decision.arena.models import (
     BuyerSelection,
     SegmentMetrics,
@@ -25,6 +25,7 @@ class ArenaRunRequest(BaseModel):
     )
     outside_option_utility: float = Field(default=0.42, ge=0, le=1)
     seed: int = 2026
+    merchant_objective_mode: ArenaObjectiveMode = "BALANCED"
 
 
 class ArenaStrategyBlock(BaseModel):
@@ -61,6 +62,7 @@ class ArenaBenchmarkRequest(BaseModel):
     buyer_profile: str | None = None
     outside_option_utility: float = Field(default=0.42, ge=0, le=1)
     persist_missions: bool = False
+    merchant_objective_mode: ArenaObjectiveMode = "BALANCED"
 
 
 class ArenaBenchmarkCreated(BaseModel):

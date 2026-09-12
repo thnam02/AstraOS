@@ -289,6 +289,14 @@ _PRIVATE_REASON_MARKERS = (
     "merchant contribution",
     "cogs",
     "pareto",
+    "merchant's",
+    "merchant objective",
+    "merchant strategy",
+    "commercial objective",
+    "buyer fit /",
+    "contribution preservation",
+    "buyer_weight",
+    "merchant_weight",
 )
 
 

@@ -9,6 +9,7 @@ from app.db.base import Base
 from app.models.mixins import CreatedAtMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.objective import MerchantObjective
     from app.models.policy import MerchantPolicy
 
 
@@ -22,5 +23,8 @@ class Merchant(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="AUD")
 
     policies: Mapped[list["MerchantPolicy"]] = relationship(
+        back_populates="merchant",
+    )
+    objectives: Mapped[list["MerchantObjective"]] = relationship(
         back_populates="merchant",
     )

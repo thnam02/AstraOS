@@ -12,6 +12,7 @@ from app.decision.negotiation.models import (
     ReasonCode,
 )
 from app.decision.optimisation.models import ScoredOffer
+from app.decision.optimisation.objective import MerchantObjectiveConfig
 from app.decision.optimisation.selection import select_offer
 
 
@@ -96,12 +97,15 @@ def compromise(
     )
 
 
-def _pick(candidates: list[ScoredOffer]) -> ScoredOffer | None:
+def _pick(
+    candidates: list[ScoredOffer],
+    objective: MerchantObjectiveConfig | None = None,
+) -> ScoredOffer | None:
     if not candidates:
         return None
     frontier = [item for item in candidates if item.is_pareto_efficient]
     pool = frontier or candidates
-    winner, _score = select_offer(pool)
+    winner, _score = select_offer(pool, objective=objective)
     return winner
 
 
@@ -127,6 +131,7 @@ def search_counter(
     *,
     request: CounterConstraints,
     current_variant_id: UUID | None,
+    objective: MerchantObjectiveConfig | None = None,
 ) -> SearchResult:
     safe = [item for item in scored if item.policy.policy_safe]
     if not safe:
@@ -151,7 +156,7 @@ def search_counter(
     ]
 
     if same_ok:
-        winner = _pick(same_ok)
+        winner = _pick(same_ok, objective)
         return SearchResult(
             outcome=MerchantOutcome.ACCEPT_BUYER_COUNTER,
             proposal_type=ProposalType.COUNTER,
@@ -164,7 +169,7 @@ def search_counter(
         )
 
     if request.alternative_product_allowed and other_ok:
-        winner = _pick(other_ok)
+        winner = _pick(other_ok, objective)
         return SearchResult(
             outcome=MerchantOutcome.ALTERNATIVE_PRODUCT,
             proposal_type=ProposalType.ALTERNATIVE_PRODUCT,

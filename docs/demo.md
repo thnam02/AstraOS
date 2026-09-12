@@ -43,6 +43,15 @@ Point to the Pareto chart. X is merchant contribution. Y is
 
 Say: “AstraOS optimises both buyer fit and merchant economics.”
 
+Open **Merchant Rules → Commercial Objective**. Start on **Balanced**.
+The selected diamond is one efficient offer. Switch to **Margin**. The
+frontier does not move; the selected point may. Switch to **Growth**
+to move toward stronger buyer fit. If all three pick the same offer,
+say the mission is objective-insensitive — that is a real result.
+
+Say: “Merchant strategy selects among efficient trade-offs. It does
+not change what is allowed.”
+
 ## 1:35 — Intervention
 
 Use the numbers on screen. Seed 2026 typically proposes **Aurora Commute 06**

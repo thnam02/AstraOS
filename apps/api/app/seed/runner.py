@@ -29,6 +29,7 @@ from app.seed.catalog import (
     data_sources,
     delivery_options,
     merchant,
+    merchant_objective,
     merchant_policy,
     return_policies,
     warranty_options,
@@ -69,9 +70,20 @@ async def seed_database(session: AsyncSession, seed_value: int) -> SeedSummary:
     bundles = bundle_options()
     returns = return_policies()
     policy = merchant_policy(store.id)
+    objective = merchant_objective(store.id)
 
     await _merge_all(
-        session, [store, *sources, *deliveries, *warranties, *bundles, *returns, policy]
+        session,
+        [
+            store,
+            *sources,
+            *deliveries,
+            *warranties,
+            *bundles,
+            *returns,
+            policy,
+            objective,
+        ],
     )
 
     catalogue = generate_catalogue(

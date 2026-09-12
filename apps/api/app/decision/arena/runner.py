@@ -27,6 +27,7 @@ from app.decision.arena.models import (
 )
 from app.decision.arena.selection import choose_response
 from app.decision.arena.strategies import strategy_set
+from app.decision.optimisation.objective import MerchantObjectiveConfig, preset
 from app.decision.utility.models import UTILITY_VERSION
 
 
@@ -53,12 +54,17 @@ async def run_mission(
     max_products: int,
     cache: ArenaCatalogueCache | None = None,
     events: list[dict[str, Any]] | None = None,
+    merchant_objective: MerchantObjectiveConfig | None = None,
 ) -> tuple[ArenaMissionResult, dict[str, Any]]:
     started = time.perf_counter()
     log = events if events is not None else _events()
     _event(log, "ARENA_MISSION_CREATED", mission_id=mission.id)
     builder = ArenaContextBuilder(session, cache=cache)
-    context = await builder.build(mission, max_products=max_products)
+    context = await builder.build(
+        mission,
+        max_products=max_products,
+        objective=merchant_objective,
+    )
     responses = []
     for strategy in strategy_set(strategies):
         item_started = time.perf_counter()
@@ -118,6 +124,7 @@ async def run_duel(
         max_products=8,
         cache=cache,
         events=events,
+        merchant_objective=request.merchant_objective(),
     )
     return {
         "result": result,
@@ -125,6 +132,7 @@ async def run_duel(
         "context": extra["context"],
         "events": events,
         "disclaimer": ARENA_DISCLAIMER,
+        "merchant_objective": request.merchant_objective().snapshot(),
     }
 
 
@@ -148,6 +156,7 @@ async def run_benchmark(
     )
     cache = ArenaCatalogueCache()
     await cache.load(session)
+    objective = config.merchant_objective()
     results: list[ArenaMissionResult] = []
     per_strategy: dict[str, list[float]] = {name: [] for name in config.strategies}
     for mission in missions:
@@ -159,6 +168,7 @@ async def run_benchmark(
             outside_option_utility=config.outside_option_utility,
             max_products=config.max_products,
             cache=cache,
+            merchant_objective=objective,
         )
         results.append(result)
         elapsed = (time.perf_counter() - item_started) * 1000
@@ -190,6 +200,7 @@ async def run_benchmark(
                 "disabled_for_bulk; offer-selection only. "
                 "Merchant inventory is snapshotted and never consumed."
             ),
+            "merchant_objective": objective.snapshot(),
         },
         timing=timing,
     )
@@ -204,3 +215,58 @@ async def run_benchmark(
 
 def hero_mission() -> BuyerMission:
     return HERO_MISSION.model_copy(deep=True)
+
+
+async def run_objective_experiment(
+    session: AsyncSession,
+    *,
+    mission_count: int = 20,
+    seed: int = 2026,
+    outside_option_utility: float = 0.42,
+) -> dict[str, Any]:
+    """ASTRAOS-only Growth / Balanced / Margin on the same missions.
+
+    Secondary analysis. Not the default strategy comparison. Synthetic.
+    """
+    missions = generate_missions(mission_count, seed=seed)
+    cache = ArenaCatalogueCache()
+    await cache.load(session)
+    by_mode: dict[str, Any] = {}
+    for mode in ("GROWTH", "BALANCED", "MARGIN"):
+        objective = preset(mode)
+        results: list[ArenaMissionResult] = []
+        for mission in missions:
+            result, _extra = await run_mission(
+                session,
+                mission,
+                strategies=["ASTRAOS"],
+                outside_option_utility=outside_option_utility,
+                max_products=8,
+                cache=cache,
+                merchant_objective=objective,
+            )
+            results.append(result)
+        summary = summarize(
+            results,
+            strategies=["ASTRAOS"],
+            seed=seed,
+            config={"merchant_objective": objective.snapshot()},
+            timing={},
+        )
+        metric = summary.strategy_metrics[0]
+        by_mode[mode] = {
+            "selection_rate": metric.selection_rate,
+            "contribution_per_opportunity_cents": (
+                metric.contribution_per_opportunity_cents
+            ),
+            "avg_buyer_utility": metric.avg_buyer_utility,
+            "avg_intervention_cost_cents": metric.avg_intervention_cost_cents,
+            "no_offer_rate": metric.no_offer_rate,
+            "policy_violation_rate": metric.policy_violation_rate,
+        }
+    return {
+        "mission_count": mission_count,
+        "seed": seed,
+        "disclaimer": ARENA_DISCLAIMER,
+        "modes": by_mode,
+    }

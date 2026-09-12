@@ -1,8 +1,13 @@
 """Explicit Arena benchmark assumptions. Do not hide these in callers."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from app.decision.arena.models import StrategyName
+from app.decision.optimisation.objective import MerchantObjectiveConfig, preset
+
+ArenaObjectiveMode = Literal["GROWTH", "BALANCED", "MARGIN"]
 
 DEFAULT_STRATEGIES: tuple[StrategyName, ...] = (
     "DEFAULT",
@@ -46,6 +51,10 @@ class ArenaBenchmarkConfig(BaseModel):
         default_factory=lambda: dict(SEGMENT_SHARES)
     )
     persist_missions: bool = True
+    merchant_objective_mode: ArenaObjectiveMode = "BALANCED"
+
+    def merchant_objective(self) -> MerchantObjectiveConfig:
+        return preset(self.merchant_objective_mode)
 
 
 class ArenaDuelRequest(BaseModel):
@@ -56,3 +65,7 @@ class ArenaDuelRequest(BaseModel):
     )
     outside_option_utility: float = Field(default=0.42, ge=0, le=1)
     seed: int = 2026
+    merchant_objective_mode: ArenaObjectiveMode = "BALANCED"
+
+    def merchant_objective(self) -> MerchantObjectiveConfig:
+        return preset(self.merchant_objective_mode)

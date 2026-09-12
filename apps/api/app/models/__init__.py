@@ -30,6 +30,7 @@ from app.models.negotiation import (
     NegotiationSession,
     NegotiationTurn,
 )
+from app.models.objective import MerchantObjective
 from app.models.offer import OfferCandidateRow, OfferConstructionRun
 from app.models.optimisation import OptimisationRun
 from app.models.policy import MerchantPolicy
@@ -57,6 +58,7 @@ __all__ = [
     "MatchResult",
     "MatchRun",
     "Merchant",
+    "MerchantObjective",
     "MerchantProposal",
     "ModelTrainingRun",
     "NegotiationSession",

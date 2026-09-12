@@ -45,12 +45,25 @@ Offer Construction
     ↓
 Merchant Economics / Policy
     ↓
-Pareto Optimisation
+Policy-safe offers
+    ↓
+Buyer Utility
+    ↓
+Pareto Frontier
+    ↓
+Merchant Objective
+    ↓
+Recommended Offer
     ↓
 Negotiation
     ↓
 Transaction
 ```
+
+Merchant **policy** is a hard guardrail: what is allowed. Merchant
+**objective** is a soft preference among policy-safe Pareto offers:
+Growth (70/30), Balanced (50/50 default), or Margin (30/70). Objective
+never overrides policy, and never rebuilds the frontier.
 
 Merchant systems / data sit below this stack: catalogue, inventory,
 delivery capacity, warranty/bundle/returns, evidence, and merchant policy.

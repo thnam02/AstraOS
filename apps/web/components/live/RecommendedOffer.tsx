@@ -1,16 +1,24 @@
 import { Disclosure } from "@/components/shared/Disclosure";
 import { conciseOfferReasons, commercialLevers } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
-import type { PublicScoredOffer } from "@/types";
+import type {
+  MerchantObjectiveSnapshot,
+  PublicScoredOffer,
+  SelectionScore,
+} from "@/types";
 
 export function RecommendedOffer({
   offer,
   explanation,
   onWhyDifferent,
+  objective,
+  selection,
 }: {
   offer: PublicScoredOffer;
   explanation: string[];
   onWhyDifferent?: () => void;
+  objective?: MerchantObjectiveSnapshot | null;
+  selection?: SelectionScore | null;
 }) {
   const reasons = conciseOfferReasons(explanation);
   return (
@@ -23,6 +31,18 @@ export function RecommendedOffer({
           {offer.product_name}
         </h2>
         <p className="font-mono text-[11px] text-muted">{offer.sku}</p>
+        {objective ? (
+          <p
+            className="mt-2 text-[11px] text-muted"
+            title="Selection from Pareto-efficient offers using the merchant's configured commercial objective."
+          >
+            Selected under {objective.mode.charAt(0)}
+            {objective.mode.slice(1).toLowerCase()} objective
+            {selection
+              ? ` · score ${selection.score.toFixed(3)}`
+              : ""}
+          </p>
+        ) : null}
         <p className="mt-2 font-mono text-3xl font-semibold tabular-nums">
           {formatAudCents(offer.pricing.total_price_cents)}
         </p>

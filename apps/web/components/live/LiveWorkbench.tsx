@@ -21,6 +21,7 @@ import {
   createNegotiation,
   getNegotiation,
   postNegotiationTurn,
+  reselectOptimisation,
   runOptimisation,
   setDemoDeliveryCapacity,
   setDemoInventory,
@@ -147,14 +148,39 @@ export function LiveWorkbench() {
     }
   }
 
+  async function reselectForObjective() {
+    if (!optimisation) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const next = await reselectOptimisation(optimisation.optimisation_run_id);
+      setOptimisation(next);
+      if (next.recommended_offer) {
+        setSelectedOfferId(next.recommended_offer.offer_id);
+      }
+    } catch {
+      setError("Objective reselection failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   useEffect(() => {
     function onPolicy() {
       if (!offers) return;
       void rerunOptimisation(profile);
     }
+    function onObjective() {
+      if (!optimisation) return;
+      void reselectForObjective();
+    }
     window.addEventListener("astraos:policy-changed", onPolicy);
-    return () => window.removeEventListener("astraos:policy-changed", onPolicy);
-  }, [offers, profile]);
+    window.addEventListener("astraos:objective-changed", onObjective);
+    return () => {
+      window.removeEventListener("astraos:policy-changed", onPolicy);
+      window.removeEventListener("astraos:objective-changed", onObjective);
+    };
+  }, [offers, profile, optimisation]);
 
   if (!result && busy) {
     return (
@@ -428,6 +454,8 @@ export function LiveWorkbench() {
               onWhyDifferent={
                 differ ? () => setStage("match") : undefined
               }
+              objective={optimisation?.merchant_objective}
+              selection={optimisation?.selection}
             />
           ) : (
             <EmptyState
@@ -503,6 +531,8 @@ export function LiveWorkbench() {
                 top_match: topMatch,
                 construction: offers?.summary,
                 optimisation: optimisation?.summary,
+                merchant_objective: optimisation?.merchant_objective,
+                selection: optimisation?.selection,
                 selected_offer: proposalOffer,
                 run_ids: {
                   match: result?.run_id,

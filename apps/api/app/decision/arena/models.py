@@ -102,6 +102,7 @@ class ArenaContext(BaseModel):
     inventory_fingerprint: str = ""
     recommended_offer_id: UUID | None = None
     optimisation_failure: str | None = None
+    merchant_objective: dict[str, Any] | None = None
 
 
 class MerchantStrategy(Protocol):

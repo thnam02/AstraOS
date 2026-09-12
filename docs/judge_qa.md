@@ -12,7 +12,24 @@ is a Synthetic Response Score.
 **Why Pareto?**
 Many policy-safe offers are dominated. AstraOS keeps the efficient
 trade-offs between simulated buyer utility and merchant contribution,
-then picks one with a declared rule.
+then picks one with the merchant's configured commercial objective.
+
+**Why did you use a 50/50 optimisation?**
+We no longer assume every merchant has the same objective. Balanced is
+the default, but merchants can select Growth or Margin-oriented
+strategies. All operate over the same Pareto-efficient frontier.
+
+**Can the merchant sacrifice margin completely to win the buyer?**
+No. Hard merchant policy is enforced before objective selection.
+
+**Does Growth just mean discounting more?**
+No. AstraOS optimises the complete offer vector including delivery,
+warranty, bundles, returns and price.
+
+**Does changing strategy rerun the entire AI pipeline?**
+The underlying efficient frontier is unchanged. AstraOS can reselect
+from the frontier using the new merchant objective when the underlying
+commercial state has not changed.
 
 **Why not just discount?**
 Discount is one lever. Same-day, warranty, bundle, and returns can be

@@ -8,7 +8,9 @@ from pydantic import BaseModel, Field
 
 from app.decision.optimisation.models import (
     CounterfactualRow,
+    MerchantObjectiveSnapshot,
     NamedComparison,
+    ObjectiveComparison,
     OptimisationFailure,
     ScoredOffer,
     SelectionScore,
@@ -29,7 +31,7 @@ BuyerProfile = Literal[
 class OptimiseRequest(BaseModel):
     offer_run_id: UUID
     buyer_profile: BuyerProfile = "INTENT_ADAPTED"
-    alpha: float = Field(default=0.5, ge=0, le=1)
+    alpha: float | None = Field(default=None, ge=0, le=1)
 
 
 class DecisionRequest(BaseModel):
@@ -37,7 +39,7 @@ class DecisionRequest(BaseModel):
     parser_mode: Literal["rule_based", "llm"] | None = None
     buyer_profile: BuyerProfile = "INTENT_ADAPTED"
     max_products: int = Field(default=8, ge=1, le=20)
-    alpha: float = Field(default=0.5, ge=0, le=1)
+    alpha: float | None = Field(default=None, ge=0, le=1)
 
 
 class OptimisationSummary(BaseModel):
@@ -126,6 +128,8 @@ class OptimisationResponse(BaseModel):
     failure: OptimisationFailure | None
     objectives: list[ObjectiveSpec]
     created_at: datetime | None = None
+    merchant_objective: MerchantObjectiveSnapshot | None = None
+    objective_comparisons: list[ObjectiveComparison] = Field(default_factory=list)
 
 
 def to_public_scored(item: ScoredOffer) -> PublicScoredOffer:

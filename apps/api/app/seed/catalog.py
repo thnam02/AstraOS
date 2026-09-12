@@ -8,6 +8,7 @@ from app.models import (
     DataSource,
     DeliveryOption,
     Merchant,
+    MerchantObjective,
     MerchantPolicy,
     ReturnPolicy,
     WarrantyOption,
@@ -211,4 +212,16 @@ def merchant_policy(merchant_id: uuid.UUID) -> MerchantPolicy:
         maximum_delivery_subsidy_cents=1000,
         maximum_warranty_subsidy_cents=1400,
         maximum_bundle_subsidy_cents=900,
+    )
+
+
+def merchant_objective(merchant_id: uuid.UUID) -> MerchantObjective:
+    return MerchantObjective(
+        id=stable_uuid("objective", "default"),
+        merchant_id=merchant_id,
+        mode="BALANCED",
+        buyer_weight=Decimal("0.5000"),
+        merchant_weight=Decimal("0.5000"),
+        version="merchant-objective-v1",
+        is_active=True,
     )

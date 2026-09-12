@@ -38,6 +38,10 @@ from app.decision.negotiation.simulator import simulate_buyer
 from app.decision.negotiation.state_machine import NegotiationState as State
 from app.decision.negotiation.state_machine import buyer_may_act, transition
 from app.decision.optimisation.models import EngineResult, ScoredOffer
+from app.decision.optimisation.objective import (
+    MerchantObjectiveConfig,
+    from_snapshot,
+)
 from app.models.negotiation import (
     MerchantProposal,
     NegotiationSession,
@@ -61,6 +65,7 @@ from app.schemas.optimisation import (
 )
 from app.services.decision import DecisionService
 from app.services.matching import SemanticMatchingService
+from app.services.objective import MerchantObjectiveService
 from app.services.offers import OfferConstructionService
 from app.services.optimisation import OptimisationService
 
@@ -102,6 +107,7 @@ class NegotiationService:
         now = datetime.now(UTC)
         expires = now + timedelta(seconds=settings.negotiation_ttl_seconds)
         rec = decided.optimisation.recommended_offer
+        objective = await MerchantObjectiveService(self.session).active_config()
         opening_state = (
             State.MERCHANT_PROPOSAL_CREATED
             if rec is not None
@@ -130,7 +136,9 @@ class NegotiationService:
                     "minimum_margin_rate": str(policy.minimum_margin_rate),
                     "maximum_discount_rate": str(policy.maximum_discount_rate),
                     "policy_id": str(policy.id),
-                }
+                },
+                "merchant_objective": objective.snapshot(),
+                "objective_binding": "snapshot_at_session_creation",
             },
         )
         row.turns = []
@@ -238,9 +246,11 @@ class NegotiationService:
             preview_limit=40,
             intent_override=working,
         )
+        objective = self._session_objective(row)
         response, engine = await self.optimisation.evaluate(
             construction.offer_run_id,
             buyer_profile=row.buyer_profile,
+            objective=objective,
         )
         assert isinstance(engine, EngineResult)
         row.offer_run_id = construction.offer_run_id
@@ -253,6 +263,7 @@ class NegotiationService:
             engine.scored,
             request=CounterConstraints(alternative_product_allowed=True),
             current_variant_id=current_variant,
+            objective=objective,
         )
         if found.offer is None:
             return None
@@ -439,9 +450,11 @@ class NegotiationService:
             preview_limit=40,
             intent_override=working,
         )
+        objective = self._session_objective(row)
         response, engine = await self.optimisation.evaluate(
             construction.offer_run_id,
             buyer_profile=row.buyer_profile,
+            objective=objective,
         )
         assert isinstance(engine, EngineResult)
         row.offer_run_id = construction.offer_run_id
@@ -459,6 +472,7 @@ class NegotiationService:
             engine.scored,
             request=request,
             current_variant_id=current_variant,
+            objective=objective,
         )
         policy = await self.policy.get_active()
         margin = policy.minimum_margin_rate if policy else Decimal("0.15")
@@ -686,6 +700,13 @@ class NegotiationService:
                 total_turn_ms=round((time.perf_counter() - started) * 1000, 2),
             ),
         )
+
+    def _session_objective(
+        self, row: NegotiationSession
+    ) -> MerchantObjectiveConfig:
+        """Use the objective snapshotted at session creation, not the live config."""
+        meta = row.session_metadata or {}
+        return from_snapshot(meta.get("merchant_objective"))
 
     async def _response(
         self,

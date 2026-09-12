@@ -170,6 +170,66 @@ export type MerchantPolicyResponse = {
   loyalty_enabled: boolean;
 };
 
+export type MerchantObjectiveMode = "GROWTH" | "BALANCED" | "MARGIN" | "CUSTOM";
+
+export type MerchantObjectivePreset = {
+  buyer_weight: number;
+  merchant_weight: number;
+  label: string;
+  blurb: string;
+};
+
+export type MerchantObjectiveResponse = {
+  id: string | null;
+  merchant_id: string | null;
+  mode: MerchantObjectiveMode;
+  buyer_weight: number;
+  merchant_weight: number;
+  version: string;
+  label: string;
+  blurb: string;
+  presets: Record<string, MerchantObjectivePreset>;
+  is_active: boolean;
+  updated_at: string | null;
+};
+
+export type MerchantObjectiveUpdate = {
+  mode: MerchantObjectiveMode;
+  buyer_weight?: number;
+  merchant_weight?: number;
+};
+
+export type MerchantObjectiveSnapshot = {
+  mode: MerchantObjectiveMode | string;
+  buyer_weight: number;
+  merchant_weight: number;
+  version: string;
+};
+
+export type ObjectiveComparison = {
+  mode: string;
+  offer_id: string | null;
+  product_name: string | null;
+  sku: string | null;
+  buyer_utility: number | null;
+  contribution_margin_cents: number | null;
+  intervention_cost_cents: number | null;
+  score: number | null;
+};
+
+export type SelectionScore = {
+  offer_id: string;
+  normalized_utility: number;
+  normalized_contribution: number;
+  score: number;
+  alpha: number;
+  rule: string;
+  mode?: string | null;
+  buyer_weight?: number | null;
+  merchant_weight?: number | null;
+  version?: string | null;
+};
+
 export type MerchantPolicyUpdate = {
   minimum_margin_rate?: number;
   maximum_discount_rate?: number;
@@ -591,6 +651,9 @@ export type OptimisationResponse = {
     total_optimisation_ms: number;
   };
   recommended_offer: PublicScoredOffer | null;
+  selection?: SelectionScore | null;
+  merchant_objective?: MerchantObjectiveSnapshot | null;
+  objective_comparisons?: ObjectiveComparison[];
   pareto_offers: PublicScoredOffer[];
   alternative_pareto_offers: PublicScoredOffer[];
   plot_points: PlotPoint[];

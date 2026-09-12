@@ -45,8 +45,14 @@ Validated ShoppingIntent
       ↓
 Deterministic AstraOS Engine
 Qualification → Semantic Matching → Offer Construction
-  → Economics / Policy → Pareto Optimisation → Negotiation → Transaction
+  → Economics / Policy → Pareto Optimisation → Merchant Objective
+  → Negotiation → Transaction
 ```
+
+AstraOS separates **merchant guardrails** from **merchant objective**.
+A guardrail such as a 15% minimum margin defines the safe offer space.
+Growth / Balanced / Margin then chooses among Pareto-efficient safe
+offers. Changing strategy does not change the frontier.
 
 The LLM interprets buyer language only. It does not set prices, qualify
 products, choose offers, or override merchant policy. If the LLM is

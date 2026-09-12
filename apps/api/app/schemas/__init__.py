@@ -12,6 +12,7 @@ from app.schemas.match import (
     MatchResponse,
 )
 from app.schemas.merchant import MerchantPolicyResponse, MerchantPolicyUpdate
+from app.schemas.objective import MerchantObjectiveResponse, MerchantObjectiveUpdate
 from app.schemas.offer import GenerateOffersRequest, GenerateOffersResponse
 from app.schemas.optimisation import (
     DecisionRequest,
@@ -44,6 +45,8 @@ __all__ = [
     "GenerateOffersResponse",
     "OptimisationResponse",
     "OptimiseRequest",
+    "MerchantObjectiveResponse",
+    "MerchantObjectiveUpdate",
     "MerchantPolicyResponse",
     "MerchantPolicyUpdate",
     "ProductDetail",

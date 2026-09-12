@@ -5,7 +5,6 @@ from __future__ import annotations
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.decision.optimisation.models import DEFAULT_ALPHA
 from app.schemas.match import MatchResponse
 from app.schemas.offer import GenerateOffersResponse
 from app.schemas.optimisation import DecisionRequest, OptimisationResponse
@@ -41,7 +40,6 @@ class DecisionService:
         optimisation = await self.optimisation.run(
             construction.offer_run_id,
             buyer_profile=payload.buyer_profile,
-            alpha=payload.alpha if payload.alpha is not None else DEFAULT_ALPHA,
         )
         return DecisionResponse(
             match=matched,

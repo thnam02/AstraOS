@@ -18,10 +18,16 @@ from app.decision.optimisation.engine import (
 )
 from app.decision.optimisation.models import (
     ALGORITHM_VERSION,
-    DEFAULT_ALPHA,
     SELECTION_RULE,
     EngineResult,
+    MerchantObjectiveSnapshot,
 )
+from app.decision.optimisation.objective import (
+    MerchantObjectiveConfig,
+    default_objective,
+    explain_objective,
+)
+from app.decision.optimisation.selection import reselect_public
 from app.decision.pareto.frontier import HERO_OBJECTIVES
 from app.decision.utility.models import UTILITY_DISCLAIMER
 from app.models.optimisation import OptimisationRun
@@ -61,10 +67,14 @@ class OptimisationService:
         offer_run_id: uuid.UUID,
         *,
         buyer_profile: str = "INTENT_ADAPTED",
-        alpha: float = DEFAULT_ALPHA,
+        alpha: float | None = None,
+        objective: MerchantObjectiveConfig | None = None,
     ) -> OptimisationResponse:
         response, _engine = await self.evaluate(
-            offer_run_id, buyer_profile=buyer_profile, alpha=alpha
+            offer_run_id,
+            buyer_profile=buyer_profile,
+            alpha=alpha,
+            objective=objective,
         )
         return response
 
@@ -73,7 +83,8 @@ class OptimisationService:
         offer_run_id: uuid.UUID,
         *,
         buyer_profile: str = "INTENT_ADAPTED",
-        alpha: float = DEFAULT_ALPHA,
+        alpha: float | None = None,
+        objective: MerchantObjectiveConfig | None = None,
     ) -> tuple[OptimisationResponse, object]:
         started = time.perf_counter()
         construction = await self.offers.get_run(offer_run_id)
@@ -89,6 +100,12 @@ class OptimisationService:
         policy = await self.policy.get_active()
         if policy is None:
             raise RuntimeError("No active merchant policy.")
+        from app.services.objective import MerchantObjectiveService
+
+        chosen = (
+            objective
+            or await MerchantObjectiveService(self.session).active_config()
+        )
 
         variant_ids = list({item.variant_id for item in candidates})
         variants = {
@@ -110,6 +127,7 @@ class OptimisationService:
             product_fits=product_fits,
             profile_id=buyer_profile,
             alpha=alpha,
+            objective=chosen,
         )
         result = await self._maybe_apply_learned_objective(
             result,
@@ -117,6 +135,7 @@ class OptimisationService:
             intent=intent,
             buyer_profile=buyer_profile,
             alpha=alpha,
+            objective=chosen,
         )
         persist_started = time.perf_counter()
         response = await self._persist(
@@ -124,9 +143,10 @@ class OptimisationService:
             match_run_id=construction.match_run_id,
             raw_intent=construction.raw_intent,
             buyer_profile=buyer_profile,
-            alpha=alpha,
+            alpha=chosen.alpha,
             policy=policy,
             result=result,
+            objective=chosen,
             started=started,
         )
         persist_ms = (time.perf_counter() - persist_started) * 1000
@@ -189,7 +209,8 @@ class OptimisationService:
         candidates: list[OfferCandidate],
         intent: ShoppingIntent,
         buyer_profile: str,
-        alpha: float,
+        alpha: float | None,
+        objective: MerchantObjectiveConfig | None = None,
     ) -> EngineResult:
         """LEARNED_EXPERIMENTAL only. Default COLD_START is unchanged."""
         from app.decision.utility.scorer import weights_for
@@ -207,9 +228,9 @@ class OptimisationService:
         )
         if not scores:
             return result
-        objective = {uuid.UUID(key): value for key, value in scores.items()}
+        learned = {uuid.UUID(key): value for key, value in scores.items()}
         updated = apply_experimental_buyer_objective(
-            result, objective, alpha=alpha
+            result, learned, alpha=alpha, objective=objective
         )
         updated.explanation = [
             "EXPERIMENTAL: Pareto buyer objective used the active learned "
@@ -224,6 +245,65 @@ class OptimisationService:
             return None
         return _row_to_response(row)
 
+    async def reselect(
+        self,
+        run_id: uuid.UUID,
+        *,
+        objective: MerchantObjectiveConfig | None = None,
+    ) -> OptimisationResponse:
+        started = time.perf_counter()
+        row = await self.runs.get(run_id)
+        if row is None:
+            raise ValueError("Optimisation run not found.")
+        from app.services.objective import MerchantObjectiveService
+
+        chosen = (
+            objective
+            or await MerchantObjectiveService(self.session).active_config()
+        )
+        pareto = list(row.pareto_offers or [])
+        winner_id, meta = reselect_public(pareto, chosen)
+        response = _row_to_response(row)
+        response.merchant_objective = MerchantObjectiveSnapshot.model_validate(
+            chosen.snapshot()
+        )
+        response.selection = meta
+        if winner_id:
+            for offer in response.pareto_offers:
+                offer.is_recommended = str(offer.offer_id) == winner_id
+            for point in response.plot_points:
+                point.is_recommended = str(point.offer_id) == winner_id
+            response.recommended_offer = next(
+                (
+                    item
+                    for item in response.pareto_offers
+                    if str(item.offer_id) == winner_id
+                ),
+                response.recommended_offer,
+            )
+            response.alternative_pareto_offers = [
+                item
+                for item in response.pareto_offers
+                if str(item.offer_id) != winner_id
+            ][:MAX_ALTERNATIVES]
+        response.explanation = [
+            explain_objective(chosen),
+            (
+                "Merchant strategy changed the selected efficient offer, "
+                "not the feasible offer space."
+            ),
+            *[
+                line
+                for line in response.explanation
+                if "Selected from the" not in line
+            ],
+        ]
+        response.objective_comparisons = _public_comparisons(pareto)
+        response.timing.selection_ms = round(
+            (time.perf_counter() - started) * 1000, 2
+        )
+        return response
+
     async def _persist(
         self,
         *,
@@ -235,6 +315,7 @@ class OptimisationService:
         policy: object,
         result: object,
         started: float,
+        objective: MerchantObjectiveConfig | None = None,
     ) -> OptimisationResponse:
         from app.models import MerchantPolicy
 
@@ -310,6 +391,15 @@ class OptimisationService:
             algorithm_version=ALGORITHM_VERSION,
             selection_rule=SELECTION_RULE,
             selection_alpha=str(alpha),
+            merchant_objective=(
+                objective.snapshot()
+                if objective is not None
+                else (
+                    result.merchant_objective.model_dump()
+                    if result.merchant_objective
+                    else default_objective().snapshot()
+                )
+            ),
             raw_intent=raw_intent,
             timing=timing.model_dump(),
             summary=summary.model_dump(),
@@ -357,6 +447,8 @@ class OptimisationService:
             failure=result.failure,
             objectives=list(HERO_OBJECTIVES),
             created_at=row.created_at,
+            merchant_objective=result.merchant_objective,
+            objective_comparisons=result.objective_comparisons,
         )
 
 
@@ -422,4 +514,45 @@ def _row_to_response(row: OptimisationRun) -> OptimisationResponse:
         ),
         objectives=list(HERO_OBJECTIVES),
         created_at=row.created_at,
+        merchant_objective=(
+            MerchantObjectiveSnapshot.model_validate(row.merchant_objective)
+            if row.merchant_objective
+            else None
+        ),
+        objective_comparisons=_public_comparisons(list(row.pareto_offers or [])),
     )
+
+
+def _public_comparisons(pareto: list[object]) -> list:
+    from typing import cast
+
+    from app.decision.optimisation.models import ObjectiveComparison
+    from app.decision.optimisation.objective import ObjectiveMode, preset
+
+    rows = []
+    points = [item if isinstance(item, dict) else {} for item in pareto]
+    for mode in ("GROWTH", "BALANCED", "MARGIN"):
+        winner_id, meta = reselect_public(
+            points, preset(cast(ObjectiveMode, mode))
+        )
+        match = next(
+            (item for item in points if str(item.get("offer_id")) == winner_id),
+            None,
+        )
+        rows.append(
+            ObjectiveComparison(
+                mode=mode,
+                offer_id=meta.offer_id if meta else None,
+                product_name=match.get("product_name") if match else None,
+                sku=match.get("sku") if match else None,
+                buyer_utility=match.get("buyer_utility") if match else None,
+                contribution_margin_cents=(
+                    match.get("contribution_margin_cents") if match else None
+                ),
+                intervention_cost_cents=(
+                    match.get("incremental_intervention_cost_cents") if match else None
+                ),
+                score=meta.score if meta else None,
+            )
+        )
+    return rows

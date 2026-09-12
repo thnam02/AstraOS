@@ -6,7 +6,13 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AttributeEvidence, InventoryRecord, Product, ProductVariant
+from app.models import (
+    AttributeEvidence,
+    InventoryRecord,
+    MerchantObjective,
+    Product,
+    ProductVariant,
+)
 from app.models.delivery import DeliveryOption, VariantDeliveryOption
 from app.seed.runner import seed_database
 from app.services.catalogue import CORE_ATTRIBUTES
@@ -18,6 +24,10 @@ async def test_seeding_succeeds(db_session: AsyncSession) -> None:
     variants = await db_session.scalar(select(func.count()).select_from(ProductVariant))
     assert products and products >= 100
     assert variants and variants >= 300
+    objectives = await db_session.scalar(
+        select(func.count()).select_from(MerchantObjective)
+    )
+    assert objectives and objectives >= 1
 
 
 @pytest.mark.asyncio

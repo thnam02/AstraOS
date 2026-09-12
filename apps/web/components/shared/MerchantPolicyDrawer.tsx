@@ -2,9 +2,24 @@
 
 import { useEffect, useState } from "react";
 
-import { getMerchantPolicy, updateMerchantPolicy } from "@/lib/api";
+import {
+  getMerchantObjective,
+  getMerchantPolicy,
+  updateMerchantObjective,
+  updateMerchantPolicy,
+} from "@/lib/api";
 import { formatRate } from "@/lib/money";
-import type { MerchantPolicyResponse } from "@/types";
+import type {
+  MerchantObjectiveMode,
+  MerchantObjectiveResponse,
+  MerchantPolicyResponse,
+} from "@/types";
+
+const OBJECTIVE_MODES: MerchantObjectiveMode[] = [
+  "GROWTH",
+  "BALANCED",
+  "MARGIN",
+];
 
 function Toggle({
   label,
@@ -44,6 +59,9 @@ export function MerchantPolicyDrawer({
   onClose: () => void;
 }) {
   const [policy, setPolicy] = useState<MerchantPolicyResponse | null>(null);
+  const [objective, setObjective] = useState<MerchantObjectiveResponse | null>(
+    null,
+  );
   const [margin, setMargin] = useState("15");
   const [discount, setDiscount] = useState("10");
   const [delivery, setDelivery] = useState(true);
@@ -61,9 +79,10 @@ export function MerchantPolicyDrawer({
     }
     setStatus("idle");
     setError(null);
-    getMerchantPolicy()
-      .then((data) => {
+    Promise.all([getMerchantPolicy(), getMerchantObjective()])
+      .then(([data, currentObjective]) => {
         setPolicy(data);
+        setObjective(currentObjective);
         setMargin(String(Math.round(data.minimum_margin_rate * 100)));
         setDiscount(String(Math.round(data.maximum_discount_rate * 100)));
         setDelivery(data.delivery_subsidy_enabled);
@@ -72,9 +91,23 @@ export function MerchantPolicyDrawer({
         setReturns(data.flexible_returns_enabled);
       })
       .catch(() => {
-        setError("Unable to load merchant policy.");
+        setError("Unable to load merchant rules.");
       });
   }, [open]);
+
+  async function onObjective(mode: MerchantObjectiveMode) {
+    setStatus("saving");
+    setError(null);
+    try {
+      const updated = await updateMerchantObjective({ mode });
+      setObjective(updated);
+      setStatus("saved");
+      window.dispatchEvent(new CustomEvent("astraos:objective-changed"));
+    } catch {
+      setStatus("error");
+      setError("Objective update failed.");
+    }
+  }
 
   async function onSave() {
     setStatus("saving");
@@ -125,9 +158,56 @@ export function MerchantPolicyDrawer({
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
           <p className="text-sm leading-6 text-muted">
-            Changing these rules is applied on the next optimisation run.
-            The LLM does not override merchant policy.
+            Guardrails define what is allowed. The commercial objective
+            chooses among policy-safe Pareto offers.
           </p>
+          {objective ? (
+            <div className="space-y-3 border border-line px-3 py-3">
+              <div>
+                <p className="text-xs tracking-[0.14em] text-muted">
+                  COMMERCIAL OBJECTIVE
+                </p>
+                <p className="mt-1 text-sm text-ink">
+                  Current: {objective.label}
+                </p>
+                <p className="text-xs text-muted">{objective.blurb}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {OBJECTIVE_MODES.map((mode) => {
+                  const preset = objective.presets[mode];
+                  const active = objective.mode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => onObjective(mode)}
+                      className={`px-2.5 py-1 text-xs ${
+                        active
+                          ? "bg-ink text-surface"
+                          : "border border-line text-ink hover:bg-canvas"
+                      }`}
+                    >
+                      {preset?.label ?? mode}
+                    </button>
+                  );
+                })}
+              </div>
+              <dl className="space-y-1 text-xs">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">Buyer fit</dt>
+                  <dd className="tabular-nums">
+                    {Math.round(objective.buyer_weight * 100)}%
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">Merchant contribution</dt>
+                  <dd className="tabular-nums">
+                    {Math.round(objective.merchant_weight * 100)}%
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          ) : null}
           {policy ? (
             <p className="text-xs text-muted">
               Active: {policy.name}. Current floor {formatRate(policy.minimum_margin_rate)},

@@ -62,6 +62,7 @@ class ArenaService:
                 "buyer_model_version": BUYER_MODEL_VERSION,
                 "strategy_set_version": STRATEGY_SET_VERSION,
                 "runtime_ms": result.runtime_ms,
+                "merchant_objective": payload.get("merchant_objective"),
             },
         )
         await self.runs.add_run(row)
@@ -94,7 +95,10 @@ class ArenaService:
             started_at=started,
             completed_at=None,
             status="RUNNING",
-            config=config.model_dump(),
+            config={
+                **config.model_dump(),
+                "merchant_objective": config.merchant_objective().snapshot(),
+            },
             summary={},
             events=[],
             run_metadata={"arena_version": ARENA_VERSION},

@@ -4,7 +4,11 @@ import { Disclosure } from "@/components/shared/Disclosure";
 import { StatStrip } from "@/components/shared/StatStrip";
 import { counterfactualStory } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
-import type { BuyerProfile, OptimisationResponse } from "@/types";
+import type {
+  BuyerProfile,
+  MerchantObjectiveSnapshot,
+  OptimisationResponse,
+} from "@/types";
 
 import { RecommendedOffer } from "./RecommendedOffer";
 
@@ -49,6 +53,8 @@ export function OptimisationPanel({
 }) {
   const rec = optimisation.recommended_offer;
   const weights = optimisation.buyer_model.weights;
+  const objective = optimisation.merchant_objective;
+  const comparisons = optimisation.objective_comparisons ?? [];
 
   return (
     <section className="space-y-4">
@@ -87,6 +93,8 @@ export function OptimisationPanel({
         </div>
       ) : null}
 
+      {objective ? <ObjectiveStrip objective={objective} /> : null}
+
       <ParetoChart
         points={optimisation.plot_points}
         selectedOfferId={selectedOfferId}
@@ -94,7 +102,8 @@ export function OptimisationPanel({
       />
       <p className="text-sm text-muted">
         Frontier offers cannot improve buyer fit without sacrificing merchant
-        contribution, or the reverse.
+        contribution, or the reverse. Changing the merchant objective moves the
+        selected point, not the frontier.
       </p>
 
       <div className="flex flex-wrap items-end gap-4">
@@ -129,8 +138,17 @@ export function OptimisationPanel({
 
       {showRecommendation && rec ? (
         <div className="border border-line px-4 py-4">
-          <RecommendedOffer offer={rec} explanation={optimisation.explanation} />
+          <RecommendedOffer
+            offer={rec}
+            explanation={optimisation.explanation}
+            objective={objective}
+            selection={optimisation.selection}
+          />
         </div>
+      ) : null}
+
+      {comparisons.length ? (
+        <ObjectiveComparisonTable rows={comparisons} />
       ) : null}
 
       <CounterfactualStory rows={optimisation.counterfactuals} />
@@ -167,6 +185,83 @@ export function OptimisationPanel({
           </table>
       </Disclosure>
     </section>
+  );
+}
+
+function ObjectiveStrip({
+  objective,
+}: {
+  objective: MerchantObjectiveSnapshot;
+}) {
+  const label =
+    objective.mode.charAt(0) + objective.mode.slice(1).toLowerCase();
+  return (
+    <div className="border border-line px-4 py-3">
+      <p className="eyebrow">Merchant objective</p>
+      <p className="mt-1 text-sm font-medium">{label}</p>
+      <dl className="mt-2 grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <dt className="text-xs text-muted">Buyer fit</dt>
+          <dd className="font-mono tabular-nums">
+            {Math.round(objective.buyer_weight * 100)}%
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted">Contribution</dt>
+          <dd className="font-mono tabular-nums">
+            {Math.round(objective.merchant_weight * 100)}%
+          </dd>
+        </div>
+      </dl>
+      <p className="mt-2 text-xs text-muted">
+        Merchant strategy changed the selected efficient offer, not the
+        feasible offer space.
+      </p>
+    </div>
+  );
+}
+
+function ObjectiveComparisonTable({
+  rows,
+}: {
+  rows: NonNullable<OptimisationResponse["objective_comparisons"]>;
+}) {
+  const distinct = new Set(rows.map((row) => row.offer_id).filter(Boolean));
+  return (
+    <div className="border border-line px-4 py-3">
+      <p className="eyebrow">Same frontier, different strategy</p>
+      <p className="mt-1 text-xs text-muted">
+        {distinct.size > 1
+          ? "Both offers are Pareto-efficient. The merchant objective determines which trade-off AstraOS selects."
+          : "This mission is objective-insensitive — the same efficient offer scores highest under all three strategies."}
+      </p>
+      <table className="mt-3 w-full text-left text-xs">
+        <thead>
+          <tr className="border-b border-line text-muted">
+            <th className="py-2 font-medium">Objective</th>
+            <th className="py-2 font-medium">Product</th>
+            <th className="py-2 font-medium">Utility</th>
+            <th className="py-2 font-medium">Contribution</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.mode} className="border-b border-line">
+              <td className="py-2">{row.mode}</td>
+              <td className="py-2">{row.product_name ?? "—"}</td>
+              <td className="py-2 tabular-nums">
+                {row.buyer_utility != null ? row.buyer_utility.toFixed(2) : "—"}
+              </td>
+              <td className="py-2 tabular-nums">
+                {row.contribution_margin_cents != null
+                  ? formatAudCents(row.contribution_margin_cents)
+                  : "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

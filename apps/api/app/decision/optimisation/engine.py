@@ -15,13 +15,18 @@ from app.decision.optimisation.counterfactual import (
 )
 from app.decision.optimisation.explanation import explain_recommendation
 from app.decision.optimisation.models import (
-    DEFAULT_ALPHA,
     EngineResult,
+    MerchantObjectiveSnapshot,
     NamedComparison,
     OptimisationFailure,
     ScoredOffer,
 )
-from app.decision.optimisation.selection import select_offer
+from app.decision.optimisation.objective import (
+    MerchantObjectiveConfig,
+    default_objective,
+    explain_objective,
+)
+from app.decision.optimisation.selection import compare_objectives, select_offer
 from app.decision.pareto.dominance import DEFAULT_EPSILON
 from app.decision.pareto.frontier import build_frontier
 from app.decision.policies.offer_policy_evaluator import evaluate_offer_policy
@@ -43,7 +48,8 @@ def score_space(
     variants: dict[UUID, ProductVariant],
     product_fits: dict[UUID, float],
     profile_id: str,
-    alpha: float = DEFAULT_ALPHA,
+    alpha: float | None = None,
+    objective: MerchantObjectiveConfig | None = None,
     epsilon: float = DEFAULT_EPSILON,
 ) -> EngineResult:
     weights = weights_for(intent, profile_id)
@@ -161,7 +167,12 @@ def score_space(
 
     frontier = [item for item in scored if item.is_pareto_efficient]
     selection_started = time.perf_counter()
-    recommended, selection = select_offer(frontier, alpha=alpha)
+    chosen = objective
+    if chosen is None and alpha is None:
+        chosen = default_objective()
+    recommended, selection = select_offer(
+        frontier, alpha=alpha, objective=chosen
+    )
     if recommended is not None:
         for item in scored:
             item.is_recommended = item.offer_id == recommended.offer_id
@@ -262,13 +273,17 @@ def score_space(
 
     reasons = []
     if recommended is not None:
-        reasons = explain_recommendation(
-            recommended,
-            intent=intent,
-            margin_floor=float(policy.minimum_margin_rate),
-            counterfactuals=counterfactuals,
-            frontier=True,
-        )
+        used = chosen or default_objective()
+        reasons = [
+            explain_objective(used),
+            *explain_recommendation(
+                recommended,
+                intent=intent,
+                margin_floor=float(policy.minimum_margin_rate),
+                counterfactuals=counterfactuals,
+                frontier=True,
+            ),
+        ]
     counterfactual_ms = (time.perf_counter() - cf_started) * 1000
     return EngineResult(
         scored=scored,
@@ -287,6 +302,10 @@ def score_space(
             "selection_ms": round(selection_ms, 2),
             "counterfactual_ms": round(counterfactual_ms, 2),
         },
+        merchant_objective=MerchantObjectiveSnapshot.model_validate(
+            (chosen or default_objective()).snapshot()
+        ),
+        objective_comparisons=compare_objectives(frontier),
     )
 
 
@@ -294,7 +313,8 @@ def apply_experimental_buyer_objective(
     result: EngineResult,
     buyer_objective: dict[UUID, float],
     *,
-    alpha: float = DEFAULT_ALPHA,
+    alpha: float | None = None,
+    objective: MerchantObjectiveConfig | None = None,
     epsilon: float = DEFAULT_EPSILON,
 ) -> EngineResult:
     """Rebuild Pareto using learned scores. Cold-start utility traces stay."""
@@ -315,8 +335,14 @@ def apply_experimental_buyer_objective(
         item.dominated_by_offer_id = dominated
         item.is_recommended = False
     frontier = [item for item in result.scored if item.is_pareto_efficient]
+    chosen = objective
+    if chosen is None and alpha is None:
+        chosen = default_objective()
     recommended, selection = select_offer(
-        frontier, alpha=alpha, buyer_objective=buyer_objective
+        frontier,
+        alpha=alpha,
+        objective=chosen,
+        buyer_objective=buyer_objective,
     )
     if recommended is not None:
         recommended.is_recommended = True
@@ -325,4 +351,8 @@ def apply_experimental_buyer_objective(
     result.frontier = frontier
     result.recommended = recommended
     result.selection = selection
+    result.merchant_objective = MerchantObjectiveSnapshot.model_validate(
+        (chosen or default_objective()).snapshot()
+    )
+    result.objective_comparisons = compare_objectives(frontier)
     return result

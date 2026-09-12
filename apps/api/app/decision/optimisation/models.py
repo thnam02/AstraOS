@@ -50,6 +50,28 @@ class SelectionScore(BaseModel):
     score: float
     alpha: float
     rule: str = SELECTION_RULE
+    mode: str | None = None
+    buyer_weight: float | None = None
+    merchant_weight: float | None = None
+    version: str | None = None
+
+
+class MerchantObjectiveSnapshot(BaseModel):
+    mode: str
+    buyer_weight: float
+    merchant_weight: float
+    version: str
+
+
+class ObjectiveComparison(BaseModel):
+    mode: str
+    offer_id: UUID | None = None
+    product_name: str | None = None
+    sku: str | None = None
+    buyer_utility: float | None = None
+    contribution_margin_cents: int | None = None
+    intervention_cost_cents: int | None = None
+    score: float | None = None
 
 
 class CounterfactualRow(BaseModel):
@@ -98,3 +120,5 @@ class EngineResult(BaseModel):
     failure: OptimisationFailure | None
     explanation: list[str]
     timing: dict[str, float] = Field(default_factory=dict)
+    merchant_objective: MerchantObjectiveSnapshot | None = None
+    objective_comparisons: list[ObjectiveComparison] = Field(default_factory=list)

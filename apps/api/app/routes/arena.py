@@ -36,6 +36,7 @@ async def run_arena(
             strategies=payload.strategies,
             outside_option_utility=payload.outside_option_utility,
             seed=payload.seed,
+            merchant_objective_mode=payload.merchant_objective_mode,
         )
     )
 
@@ -53,6 +54,7 @@ async def create_benchmark(
             buyer_profile=payload.buyer_profile,
             outside_option_utility=payload.outside_option_utility,
             persist_missions=payload.persist_missions,
+            merchant_objective_mode=payload.merchant_objective_mode,
         )
     )
 

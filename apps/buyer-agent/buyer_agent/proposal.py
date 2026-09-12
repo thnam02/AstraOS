@@ -16,6 +16,10 @@ PRIVATE_KEYS = {
     "alpha",
     "incremental_intervention_cost_cents",
     "utility_trace",
+    "merchant_objective",
+    "buyer_weight",
+    "merchant_weight",
+    "objective_comparisons",
 }
 
 

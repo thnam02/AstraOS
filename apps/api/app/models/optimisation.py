@@ -39,6 +39,7 @@ class OptimisationRun(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     algorithm_version: Mapped[str] = mapped_column(String(32), nullable=False)
     selection_rule: Mapped[str] = mapped_column(String(40), nullable=False)
     selection_alpha: Mapped[str] = mapped_column(String(16), nullable=False)
+    merchant_objective: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     raw_intent: Mapped[str] = mapped_column(Text, nullable=False)
     timing: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     summary: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)

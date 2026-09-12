@@ -24,6 +24,16 @@ Intent benchmark: `python -m app.eval.intent_benchmark`.
 Retrieval benchmark: `python -m app.eval.retrieval`.
 The default Docker image does not install torch; without a cached
 sentence-transformer the API uses hashing and reports the fallback.
+Merchant configuration:
+
+- `GET /api/v1/merchant/policy` — hard guardrails
+- `PATCH /api/v1/merchant/policy`
+- `GET /api/v1/merchant/objective` — Growth / Balanced / Margin
+- `PATCH /api/v1/merchant/objective`
+- `POST /api/v1/optimisation/runs/{run_id}/reselect` — cheap frontier reselection
+
+Objective evaluation: `python -m app.eval.merchant_objective`.
+
 - `GET /api/v1/agent/capabilities`
 - `POST /api/v1/agent/offers/request`
 - `GET /api/v1/agent/offers/{proposal_id}`

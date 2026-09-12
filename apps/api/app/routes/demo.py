@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.dependencies import get_db
 from app.demo.scenarios import SCENARIOS
+from app.schemas.objective import MerchantObjectiveUpdate
 from app.schemas.transaction import (
     DemoDeliveryCapacityRequest,
     DemoInventoryRequest,
@@ -12,6 +13,7 @@ from app.schemas.transaction import (
     DemoStateResponse,
 )
 from app.services.demo_state import DemoStateError, DemoStateService
+from app.services.objective import MerchantObjectiveService, ObjectiveValidationError
 
 router = APIRouter(prefix="/demo", tags=["demo"])
 
@@ -59,8 +61,15 @@ async def list_demo_scenarios() -> list[dict[str, str]]:
 @router.post("/reset-state", response_model=DemoStateResponse)
 async def reset_demo_state(
     service: DemoStateService = Depends(_service),
+    db: AsyncSession = Depends(get_db),
 ) -> DemoStateResponse:
-    """Restore seed policy guardrails without remigrating."""
+    """Restore seed policy guardrails and Balanced objective without remigrating."""
+    try:
+        await MerchantObjectiveService(db).update(
+            MerchantObjectiveUpdate(mode="BALANCED")
+        )
+    except ObjectiveValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return await service.set_policy(
         DemoPolicyRequest(minimum_margin_rate=0.15, maximum_discount_rate=0.10)
     )

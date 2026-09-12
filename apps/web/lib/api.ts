@@ -2,6 +2,8 @@ import { API_BASE_URL } from "@/lib/config";
 import type {
   CatalogueStatsResponse,
   HealthResponse,
+  MerchantObjectiveResponse,
+  MerchantObjectiveUpdate,
   MerchantPolicyResponse,
   MerchantPolicyUpdate,
   ProductDetail,
@@ -107,6 +109,28 @@ export function updateMerchantPolicy(
     method: "PATCH",
     body: JSON.stringify(payload),
   });
+}
+
+export function getMerchantObjective(): Promise<MerchantObjectiveResponse> {
+  return request<MerchantObjectiveResponse>("/api/v1/merchant/objective");
+}
+
+export function updateMerchantObjective(
+  payload: MerchantObjectiveUpdate,
+): Promise<MerchantObjectiveResponse> {
+  return request<MerchantObjectiveResponse>("/api/v1/merchant/objective", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function reselectOptimisation(
+  runId: string,
+): Promise<OptimisationResponse> {
+  return request<OptimisationResponse>(
+    `/api/v1/optimisation/runs/${runId}/reselect`,
+    { method: "POST" },
+  );
 }
 
 export function qualifyIntent(

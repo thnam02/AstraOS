@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #f6f6f4;
+  --color-surface: #ffffff;
+  --color-ink: #171717;
+  --color-muted: #6f6f69;
+  --color-line: #e4e4e0;
+  --color-success: #1b7f4a;
+  --color-danger: #b42318;
+  --color-warning: #b54708;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --radius-control: 6px;
+}
+
+html,
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+body {
+  min-height: 100vh;
+}

@@ -1,7 +1,11 @@
 "use client";
 
-import { formatAudCents, formatRate } from "@/lib/money";
+import { Disclosure } from "@/components/shared/Disclosure";
+import { StatStrip } from "@/components/shared/StatStrip";
+import { formatAudCents } from "@/lib/money";
 import type { BuyerProfile, OptimisationResponse } from "@/types";
+
+import { RecommendedOffer } from "./RecommendedOffer";
 
 import { ParetoChart } from "./ParetoChart";
 
@@ -28,31 +32,33 @@ export function OptimisationPanel({
   profile,
   onProfile,
   busy,
+  showRecommendation = true,
 }: {
   optimisation: OptimisationResponse;
   profile: BuyerProfile;
   onProfile: (profile: BuyerProfile) => void;
   busy: boolean;
+  showRecommendation?: boolean;
 }) {
   const rec = optimisation.recommended_offer;
   const weights = optimisation.buyer_model.weights;
 
   return (
-    <section className="panel space-y-5">
+    <section className="space-y-4">
       <div>
-        <p className="eyebrow">
-          PARETO FRONTIER
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-          Efficient trade-offs
+        <p className="eyebrow">Optimise</p>
+        <h2 className="mt-1 text-xl font-semibold tracking-tight">
+          Pareto frontier
         </h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {optimisation.summary.offers_considered.toLocaleString()} constructed
-          {" → "}
-          {optimisation.summary.policy_safe.toLocaleString()} policy-safe
-          {" → "}
-          {optimisation.summary.pareto_efficient.toLocaleString()} Pareto-efficient
-        </p>
+        <div className="mt-3">
+          <StatStrip
+            items={[
+              { label: "Constructed", value: optimisation.summary.offers_considered },
+              { label: "Policy-safe", value: optimisation.summary.policy_safe },
+              { label: "Frontier", value: optimisation.summary.pareto_efficient },
+            ]}
+          />
+        </div>
       </div>
 
       {optimisation.failure && !rec ? (
@@ -72,131 +78,54 @@ export function OptimisationPanel({
       ) : null}
 
       <ParetoChart points={optimisation.plot_points} />
-      <p className="text-xs text-muted">
-        Buyer utility is a transparent cold-start simulation. It is not a
-        purchase probability.
+      <p className="text-sm text-muted">
+        Offers on the frontier cannot improve buyer fit without sacrificing
+        merchant contribution, or improve contribution without sacrificing
+        buyer fit.
       </p>
       <p className="text-[11px] text-muted">
         Muted = dominated · black = Pareto-efficient · green = AstraOS response.
-        Bubble size is intervention cost. Utility is a simulation, not a
-        probability.
+        Bubble size is intervention cost. Buyer utility is a cold-start
+        simulation, not a purchase probability.
       </p>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(260px,0.9fr)_minmax(320px,1.2fr)]">
-        <div className="space-y-4">
-          <div>
-            <p className="text-[11px] tracking-[0.14em] text-muted">
-              SIMULATED BUYER MODEL
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              Cold-start simulation — not real agent probability.
-            </p>
-            <label className="mt-3 block text-xs text-muted">
-              Profile
-              <select
-                value={profile}
-                onChange={(event) =>
-                  onProfile(event.target.value as BuyerProfile)
-                }
-                disabled={busy}
-                className="control mt-1 w-full px-2 py-1 text-sm"
-              >
-                {PROFILES.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <dl className="mt-3 space-y-1 text-sm">
-              {Object.entries(WEIGHT_LABELS).map(([key, label]) => (
-                <div key={key} className="flex justify-between gap-3">
-                  <dt className="text-muted">{label}</dt>
-                  <dd className="tabular-nums">
-                    {Math.round((weights[key] ?? 0) * 100)}%
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+      <div className="flex flex-wrap items-end gap-4">
+        <label className="text-xs text-muted">
+          Simulated buyer profile
+          <select
+            value={profile}
+            onChange={(event) => onProfile(event.target.value as BuyerProfile)}
+            disabled={busy}
+            className="control mt-1 block px-2 py-1 text-sm"
+          >
+            {PROFILES.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Disclosure title="Weight mix">
+          <dl className="space-y-1 text-sm">
+            {Object.entries(WEIGHT_LABELS).map(([key, label]) => (
+              <div key={key} className="flex justify-between gap-3">
+                <dt className="text-muted">{label}</dt>
+                <dd className="tabular-nums">
+                  {Math.round((weights[key] ?? 0) * 100)}%
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Disclosure>
+      </div>
 
-          {rec ? (
-            <div className="border border-line px-4 py-4">
-              <p className="text-[11px] tracking-[0.14em] text-muted">
-                ASTRAOS RESPONSE
-              </p>
-              <h3 className="mt-2 text-lg font-semibold">{rec.product_name}</h3>
-              <p className="font-mono text-[11px] text-muted">{rec.sku}</p>
-              <p className="mt-2 text-sm">
-                {formatAudCents(rec.pricing.total_price_cents)} · {rec.delivery.name} ·{" "}
-                {rec.warranty.months} months · {rec.bundle?.name ?? "No bundle"}
-              </p>
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <dt className="text-[11px] text-muted">SIMULATED UTILITY</dt>
-                  <dd className="tabular-nums">{rec.buyer_utility.toFixed(3)}</dd>
-                </div>
-                {rec.learned_synthetic_score != null ? (
-                  <div>
-                    <dt className="text-[11px] text-muted">
-                      EXPERIMENTAL LEARNED SCORE
-                    </dt>
-                    <dd className="tabular-nums text-muted">
-                      {rec.learned_synthetic_score.toFixed(3)}
-                    </dd>
-                    <p className="mt-1 text-[10px] text-muted">
-                      trained on synthetic outcomes
-                    </p>
-                  </div>
-                ) : null}
-                <div>
-                  <dt className="text-[11px] text-muted">CONTRIBUTION</dt>
-                  <dd className="tabular-nums">
-                    {formatAudCents(rec.contribution_margin_cents)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[11px] text-muted">INTERVENTION</dt>
-                  <dd className="tabular-nums">
-                    {formatAudCents(rec.incremental_intervention_cost_cents)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[11px] text-muted">MARGIN</dt>
-                  <dd className="tabular-nums">
-                    {formatRate(rec.contribution_margin_rate)}
-                  </dd>
-                </div>
-              </dl>
-              <p className="mt-4 text-[11px] tracking-[0.12em] text-muted">
-                WHY THIS OFFER?
-              </p>
-              <ul className="mt-2 space-y-2 text-sm">
-                {optimisation.explanation.map((reason) => (
-                  <li key={reason}>✓ {reason}</li>
-                ))}
-              </ul>
-              {rec.utility_trace.components.length ? (
-                <div className="mt-4">
-                  <p className="text-[11px] tracking-[0.12em] text-muted">
-                    UTILITY TRACE
-                  </p>
-                  <ul className="mt-1 space-y-1 text-xs text-muted">
-                    {rec.utility_trace.components.map((item) => (
-                      <li key={item.component}>
-                        {item.component}: {item.fit.toFixed(2)} × {item.weight.toFixed(2)}{" "}
-                        = {item.weighted.toFixed(4)}
-                      </li>
-                    ))}
-                    <li>total {rec.utility_trace.total.toFixed(4)}</li>
-                  </ul>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
+      {showRecommendation && rec ? (
+        <div className="border border-line px-4 py-4">
+          <RecommendedOffer offer={rec} explanation={optimisation.explanation} />
         </div>
+      ) : null}
 
-        <div>
+      <div>
           <p className="text-[11px] tracking-[0.14em] text-muted">
             WHAT SHOULD THE MERCHANT CHANGE?
           </p>
@@ -257,7 +186,6 @@ export function OptimisationPanel({
             utility {optimisation.timing.utility_ms.toFixed(0)} ·
             pareto {optimisation.timing.pareto_ms.toFixed(0)}
           </p>
-        </div>
       </div>
     </section>
   );

@@ -27,5 +27,7 @@ export function fieldLabel(field: string): string {
 }
 
 export function contextLabel(tag: string): string {
-  return tag.replace(/_/g, " ");
+  return tag
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }

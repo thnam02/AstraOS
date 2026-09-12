@@ -7,8 +7,8 @@ export default function ArenaPage() {
     <PageContainer wide>
       <SectionHeader
         eyebrow="Arena"
-        title="Agent Arena"
-        description="Synthetic comparison of merchant strategies against the same catalogue, policy, and transparent simulated buyer. Not a conversion study."
+        title="Merchant strategy comparison"
+        description="Same buyer, catalogue, inventory, and merchant policy. Only the merchant strategy changes."
       />
       <div className="mt-6">
         <ArenaWorkbench />

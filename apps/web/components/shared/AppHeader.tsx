@@ -58,14 +58,14 @@ export function AppHeader() {
                   : "text-muted hover:text-ink"
               }`}
             >
-              DATA
+              Merchant Data
             </Link>
             <button
               type="button"
               onClick={() => setRulesOpen(true)}
               className="btn-ghost"
             >
-              RULES
+              Merchant Rules
             </button>
           </div>
         </div>

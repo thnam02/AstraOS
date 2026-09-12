@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { Disclosure } from "@/components/shared/Disclosure";
 import { formatAudCents, formatRate } from "@/lib/money";
 import type { MerchantProposal, NegotiationResponse } from "@/types";
 
@@ -75,12 +76,12 @@ export function NegotiationPanel({
   const commercial = negotiation.commercial;
 
   return (
-    <section className="panel space-y-5">
+    <section className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow">Machine-to-machine exchange</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-            Negotiate
+          <p className="eyebrow">Negotiate</p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-ink">
+            Machine-to-machine exchange
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted">
             LLMs interpret language. Deterministic AstraOS services control
@@ -130,10 +131,20 @@ export function NegotiationPanel({
             </div>
             {turn.raw_message ? (
               <p className="mt-2 text-sm">{turn.raw_message}</p>
+            ) : (
+              <p className="mt-2 text-sm text-muted">
+                {turn.structured_action.replaceAll("_", " ")}
+              </p>
+            )}
+            {Object.keys(turn.structured_payload ?? {}).length ? (
+              <div className="mt-2">
+                <Disclosure title="Structured payload">
+                  <pre className="overflow-x-auto text-[11px] text-muted">
+                    {JSON.stringify(turn.structured_payload, null, 2)}
+                  </pre>
+                </Disclosure>
+              </div>
             ) : null}
-            <pre className="mt-2 overflow-x-auto text-[11px] text-muted">
-              {JSON.stringify(turn.structured_payload, null, 2)}
-            </pre>
           </li>
         ))}
       </ol>

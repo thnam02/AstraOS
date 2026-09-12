@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { StatStrip } from "@/components/shared/StatStrip";
 import { getOffer, getOfferRun } from "@/lib/api";
 import { contextLabel } from "@/lib/intent";
 import { formatAudCents } from "@/lib/money";
@@ -71,55 +72,57 @@ export function OfferExplorer({
   }, [construction.offers]);
   const featured = heroProduct ?? products[0]?.[1] ?? "Matched product";
 
+  const matched = construction.input.matched_products || products.length;
+
   return (
-    <section className="panel space-y-5">
+    <section className="space-y-4">
       <div>
-        <p className="eyebrow">Offer space</p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-          One product, many possible offers
+        <p className="eyebrow">Construct</p>
+        <h2 className="mt-1 text-xl font-semibold tracking-tight">
+          Product → offer space
         </h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Matched products are unchanged. The merchant is enumerating commercial
-          configurations — not choosing a winner.
+        <p className="mt-1 text-sm text-muted">
+          Matched products stay fixed. AstraOS enumerates commercial
+          configurations — it is not choosing a winner here.
         </p>
       </div>
 
-      <div className="grid gap-3 border border-line px-4 py-4 md:grid-cols-[minmax(160px,1fr)_auto_minmax(220px,1.4fr)_auto_minmax(160px,1fr)] md:items-center">
-        <div>
-          <p className="text-[11px] tracking-[0.12em] text-muted">ONE PRODUCT</p>
-          <p className="mt-1 text-sm font-medium">{featured}</p>
-        </div>
+      <div className="space-y-2 border border-line px-4 py-3 text-sm">
+        <p>
+          <span className="font-mono font-semibold tabular-nums">{matched}</span>{" "}
+          matched products
+        </p>
         <p className="text-muted">↓</p>
-        <div>
-          <p className="text-[11px] tracking-[0.12em] text-muted">
-            COMMERCIAL DIMENSIONS
-          </p>
-          <p className="mt-1 text-sm">
-            Price · Delivery · Warranty · Bundle · Returns
-          </p>
-        </div>
+        <p>
+          <span className="font-mono font-semibold tabular-nums">
+            {construction.summary.generated_candidates.toLocaleString()}
+          </span>{" "}
+          commercial configurations
+        </p>
+        <p className="text-xs text-muted">
+          Price {dims.price_options} · Delivery {dims.delivery_options} · Warranty{" "}
+          {dims.warranty_options} · Bundle {dims.bundle_options} · Returns{" "}
+          {dims.return_options}
+          {perSku ? ` · ${perSku.toLocaleString()} / SKU` : ""}
+        </p>
         <p className="text-muted">↓</p>
-        <div>
-          <p className="text-[11px] tracking-[0.12em] text-muted">
-            CONFIGURATIONS
-          </p>
-          <p className="mt-1 text-sm tabular-nums">
-            {perSku.toLocaleString()} possible / SKU
-          </p>
-        </div>
+        <p>
+          <span className="font-mono font-semibold tabular-nums">
+            {construction.summary.feasible_candidates.toLocaleString()}
+          </span>{" "}
+          feasible offers
+        </p>
+        <p className="text-xs text-muted">Example matched product: {featured}</p>
       </div>
 
-      <p className="text-sm tabular-nums">
-        {construction.input.matched_products || products.length} matched products
-        {" → "}
-        {construction.summary.estimated_candidates.toLocaleString()} estimated
-        {" → "}
-        {construction.summary.generated_candidates.toLocaleString()} generated
-        {" → "}
-        {construction.summary.feasible_candidates.toLocaleString()} feasible
-        {" / "}
-        {construction.summary.rejected_candidates.toLocaleString()} rejected
-      </p>
+      <StatStrip
+        items={[
+          { label: "Estimated", value: construction.summary.estimated_candidates },
+          { label: "Generated", value: construction.summary.generated_candidates },
+          { label: "Feasible", value: construction.summary.feasible_candidates },
+          { label: "Rejected", value: construction.summary.rejected_candidates },
+        ]}
+      />
       {construction.summary.pruning_reason ? (
         <p className="text-xs text-muted">
           Pruned: {construction.summary.pruning_reason}
@@ -133,14 +136,6 @@ export function OfferExplorer({
             .join(" · ")}
         </p>
       ) : null}
-
-      <div className="grid gap-3 border border-line px-4 py-3 text-sm md:grid-cols-5">
-        <p>Price × {construction.dimensions.price_options}</p>
-        <p>Delivery × {construction.dimensions.delivery_options}</p>
-        <p>Warranty × {construction.dimensions.warranty_options}</p>
-        <p>Bundle × {construction.dimensions.bundle_options}</p>
-        <p>Returns × {construction.dimensions.return_options}</p>
-      </div>
 
       <div className="flex flex-wrap items-end gap-3 text-xs">
         <label className="space-y-1">
@@ -226,7 +221,7 @@ export function OfferExplorer({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-xs">
+        <table className="table-dense w-full min-w-[720px] text-left text-xs">
           <thead>
             <tr className="border-b border-line text-[11px] tracking-[0.08em] text-muted">
               <th className="py-2 font-medium">Product</th>

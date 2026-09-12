@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 import { ApiStatus } from "@/components/live/ApiStatus";
+import { IntentPanel } from "@/components/live/IntentPanel";
+import { MatchList } from "@/components/live/MatchList";
 import { NegotiationPanel } from "@/components/live/NegotiationPanel";
 import { OfferExplorer } from "@/components/live/OfferExplorer";
 import { OptimisationPanel } from "@/components/live/OptimisationPanel";
+import { ProcessRail, type LiveStage } from "@/components/live/ProcessRail";
+import { QualificationInspect } from "@/components/live/QualificationInspect";
+import { RecommendedOffer } from "@/components/live/RecommendedOffer";
 import { TransactionPanel } from "@/components/live/TransactionPanel";
+import { EmptyState, ErrorState } from "@/components/shared/EmptyState";
+import { StatStrip } from "@/components/shared/StatStrip";
 import {
   acceptProposal,
   createNegotiation,
@@ -18,8 +25,7 @@ import {
   setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
-import { HERO_INTENT, contextLabel, fieldLabel } from "@/lib/intent";
-import { formatAudCents } from "@/lib/money";
+import { HERO_INTENT } from "@/lib/intent";
 import type {
   BuyerProfile,
   GenerateOffersResponse,
@@ -27,47 +33,7 @@ import type {
   AcceptProposalResponse,
   NegotiationResponse,
   OptimisationResponse,
-  RankedProductMatch,
-  ShoppingIntent,
 } from "@/types";
-
-function processState(
-  hasMatch: boolean,
-  hasOffers: boolean,
-  hasOpt: boolean,
-  hasNego: boolean,
-  hasTxn: boolean,
-  txnComplete: boolean,
-  id: string,
-): string {
-  if (!hasMatch) return "not started";
-  if (id === "understand" || id === "qualify" || id === "match") return "complete";
-  if (id === "construct") return hasOffers ? "complete" : "not started";
-  if (id === "optimise") {
-    if (hasOpt) return "complete";
-    return hasOffers ? "next" : "not started";
-  }
-  if (id === "negotiate") {
-    if (hasTxn || hasNego) return "complete";
-    return hasOpt ? "next" : "locked";
-  }
-  if (id === "transact") {
-    if (txnComplete) return "complete";
-    if (hasTxn) return "active";
-    return hasNego ? "next" : "locked";
-  }
-  return "locked";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
-
-function importanceLabel(value: number): string {
-  if (value >= 0.75) return "HIGH";
-  if (value <= 0.25) return "LOW";
-  return "MEDIUM";
-}
 
 export function LiveWorkbench() {
   const [text, setText] = useState(HERO_INTENT);
@@ -86,15 +52,35 @@ export function LiveWorkbench() {
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stage, setStage] = useState<LiveStage>("understand");
+
+  const proposalOffer =
+    negotiation?.proposal?.offer ?? optimisation?.recommended_offer ?? null;
+  const proposalWhy =
+    negotiation?.proposal?.explanation ?? optimisation?.explanation ?? [];
+
+  const flags = {
+    hasMatch: Boolean(result),
+    hasOffers: Boolean(offers),
+    hasOpt: Boolean(optimisation),
+    hasNego: Boolean(negotiation),
+    hasTxn: Boolean(transaction),
+    txnFailed: Boolean(
+      transaction &&
+        transaction.state !== "CONFIRMED" &&
+        transaction.failure_codes.length > 0,
+    ),
+    txnComplete: transaction?.state === "CONFIRMED",
+  };
 
   async function executeAcceptance(session: NegotiationResponse) {
     if (!session.proposal) return;
-    const result = await acceptProposal(session.session_id, {
+    const accepted = await acceptProposal(session.session_id, {
       proposal_id: session.proposal.proposal_id,
       idempotency_key:
         globalThis.crypto?.randomUUID?.() ?? `web-${Date.now()}`,
     });
-    setTransaction(result);
+    setTransaction(accepted);
     setNegotiation(await getNegotiation(session.session_id));
   }
 
@@ -113,6 +99,7 @@ export function LiveWorkbench() {
       if (decided.optimisation) setOptimisation(decided.optimisation);
       setNegotiation(decided);
       setTransaction(null);
+      setStage("match");
     } catch {
       setError("Negotiation failed. Is the API running?");
     } finally {
@@ -149,215 +136,91 @@ export function LiveWorkbench() {
   }, [offers, profile]);
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(260px,0.9fr)_minmax(380px,1.2fr)_minmax(280px,1fr)]">
-      <section className="panel space-y-5">
-        <div className="space-y-2">
-          <p className="eyebrow">Buyer Agent request</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">
-            Deep intent intake
-          </h1>
-          <p className="text-sm leading-6 text-muted">
-            Language is interpreted. Hard rules decide who may compete.
-            Semantic fit ranks eligible products. Construction enumerates
-            configurations. Optimisation then keeps only policy-safe Pareto
-            trade-offs.
-          </p>
-        </div>
-        <textarea
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          rows={11}
-          className="control w-full resize-y px-3 py-3 text-sm leading-6"
-        />
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setText(HERO_INTENT)}
-            className="cursor-pointer text-xs font-medium tracking-[0.08em] text-muted hover:text-ink"
-          >
-            Example request
-          </button>
-          <span className="text-xs text-muted">
-            Parser: {parserMode === "rule_based" ? "Rule-based" : "LLM"}
-          </span>
-          <select
-            value={parserMode}
-            onChange={(event) =>
-              setParserMode(event.target.value as "rule_based" | "llm")
-            }
-            className="control px-2 py-1 text-xs"
-          >
-            <option value="rule_based">Rule-based</option>
-            <option value="llm">LLM</option>
-          </select>
-        </div>
-        <button
-          type="button"
-          onClick={() => void run()}
-          disabled={busy || !text.trim()}
-          className="btn-primary"
-        >
-          {busy ? "NEGOTIATING…" : "UNDERSTAND → NEGOTIATE"}
-        </button>
-        {busy ? (
-          <p className="text-sm text-muted">
-            Understanding intent, checking mandatory requirements, matching the
-            catalogue, constructing offers, applying merchant policy, and
-            computing the efficient frontier.
-          </p>
-        ) : null}
-        {error ? <p className="text-sm text-danger">{error}</p> : null}
-        <ApiStatus />
-      </section>
-
-      <section className="panel space-y-5">
-        <div>
-          <p className="eyebrow">AstraOS understanding</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-            Qualify, match, construct
-          </h2>
-        </div>
-        {!result ? (
-          <p className="text-sm leading-6 text-muted">
-            Submit a request to see structured intent, hard qualification, and
-            grounded semantic matches.
-          </p>
-        ) : (
-          <>
-            <DeepIntent intent={result.intent} />
-            <div className="border border-line bg-canvas px-4 py-4 text-sm">
-              <p className="eyebrow">Qualification</p>
-              <p className="mt-2 tabular-nums">
-                {result.qualification.variants_checked} checked ·{" "}
-                {result.qualification.eligible} eligible ·{" "}
-                {result.qualification.violated} violated ·{" "}
-                {result.qualification.uncertain} uncertain
-              </p>
-              <p className="mt-2 text-xs text-muted">
-                Semantic ranking runs only on eligible SKUs. Fit is not a
-                purchase probability.
-              </p>
+    <div className="space-y-4">
+      <section className="panel space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="eyebrow">Buyer Agent request</p>
+            <textarea
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              rows={3}
+              className="control mt-2 w-full resize-y px-3 py-2 text-sm leading-6"
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setText(HERO_INTENT)}
+                className="cursor-pointer text-xs text-muted hover:text-ink"
+              >
+                Example request
+              </button>
+              <select
+                value={parserMode}
+                onChange={(event) =>
+                  setParserMode(event.target.value as "rule_based" | "llm")
+                }
+                className="control px-2 py-1 text-xs"
+              >
+                <option value="rule_based">Rule-based parser</option>
+                <option value="llm">LLM parser</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => void run()}
+                disabled={busy || !text.trim()}
+                className="btn-primary"
+              >
+                {busy ? "Running…" : "Run AstraOS"}
+              </button>
             </div>
-          </>
-        )}
+          </div>
+          <ApiStatus />
+        </div>
+        {error ? <ErrorState message={error} /> : null}
+        <ProcessRail active={stage} flags={flags} onSelect={setStage} />
       </section>
 
-      <aside className="panel space-y-5">
-        <div>
-          <p className="eyebrow">Best product matches</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-            Semantic fit
-          </h2>
-        </div>
-        {result ? (
-          <div className="space-y-3">
-            {result.semantic_matching.matches.map((match) => (
-              <MatchCard key={match.variant_id} match={match} />
-            ))}
-            {result.semantic_matching.matches.length === 0 ? (
-              <p className="text-sm text-muted">
-                No eligible products to rank.
-              </p>
-            ) : null}
-            <p className="text-xs text-muted">
-              {result.timing.total_ms.toFixed(0)} ms · parse{" "}
-              {result.timing.intent_parse_ms.toFixed(0)} · qualify{" "}
-              {result.timing.qualification_ms.toFixed(0)} · embed{" "}
-              {result.timing.embedding_ms.toFixed(0)} · rerank{" "}
-              {result.timing.rerank_ms.toFixed(0)}
+      <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)_300px]">
+        <aside className="panel">
+          <p className="eyebrow">Intent understanding</p>
+          {result ? (
+            <div className="mt-3">
+              <IntentPanel intent={result.intent} />
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-muted">
+              Run a request to extract mandatory constraints, context, and
+              priorities.
             </p>
-          </div>
-        ) : (
-          <p className="text-sm text-muted">No run yet.</p>
-        )}
-        {result || offers || optimisation ? (
-          <DecisionTrace
-            match={result}
+          )}
+        </aside>
+
+        <section className="panel min-w-0 space-y-4">
+          <StageView
+            stage={stage}
+            result={result}
             offers={offers}
             optimisation={optimisation}
-            hasProposal={Boolean(negotiation?.proposal)}
-          />
-        ) : null}
-        <ol className="space-y-1">
-          {(
-            [
-              "understand",
-              "qualify",
-              "match",
-              "construct",
-              "optimise",
-              "negotiate",
-              "transact",
-              "learn",
-            ] as const
-          ).map((id) => {
-            const state = processState(
-              Boolean(result),
-              Boolean(offers),
-              Boolean(optimisation),
-              Boolean(negotiation),
-              Boolean(transaction),
-              transaction?.state === "CONFIRMED",
-              id,
-            );
-            return (
-              <li
-                key={id}
-                className={`flex items-center justify-between border-l-2 px-3 py-2 text-sm ${
-                  state === "complete" || state === "active"
-                    ? "border-ink bg-canvas"
-                    : state === "next"
-                      ? "border-warning/60 bg-warning/5"
-                      : "border-line"
-                }`}
-              >
-                <span className="uppercase text-ink">{id}</span>
-                <span className="text-[11px] tracking-[0.08em] text-muted">
-                  {state}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      </aside>
-
-      {offers ? (
-        <div className="xl:col-span-3">
-          <OfferExplorer
-            construction={offers}
-            heroProduct={result?.semantic_matching.matches[0]?.product_name}
-          />
-        </div>
-      ) : null}
-      {optimisation ? (
-        <div className="xl:col-span-3">
-          <OptimisationPanel
-            optimisation={optimisation}
-            profile={profile}
-            onProfile={(next) => void rerunOptimisation(next)}
-            busy={busy}
-          />
-        </div>
-      ) : null}
-      {negotiation ? (
-        <div className="xl:col-span-3">
-          <NegotiationPanel
             negotiation={negotiation}
+            transaction={transaction}
+            profile={profile}
             busy={busy}
+            parserMode={parserMode}
+            intentText={text}
+            onProfile={(next) => void rerunOptimisation(next)}
             onMessage={(message) => {
+              if (!negotiation) return;
               void (async () => {
                 setBusy(true);
                 try {
-                  const next = await postNegotiationTurn(
-                    negotiation.session_id,
-                    { message },
-                  );
+                  const next = await postNegotiationTurn(negotiation.session_id, {
+                    message,
+                  });
                   setNegotiation(next);
-                  if (
-                    next.state === "READY_FOR_CHECKOUT" &&
-                    next.proposal
-                  ) {
+                  if (next.state === "READY_FOR_CHECKOUT" && next.proposal) {
                     await executeAcceptance(next);
+                    setStage("transact");
                   }
                 } catch {
                   setError("Negotiation turn failed.");
@@ -367,6 +230,7 @@ export function LiveWorkbench() {
               })();
             }}
             onSimulate={(mode) => {
+              if (!negotiation) return;
               void (async () => {
                 setBusy(true);
                 try {
@@ -380,20 +244,13 @@ export function LiveWorkbench() {
                 }
               })();
             }}
-          />
-        </div>
-      ) : null}
-      {negotiation ? (
-        <div className="xl:col-span-3">
-          <TransactionPanel
-            negotiation={negotiation}
-            transaction={transaction}
-            busy={busy}
             onExecute={() => {
+              if (!negotiation) return;
               void (async () => {
                 setBusy(true);
                 try {
                   await executeAcceptance(negotiation);
+                  setStage("transact");
                 } catch {
                   setError("Acceptance failed.");
                 } finally {
@@ -402,6 +259,7 @@ export function LiveWorkbench() {
               })();
             }}
             onRecover={() => {
+              if (!negotiation) return;
               void (async () => {
                 setBusy(true);
                 try {
@@ -415,7 +273,7 @@ export function LiveWorkbench() {
               })();
             }}
             onDemoInventory={(units) => {
-              const sku = negotiation.proposal?.offer?.sku;
+              const sku = negotiation?.proposal?.offer?.sku;
               if (!sku) return;
               void (async () => {
                 setBusy(true);
@@ -429,7 +287,7 @@ export function LiveWorkbench() {
               })();
             }}
             onDemoDelivery={(available) => {
-              const sku = negotiation.proposal?.offer?.sku;
+              const sku = negotiation?.proposal?.offer?.sku;
               if (!sku) return;
               void (async () => {
                 setBusy(true);
@@ -460,187 +318,216 @@ export function LiveWorkbench() {
               })();
             }}
           />
-        </div>
-      ) : null}
+        </section>
+
+        <aside className="panel h-fit xl:sticky xl:top-20">
+          {proposalOffer ? (
+            <RecommendedOffer offer={proposalOffer} explanation={proposalWhy} />
+          ) : (
+            <EmptyState
+              title="Current decision"
+              body="AstraOS will place the recommended merchant response here after a run."
+            />
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
 
-function DecisionTrace({
-  match,
+function StageView({
+  stage,
+  result,
   offers,
   optimisation,
-  hasProposal,
+  negotiation,
+  transaction,
+  profile,
+  busy,
+  parserMode,
+  intentText,
+  onProfile,
+  onMessage,
+  onSimulate,
+  onExecute,
+  onRecover,
+  onDemoInventory,
+  onDemoDelivery,
+  onDemoMargin,
 }: {
-  match: MatchResponse | null;
+  stage: LiveStage;
+  result: MatchResponse | null;
   offers: GenerateOffersResponse | null;
   optimisation: OptimisationResponse | null;
-  hasProposal: boolean;
+  negotiation: NegotiationResponse | null;
+  transaction: AcceptProposalResponse | null;
+  profile: BuyerProfile;
+  busy: boolean;
+  parserMode: "rule_based" | "llm";
+  intentText: string;
+  onProfile: (profile: BuyerProfile) => void;
+  onMessage: (message: string) => void;
+  onSimulate: (mode: "TRAVEL" | "BUDGET") => void;
+  onExecute: () => void;
+  onRecover: () => void;
+  onDemoInventory: (units: number) => void;
+  onDemoDelivery: (available: boolean) => void;
+  onDemoMargin: (rate: number) => void;
 }) {
-  const rows = [
-    match ? `${match.qualification.variants_checked} variants` : null,
-    match ? `${match.qualification.eligible} eligible` : null,
-    match ? `${match.semantic_matching.matches.length} semantic matches` : null,
-    offers
-      ? `${offers.summary.generated_candidates.toLocaleString()} offer configurations`
-      : null,
-    optimisation
-      ? `${optimisation.summary.policy_safe.toLocaleString()} policy-safe`
-      : null,
-    optimisation
-      ? `${optimisation.summary.pareto_efficient} Pareto efficient`
-      : null,
-    hasProposal ? "1 merchant proposal" : null,
-  ].filter((item): item is string => item != null);
-  if (!rows.length) return null;
-  return (
-    <div className="border border-line bg-canvas px-4 py-3 text-sm">
-      <p className="eyebrow">Decision trace</p>
-      <p className="mt-2 font-mono text-xs tabular-nums leading-5">{rows.join(" → ")}</p>
-    </div>
-  );
-}
-
-function DeepIntent({ intent }: { intent: ShoppingIntent }) {
-  return (
-    <div className="space-y-4 border border-line bg-canvas px-4 py-4">
-      <Section title="MANDATORY">
-        {intent.hard_constraints.map((item) => (
-          <p key={item.id} className="text-sm">
-            {fieldLabel(item.field)} {formatConstraint(item.operator, item.normalized_value ?? item.value, item.unit)}
-          </p>
-        ))}
-      </Section>
-      {intent.context_items.length ? (
-        <Section title="CONTEXT">
-          {intent.context_items.map((item) => (
-            <p key={item.label} className="text-sm capitalize">
-              {contextLabel(item.label)}
-            </p>
-          ))}
-        </Section>
-      ) : null}
-      {intent.desired_outcomes.length ? (
-        <Section title="DESIRED OUTCOMES">
-          {intent.desired_outcomes.map((item) => (
-            <p key={item.label} className="text-sm capitalize">
-              {contextLabel(item.label)}
-            </p>
-          ))}
-        </Section>
-      ) : null}
-      {intent.soft_preferences.length ? (
-        <Section title="PREFERENCES">
-          {intent.soft_preferences.map((item) => (
-            <p key={item.id} className="text-sm">
-              {fieldLabel(item.field)}{" "}
-              <span className="text-muted">{importanceLabel(item.importance)}</span>
-            </p>
-          ))}
-        </Section>
-      ) : null}
-      {intent.tradeoffs.length ? (
-        <Section title="TRADE-OFF">
-          {intent.tradeoffs.map((item) => (
-            <p key={`${item.preferred_dimension}-${item.over_dimension}`} className="text-sm">
-              {fieldLabel(item.preferred_dimension)} {">"}{" "}
-              {item.over_dimension === "price"
-                ? "lowest possible price"
-                : fieldLabel(item.over_dimension)}
-            </p>
-          ))}
-        </Section>
-      ) : null}
-      {intent.unsupported_semantic_needs.length || intent.ambiguities.length ? (
-        <Section title="UNSUPPORTED / CLARIFY">
-          {intent.unsupported_semantic_needs.map((item) => (
-            <p key={item.label} className="text-sm text-uncertain">
-              {item.source_phrase}
-            </p>
-          ))}
-          {intent.ambiguities.map((item) => (
-            <p key={item.source_phrase} className="text-sm text-uncertain">
-              {item.source_phrase}
-            </p>
-          ))}
-        </Section>
-      ) : null}
-    </div>
-  );
-}
-
-function MatchCard({ match }: { match: RankedProductMatch }) {
-  return (
-    <article className="border border-line bg-canvas px-4 py-4">
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-sm font-medium tracking-[0.06em] uppercase">
-          #{match.rank} {match.product_name}
+  if (stage === "understand") {
+    return (
+      <div>
+        <p className="eyebrow">Understand</p>
+        <h2 className="mt-2 text-xl font-semibold tracking-tight">
+          Structured intent
+        </h2>
+        <p className="mt-2 text-sm text-muted">
+          Language is interpreted. Mandatory rules, context, and priorities
+          appear in the left column. No commercial terms are decided here.
         </p>
-        <span className="text-[11px] text-success">PASS</span>
       </div>
-      <p className="font-mono text-[11px] text-muted">
-        {match.sku} · {formatAudCents(match.base_price_cents)}
-      </p>
-      <dl className="mt-3 grid grid-cols-2 gap-1 text-[11px]">
-        <Score label="Semantic fit" value={match.overall_semantic_fit} />
-        <Score label="Context fit" value={match.context_fit} />
-        <Score label="Preference fit" value={match.preference_fit} />
-        <Score label="Evidence" value={match.evidence_coverage} />
-      </dl>
-      <p className="mt-3 text-[11px] tracking-[0.12em] text-muted">WHY IT FITS</p>
-      <ul className="mt-1 space-y-2">
-        {match.reasons.map((reason) => (
-          <li key={`${reason.kind}-${reason.need}`}>
-            <p className="text-sm capitalize">{contextLabel(reason.need)}</p>
-            {reason.facts.map((fact) => (
-              <p key={fact.attribute} className="text-xs text-muted">
-                → {fact.display}
-                {fact.source_name ? ` · ${fact.source_name}` : ""}
-              </p>
-            ))}
-          </li>
-        ))}
-      </ul>
-      {match.unsupported_needs.length ? (
-        <p className="mt-2 text-xs text-uncertain">
-          Limited evidence: {match.unsupported_needs.map(contextLabel).join(", ")}
-        </p>
-      ) : null}
-    </article>
-  );
-}
-
-function Score({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex justify-between gap-2">
-      <dt className="text-muted">{label}</dt>
-      <dd className="tabular-nums">{pct(value)}</dd>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <p className="eyebrow">{title}</p>
-      <div className="mt-2 space-y-1">{children}</div>
-    </div>
-  );
-}
-
-function formatConstraint(operator: string, value: unknown, unit: string | null): string {
-  if (unit === "AUD_CENTS" && typeof value === "number") {
-    const symbol = operator === "LT" ? "<" : operator === "LTE" ? "≤" : operator;
-    return `${symbol} ${formatAudCents(value)}`;
+    );
   }
-  if (unit === "DAYS" && value === 0) return "today";
-  if (operator === "EQ" && value === true) return "";
-  if (operator === "EQ" && value === false) return "must be false";
-  return `${operator} ${String(value)}`;
+
+  if (stage === "qualify") {
+    if (!result) {
+      return (
+        <EmptyState
+          title="Qualification"
+          body="Run AstraOS to check mandatory eligibility."
+        />
+      );
+    }
+    return (
+      <div className="space-y-3">
+        <p className="eyebrow">Qualify</p>
+        <h2 className="text-xl font-semibold tracking-tight">Eligibility</h2>
+        <StatStrip
+          items={[
+            { label: "Variants", value: result.qualification.variants_checked },
+            { label: "Eligible", value: result.qualification.eligible },
+            { label: "Violated", value: result.qualification.violated },
+            { label: "Unknown", value: result.qualification.uncertain },
+          ]}
+        />
+        <QualificationInspect intentText={intentText} parserMode={parserMode} />
+        <p className="text-xs text-muted">
+          Semantic ranking runs only on eligible SKUs.
+        </p>
+      </div>
+    );
+  }
+
+  if (stage === "match") {
+    if (!result) {
+      return (
+        <EmptyState
+          title="Match"
+          body="Run AstraOS to rank eligible products by overall match."
+        />
+      );
+    }
+    return (
+      <div className="space-y-4">
+        <div>
+          <p className="eyebrow">Top match</p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight">
+            Product ranking
+          </h2>
+        </div>
+        <MatchList matches={result.semantic_matching.matches} />
+        <p className="text-xs text-muted">
+          {result.timing.total_ms.toFixed(0)} ms · parse{" "}
+          {result.timing.intent_parse_ms.toFixed(0)} · qualify{" "}
+          {result.timing.qualification_ms.toFixed(0)}
+        </p>
+      </div>
+    );
+  }
+
+  if (stage === "construct") {
+    if (!offers) {
+      return (
+        <EmptyState
+          title="Construct"
+          body="Offer space is built after matching."
+        />
+      );
+    }
+    return (
+      <OfferExplorer
+        construction={offers}
+        heroProduct={result?.semantic_matching.matches[0]?.product_name}
+      />
+    );
+  }
+
+  if (stage === "optimise") {
+    if (!optimisation) {
+      return (
+        <EmptyState
+          title="Optimise"
+          body="The Pareto frontier appears after construction."
+        />
+      );
+    }
+    return (
+      <OptimisationPanel
+        optimisation={optimisation}
+        profile={profile}
+        onProfile={onProfile}
+        busy={busy}
+        showRecommendation={false}
+      />
+    );
+  }
+
+  if (stage === "negotiate") {
+    if (!negotiation) {
+      return (
+        <EmptyState
+          title="Negotiate"
+          body="A merchant proposal is required before counters."
+        />
+      );
+    }
+    return (
+      <NegotiationPanel
+        negotiation={negotiation}
+        busy={busy}
+        onMessage={onMessage}
+        onSimulate={onSimulate}
+      />
+    );
+  }
+
+  if (stage === "transact") {
+    if (!negotiation) {
+      return (
+        <EmptyState
+          title="Transact"
+          body="Accept a proposal to reserve inventory and write the order."
+        />
+      );
+    }
+    return (
+      <TransactionPanel
+        negotiation={negotiation}
+        transaction={transaction}
+        busy={busy}
+        onExecute={onExecute}
+        onRecover={onRecover}
+        onDemoInventory={onDemoInventory}
+        onDemoDelivery={onDemoDelivery}
+        onDemoMargin={onDemoMargin}
+      />
+    );
+  }
+
+  return (
+    <EmptyState
+      title="Learn"
+      body="Transaction outcomes feed LEARN. Open the LEARN destination for calibration and model status."
+    />
+  );
 }

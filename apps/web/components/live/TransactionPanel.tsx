@@ -65,12 +65,12 @@ export function TransactionPanel({
   const confirmed = transaction?.state === "CONFIRMED";
 
   return (
-    <section className="panel space-y-5">
+    <section className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow">Machine transaction boundary</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-            Transact
+          <p className="eyebrow">Transact</p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-ink">
+            Machine transaction boundary
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted">
             Acceptance is not final until live merchant state is revalidated.

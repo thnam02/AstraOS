@@ -595,11 +595,19 @@ export function negotiationConstraint(
 
 export const LEARN_STORY = [
   { id: "intent", label: "Intent", body: "What the buyer asked" },
-  { id: "offer", label: "Offer", body: "Merchant response sent" },
-  { id: "outcome", label: "Outcome", body: "Selected, rejected, or no purchase" },
-  { id: "record", label: "Learning record", body: "Intent → Offer → Outcome" },
-  { id: "model", label: "Response model", body: "Experimental, synthetic only" },
-  { id: "future", label: "Future support", body: "After real B2A outcomes exist" },
+  { id: "offer", label: "Offer", body: "Merchant response" },
+  { id: "outcome", label: "Outcome", body: "Selected / rejected / no purchase" },
+  { id: "record", label: "Learning record", body: "Intent + Offer + Outcome" },
+  {
+    id: "model",
+    label: "Response model",
+    body: "Experimental until real outcomes exist",
+  },
+  {
+    id: "future",
+    label: "Future decision support",
+    body: "After real B2A outcomes exist",
+  },
 ] as const;
 
 export const LEARN_STATUS = [
@@ -609,6 +617,24 @@ export const LEARN_STATUS = [
   { label: "Learned response model", state: "EXPERIMENTAL" },
   { label: "Real observed response model", state: "FUTURE" },
 ] as const;
+
+export type LearnCapabilityState = (typeof LEARN_STATUS)[number]["state"];
+
+/** Merchant-facing capability badge copy (text + tone, not colour alone). */
+export function learnCapabilityStatusLabel(state: LearnCapabilityState): string {
+  switch (state) {
+    case "ACTIVE":
+      return "Active";
+    case "PRIMARY":
+      return "Primary · Cold start";
+    case "EXPERIMENTAL":
+      return "Experimental";
+    case "FUTURE":
+      return "Future";
+    default:
+      return state;
+  }
+}
 
 export const SCENARIOS = [
   {

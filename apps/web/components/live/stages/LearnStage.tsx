@@ -3,7 +3,11 @@ import Link from "next/link";
 import { AstraDataTable, AstraStatusBadge, type AstraTone } from "@/components/astra";
 import { LIVE_STAGES } from "@/components/live/ProcessRail";
 import { StageResult, StageSection } from "@/components/live/StageShell";
-import { LEARN_STATUS } from "@/lib/decisionNarrative";
+import {
+  LEARN_STATUS,
+  learnCapabilityStatusLabel,
+  type LearnCapabilityState,
+} from "@/lib/decisionNarrative";
 import { formatUtilityShort, humanizeEnum } from "@/lib/format";
 import { STAGE_META } from "@/lib/liveStages";
 import { formatAudCents } from "@/lib/money";
@@ -34,8 +38,9 @@ function outcomeCopy(
   };
 }
 
-function statusTone(state: string): AstraTone {
-  if (state === "ACTIVE" || state === "PRIMARY") return "positive";
+function statusTone(state: LearnCapabilityState): AstraTone {
+  if (state === "ACTIVE") return "positive";
+  if (state === "PRIMARY") return "info";
   if (state === "EXPERIMENTAL") return "warning";
   return "neutral";
 }
@@ -113,7 +118,7 @@ export function LearnStage({
                 <td>{item.label}</td>
                 <td>
                   <AstraStatusBadge tone={statusTone(item.state)}>
-                    {humanizeEnum(item.state)}
+                    {learnCapabilityStatusLabel(item.state)}
                   </AstraStatusBadge>
                 </td>
               </tr>

@@ -116,7 +116,14 @@ describe("learn story", () => {
   it("leads with observe, learn, improve", () => {
     assert.deepEqual(
       LEARN_STORY.map((item) => item.label),
-      ["Intent", "Offer", "Outcome", "Learning record", "Response model", "Future support"],
+      [
+        "Intent",
+        "Offer",
+        "Outcome",
+        "Learning record",
+        "Response model",
+        "Future decision support",
+      ],
     );
     assert.equal(LEARN_STATUS[2]?.state, "PRIMARY");
     assert.equal(LEARN_STATUS[3]?.state, "EXPERIMENTAL");

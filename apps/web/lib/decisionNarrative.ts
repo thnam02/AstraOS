@@ -4,6 +4,7 @@ import {
   warrantyLabel,
   returnsLabel,
 } from "./arenaDisplay";
+import { HERO_INTENT } from "./intent";
 import { formatAudCents } from "./money";
 import type {
   CounterfactualRow,
@@ -611,24 +612,9 @@ export const LEARN_STATUS = [
 
 export const SCENARIOS = [
   {
-    id: "urgent",
-    label: "Urgent traveller",
+    id: "headphones",
+    label: "Headphones sample",
     profile: "URGENT_TRAVELLER" as const,
-    intent:
-      "I need ANC headphones under A$350 for a long-haul flight. Delivered today. Comfort and reliability matter more than getting the cheapest option.",
-  },
-  {
-    id: "budget",
-    label: "Budget buyer",
-    profile: "BUDGET_SHOPPER" as const,
-    intent:
-      "I need wireless ANC headphones under A$260. Cheapest option that still works is fine. Two-day delivery is ok.",
-  },
-  {
-    id: "assurance",
-    label: "Assurance buyer",
-    profile: "ASSURANCE_BUYER" as const,
-    intent:
-      "I want reliable ANC headphones under A$350. A long warranty matters more than getting the cheapest pair.",
+    intent: HERO_INTENT,
   },
 ] as const;

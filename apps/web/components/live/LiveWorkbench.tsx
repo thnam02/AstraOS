@@ -203,12 +203,6 @@ export function LiveWorkbench() {
         onText={setText}
         onParser={setParserMode}
         onRun={() => void run()}
-        onScenario={(intent, nextProfile) => {
-          setText(intent);
-          setProfile(nextProfile);
-          void run(intent, nextProfile);
-        }}
-        onCustom={() => setText(HERO_INTENT)}
       />
     );
   }

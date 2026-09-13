@@ -78,10 +78,23 @@ export function IntegrationsWorkbench() {
 
   useEffect(() => {
     let cancelled = false;
-    loadCore()
-      .then(async () => {
+    Promise.all([getAgentCapabilities(), getReady()])
+      .then(async ([caps, readiness]) => {
         if (cancelled) return;
-        await loadActivity();
+        setCapabilities(caps);
+        setReady(readiness);
+        try {
+          const feed = await getAgentActivity(25);
+          if (!cancelled) {
+            setActivity(feed.items);
+            setActivityError(null);
+          }
+        } catch {
+          if (!cancelled) {
+            setActivity(null);
+            setActivityError("Unable to load recent agent activity.");
+          }
+        }
       })
       .catch(() => {
         if (!cancelled) setError("Unable to load agent API status.");
@@ -92,7 +105,7 @@ export function IntegrationsWorkbench() {
     return () => {
       cancelled = true;
     };
-  }, [loadActivity, loadCore]);
+  }, []);
 
   if (loading && !capabilities && !error) {
     return (
@@ -301,63 +314,94 @@ export function IntegrationsWorkbench() {
         ) : null}
 
         {!activityError && activity && activity.length > 0 ? (
-          <div className="overflow-x-auto border border-line">
-            <table className="table-dense w-full min-w-[720px] text-left text-sm">
+          <div className="overflow-x-auto border border-line bg-surface">
+            <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-line text-xs text-muted">
-                  <th className="py-2 pr-3 font-medium">When</th>
-                  <th className="py-2 pr-3 font-medium">Event</th>
-                  <th className="py-2 pr-3 font-medium">Channel</th>
-                  <th className="py-2 pr-3 font-medium">Reference</th>
-                  <th className="py-2 pr-3 font-medium">Status</th>
-                  <th className="py-2 pr-3 font-medium">Total</th>
-                  <th className="py-2 font-medium">
+                <tr className="border-b border-line bg-canvas text-left text-[11px] font-medium tracking-[0.06em] text-muted uppercase">
+                  <th className="whitespace-nowrap px-3 py-2">When</th>
+                  <th className="px-3 py-2">Event</th>
+                  <th className="whitespace-nowrap px-3 py-2">Channel</th>
+                  <th className="whitespace-nowrap px-3 py-2">Ref</th>
+                  <th className="whitespace-nowrap px-3 py-2">Status</th>
+                  <th className="whitespace-nowrap px-3 py-2 text-right">Total</th>
+                  <th className="w-px whitespace-nowrap px-3 py-2 text-right">
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {activity.map((item) => (
-                  <tr key={item.negotiation_session_id} className="border-b border-line">
-                    <td className="py-2 pr-3 tabular-nums text-xs text-muted">
-                      <time dateTime={item.occurred_at}>
-                        {new Date(item.occurred_at).toLocaleString()}
-                      </time>
-                    </td>
-                    <td className="py-2 pr-3">
-                      <p className="font-medium">{activityKindLabel(item.kind)}</p>
-                      <p className="max-w-xs truncate text-xs text-muted">
-                        {item.intent_summary}
-                      </p>
-                    </td>
-                    <td className="py-2 pr-3 text-xs">
-                      {channelLabel(item.channel)}
-                    </td>
-                    <td className="py-2 pr-3 font-mono text-xs">
-                      {item.request_id ??
-                        item.order_number ??
-                        item.proposal_id ??
-                        item.negotiation_session_id.slice(0, 8)}
-                    </td>
-                    <td className="py-2 pr-3 text-xs">
-                      {humanizeEnum(item.status)}
-                    </td>
-                    <td className="py-2 pr-3 tabular-nums">
-                      {item.total_amount_cents != null
-                        ? formatAudCents(item.total_amount_cents)
-                        : "—"}
-                    </td>
-                    <td className="py-2">
-                      <button
-                        type="button"
-                        className="btn-quiet"
-                        onClick={() => setInspect(item)}
+                {activity.map((item) => {
+                  const fullRef =
+                    item.order_number ??
+                    item.request_id ??
+                    item.proposal_id ??
+                    item.negotiation_session_id;
+                  const shortRef = item.order_number
+                    ? item.order_number
+                    : fullRef.replace(/-/g, "").slice(0, 8);
+                  const when = new Date(item.occurred_at);
+                  return (
+                    <tr
+                      key={item.negotiation_session_id}
+                      className="border-b border-line last:border-0 hover:bg-canvas/70"
+                    >
+                      <td className="whitespace-nowrap px-3 py-2 align-middle tabular-nums text-xs text-muted">
+                        <time
+                          dateTime={item.occurred_at}
+                          title={when.toLocaleString()}
+                        >
+                          {when.toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })}{" "}
+                          {when.toLocaleTimeString(undefined, {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </time>
+                      </td>
+                      <td className="max-w-[18rem] px-3 py-2 align-middle">
+                        <p className="truncate font-medium leading-5">
+                          {activityKindLabel(item.kind)}
+                        </p>
+                        <p
+                          className="truncate text-xs leading-4 text-muted"
+                          title={item.intent_summary}
+                        >
+                          {item.intent_summary}
+                        </p>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 align-middle text-xs">
+                        {channelLabel(item.channel)}
+                      </td>
+                      <td
+                        className="whitespace-nowrap px-3 py-2 align-middle font-mono text-xs tabular-nums text-muted"
+                        title={fullRef}
                       >
-                        Inspect exchange
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        {shortRef}
+                      </td>
+                      <td className="max-w-[8.5rem] px-3 py-2 align-middle text-xs">
+                        <span className="line-clamp-1" title={humanizeEnum(item.status)}>
+                          {humanizeEnum(item.status)}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 align-middle text-right font-mono text-xs tabular-nums">
+                        {item.total_amount_cents != null
+                          ? formatAudCents(item.total_amount_cents)
+                          : "—"}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 align-middle text-right">
+                        <button
+                          type="button"
+                          className="btn-quiet"
+                          onClick={() => setInspect(item)}
+                        >
+                          Inspect
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

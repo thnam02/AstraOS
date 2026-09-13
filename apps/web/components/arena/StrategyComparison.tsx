@@ -21,7 +21,7 @@ export function StrategyComparison({ duel }: { duel: ArenaRunResponse }) {
   const rows = comparisonRows(baseline, winner);
 
   return (
-    <section className="panel space-y-3">
+    <section className="space-y-3">
       <p className="eyebrow">
         {comparingSemantic
           ? "Semantic Only vs AstraOS"

@@ -8,9 +8,9 @@ export default function ArenaPage() {
       <SectionHeader
         eyebrow="Evaluate"
         title="Strategy evaluation"
-        description="Compare AstraOS with simpler merchant decision strategies under controlled conditions. Same buyer, catalogue, inventory, and merchant policy — only the strategy changes."
+        description="Compare AstraOS with simpler merchant decision strategies under identical commercial conditions."
       />
-      <div className="mt-6">
+      <div className="mt-5">
         <ArenaWorkbench />
       </div>
     </PageContainer>

@@ -277,6 +277,7 @@ export function LiveWorkbench() {
           optimisation={optimisation}
           offer={proposalOffer}
           topMatch={topMatch}
+          construction={offers}
           profile={profile}
           busy={busy}
           selectedOfferId={selectedOfferId}

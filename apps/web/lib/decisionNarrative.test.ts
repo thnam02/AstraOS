@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  baselineTermsForProduct,
+  commercialDeltas,
   conciseOfferReasons,
   constructStory,
   expansionSteps,
@@ -12,6 +14,9 @@ import {
   negotiationConstraint,
   offerVsProductCopy,
   productsDiffer,
+  sameProductOfferSummary,
+  termsFromScored,
+  winnerChangeSummary,
 } from "./decisionNarrative";
 
 describe("product vs offer", () => {
@@ -21,7 +26,7 @@ describe("product vs offer", () => {
       { sku: "AUR-T06-BLK", product_name: "Aurora Commute 06" } as never,
     );
     assert.equal(differ, true);
-    assert.match(offerVsProductCopy(true), /best commercial response/);
+    assert.match(offerVsProductCopy(true), /complete merchant response/);
   });
 
   it("explains when the same product remains strongest", () => {
@@ -30,7 +35,7 @@ describe("product vs offer", () => {
       { sku: "SON-T32-SLV", product_name: "Sonic Cabin 32" } as never,
     );
     assert.equal(differ, false);
-    assert.match(offerVsProductCopy(false), /remained strongest/);
+    assert.match(offerVsProductCopy(false), /best complete offer/);
   });
 });
 
@@ -91,6 +96,108 @@ describe("learn story", () => {
     );
     assert.equal(LEARN_STATUS[2]?.state, "PRIMARY");
     assert.equal(LEARN_STATUS[3]?.state, "EXPERIMENTAL");
+  });
+});
+
+describe("commercial comparison", () => {
+  const atlas = {
+    sku: "ATL-C72",
+    product_name: "Atlas Cabin 72",
+  } as never;
+  const aurora = {
+    product_name: "Aurora Commute 06",
+    sku: "AUR-T06",
+    pricing: { total_price_cents: 30185 },
+    delivery: { code: "SAME_DAY", name: "Same Day Delivery", days: 0 },
+    warranty: { code: "EXTENDED_36", name: "36-month", months: 36 },
+    bundle: { code: "HARD_CASE", name: "Hard travel case" },
+    returns: { code: "FLEX_60", window_days: 60 },
+    product_fit: 0.84,
+    buyer_utility: 0.9,
+  } as never;
+  const atlasBaseline = {
+    product_name: "Atlas Cabin 72",
+    sku: "ATL-C72",
+    is_baseline: true,
+    pricing: { total_price_cents: 24800 },
+    delivery: { code: "STANDARD", name: "Standard Delivery", days: 3 },
+    warranty: { code: "STANDARD_12", name: "12-month", months: 12 },
+    bundle: null,
+    returns: { code: "STANDARD_30", window_days: 30 },
+  } as never;
+
+  it("prefers construction product_baselines over sampled scored offers", () => {
+    const terms = baselineTermsForProduct(
+      atlas,
+      {
+        recommended_offer: aurora,
+        pareto_offers: [],
+        alternative_pareto_offers: [],
+        plot_points: [],
+      } as never,
+      {
+        product_baselines: [
+          {
+            product: { sku: "ATL-C72", name: "Atlas Cabin 72" },
+            pricing: { total_price_cents: 24800 },
+            delivery: { code: "STANDARD", name: "Standard Delivery", days: 3 },
+            warranty: { code: "STANDARD_12", name: "12-month", months: 12 },
+            bundle: null,
+            returns: { code: "STANDARD_30", window_days: 30 },
+          },
+        ],
+      } as never,
+    );
+    assert.equal(terms?.delivery_code, "STANDARD");
+    assert.equal(terms?.warranty_code, "STANDARD_12");
+    assert.equal(terms?.bundle_code, null);
+  });
+
+  it("finds a baseline from scored offers without inventing terms", () => {
+    const terms = baselineTermsForProduct(atlas, {
+      recommended_offer: aurora,
+      pareto_offers: [atlasBaseline],
+      alternative_pareto_offers: [],
+      plot_points: [],
+    } as never, null);
+    assert.equal(terms?.delivery_code, "STANDARD");
+    assert.equal(terms?.warranty_code, "STANDARD_12");
+  });
+
+  it("lists only fields that actually differ", () => {
+    const rows = commercialDeltas(
+      baselineTermsForProduct(atlas, {
+        recommended_offer: aurora,
+        pareto_offers: [atlasBaseline],
+        alternative_pareto_offers: [],
+        plot_points: [],
+      } as never, null),
+      termsFromScored(aurora),
+    );
+    assert.ok(rows.some((item) => item.field === "Delivery"));
+    assert.ok(rows.some((item) => item.field === "Warranty"));
+    assert.equal(rows.some((item) => item.from.includes("undefined")), false);
+  });
+
+  it("summarises a product change from structured deltas", () => {
+    const text = winnerChangeSummary("Atlas Cabin 72", "Aurora Commute 06", [
+      { field: "Delivery", from: "Standard delivery", to: "Same-day delivery" },
+      { field: "Warranty", from: "12-month warranty", to: "36-month warranty" },
+    ]);
+    assert.match(text, /Atlas Cabin 72 is the stronger standalone product match/);
+    assert.match(text, /same-day delivery and 36-month warranty/);
+  });
+
+  it("uses the same-product story when the winner does not change", () => {
+    const text = sameProductOfferSummary("Atlas Cabin 72", [
+      { field: "Delivery", from: "Standard delivery", to: "Same-day delivery" },
+    ]);
+    assert.match(text, /remained the strongest product/);
+    assert.match(text, /configured delivery/);
+  });
+
+  it("returns no rows when a baseline is missing", () => {
+    assert.deepEqual(commercialDeltas(null, termsFromScored(aurora)), []);
   });
 });
 

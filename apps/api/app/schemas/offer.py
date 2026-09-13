@@ -71,6 +71,7 @@ class GenerateOffersResponse(BaseModel):
     dimensions: OfferDimensions
     timing: OfferTiming
     offers: list[PublicOffer]
+    product_baselines: list[PublicOffer] = Field(default_factory=list)
     truncated: bool = False
 
 

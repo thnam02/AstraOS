@@ -664,6 +664,7 @@ export type GenerateOffersResponse = {
     total_ms: number;
   };
   offers: PublicOffer[];
+  product_baselines?: PublicOffer[];
   truncated: boolean;
 };
 

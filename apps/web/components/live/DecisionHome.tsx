@@ -57,8 +57,7 @@ export function DecisionHome({
           topMatch={topMatch}
           optimisation={optimisation}
           offer={offer}
-          onCompare={() => setCompareOpen(true)}
-          onInspect={onInspect}
+          construction={offers}
         />
       ) : null}
       <section>

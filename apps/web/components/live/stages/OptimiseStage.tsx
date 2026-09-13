@@ -3,17 +3,18 @@
 import { useState } from "react";
 
 import { DecisionBridge } from "@/components/live/DecisionBridge";
+import { MetricHint } from "@/components/live/MetricHint";
 import { OptimisationPanel } from "@/components/live/OptimisationPanel";
 import { WhyDifferentDrawer } from "@/components/live/RecommendedOffer";
 import {
   StagePrimaryAction,
   StageResult,
-  StageSection,
 } from "@/components/live/StageShell";
-import { commercialLevers } from "@/lib/decisionNarrative";
+import { METRIC_HELP, commercialLevers } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
 import type {
   BuyerProfile,
+  GenerateOffersResponse,
   OptimisationResponse,
   PublicScoredOffer,
   RankedProductMatch,
@@ -23,6 +24,7 @@ export function OptimiseStage({
   optimisation,
   offer,
   topMatch,
+  construction,
   profile,
   busy,
   selectedOfferId,
@@ -33,6 +35,7 @@ export function OptimiseStage({
   optimisation: OptimisationResponse;
   offer: PublicScoredOffer | null;
   topMatch: RankedProductMatch | null;
+  construction?: GenerateOffersResponse | null;
   profile: BuyerProfile;
   busy: boolean;
   selectedOfferId: string | null;
@@ -57,7 +60,7 @@ export function OptimiseStage({
   return (
     <>
       <StageResult
-        label="Recommended commercial response"
+        label="Selected complete offer"
         title={offer.product_name}
         value={formatAudCents(offer.pricing.total_price_cents)}
         explanation={
@@ -67,22 +70,6 @@ export function OptimiseStage({
             ))}
           </ul>
         }
-        metrics={[
-          { label: "Buyer utility", value: offer.buyer_utility.toFixed(2) },
-          {
-            label: "Merchant contribution",
-            value: formatAudCents(offer.contribution_margin_cents),
-          },
-          {
-            label: "Product match",
-            value: (
-              <>
-                {Math.round(offer.product_fit * 100)}
-                <span className="ml-1 text-sm font-medium text-muted">/ 100</span>
-              </>
-            ),
-          },
-        ]}
         emphasis
         actions={
           <>
@@ -108,7 +95,53 @@ export function OptimiseStage({
           </>
         }
       >
-        <ul className="space-y-1.5 text-sm">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div>
+            <p className="eyebrow">Complete offer</p>
+            <dl className="mt-3 space-y-3">
+              <div>
+                <dt className="type-small text-muted">
+                  <MetricHint
+                    label="Simulated buyer utility"
+                    hint={METRIC_HELP.buyerUtility}
+                  />
+                </dt>
+                <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                  {offer.buyer_utility.toFixed(2)}
+                </dd>
+              </div>
+              <div>
+                <dt className="type-small text-muted">
+                  <MetricHint
+                    label="Merchant contribution"
+                    hint={METRIC_HELP.contribution}
+                  />
+                </dt>
+                <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                  {formatAudCents(offer.contribution_margin_cents)}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div>
+            <p className="eyebrow">Underlying product</p>
+            <dl className="mt-3 space-y-3">
+              <div>
+                <dt className="type-small text-muted">
+                  <MetricHint
+                    label="Product match"
+                    hint={METRIC_HELP.productMatch}
+                  />
+                </dt>
+                <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                  {Math.round(offer.product_fit * 100)}
+                  <span className="ml-1 text-sm font-medium text-muted">/ 100</span>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+        <ul className="mt-5 space-y-1.5 text-sm">
           <li className="flex gap-2">
             <span aria-hidden className={offer.policy_safe ? "text-mark" : "text-danger"}>
               {offer.policy_safe ? "✓" : "!"}
@@ -127,21 +160,25 @@ export function OptimiseStage({
               {offer.is_pareto_efficient ? "✓" : "○"}
             </span>
             <span>
-              {offer.is_pareto_efficient
-                ? "Pareto-efficient"
-                : "Not on the efficient frontier"}
+              <MetricHint
+                label={
+                  offer.is_pareto_efficient
+                    ? "Pareto-efficient"
+                    : "Not on the efficient frontier"
+                }
+                hint={METRIC_HELP.pareto}
+              />
             </span>
           </li>
         </ul>
       </StageResult>
 
-      <StageSection title="Why this response?">
-        <DecisionBridge
-          topMatch={topMatch}
-          optimisation={optimisation}
-          offer={offer}
-        />
-      </StageSection>
+      <DecisionBridge
+        topMatch={topMatch}
+        optimisation={optimisation}
+        offer={offer}
+        construction={construction}
+      />
 
       {detailOpen ? (
         <OptimisationPanel

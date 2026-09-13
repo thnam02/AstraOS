@@ -1,11 +1,50 @@
-import { deliveryLabel, bundleLabel, warrantyLabel } from "./arenaDisplay";
+import {
+  deliveryLabel,
+  bundleLabel,
+  warrantyLabel,
+  returnsLabel,
+} from "./arenaDisplay";
+import { formatAudCents } from "./money";
 import type {
   CounterfactualRow,
   GenerateOffersResponse,
   OptimisationResponse,
+  PublicOffer,
   PublicScoredOffer,
   RankedProductMatch,
 } from "../types";
+
+export const METRIC_HELP = {
+  productMatch:
+    "How strongly the product itself aligns with the buyer’s validated intent.",
+  buyerUtility:
+    "Transparent cold-start score for the complete commercial offer. Not purchase probability.",
+  contribution:
+    "Merchant contribution after product and commercial intervention costs.",
+  pareto:
+    "No other available offer improves buyer utility without reducing merchant contribution, or vice versa.",
+} as const;
+
+export type OfferTerms = {
+  product_name: string;
+  sku?: string;
+  price_cents?: number;
+  delivery_code: string | null;
+  delivery_name?: string;
+  delivery_days?: number | null;
+  warranty_code: string | null;
+  warranty_months?: number | null;
+  bundle_code: string | null;
+  bundle_name?: string | null;
+  return_code: string | null;
+  return_days?: number | null;
+};
+
+export type CommercialDelta = {
+  field: "Price" | "Delivery" | "Warranty" | "Bundle" | "Returns";
+  from: string;
+  to: string;
+};
 
 export function matchScoreDisplay(
   value: number,
@@ -52,6 +91,210 @@ export function commercialLevers(offer: PublicScoredOffer) {
       ? `${offer.returns.window_days}-day returns`
       : "Standard returns",
   ];
+}
+
+function isBaselineCodes(
+  delivery: string | null | undefined,
+  warranty: string | null | undefined,
+  bundle: string | null | undefined,
+  returns: string | null | undefined,
+  adjustment?: string | null,
+) {
+  if (adjustment && adjustment !== "BASE") return false;
+  return (
+    delivery === "STANDARD" &&
+    warranty === "STANDARD_12" &&
+    (bundle == null || bundle === "NONE") &&
+    (returns == null || returns === "STANDARD_30")
+  );
+}
+
+export function termsFromScored(offer: PublicScoredOffer): OfferTerms {
+  return {
+    product_name: offer.product_name,
+    sku: offer.sku,
+    price_cents: offer.pricing.total_price_cents,
+    delivery_code: offer.delivery.code,
+    delivery_name: offer.delivery.name,
+    delivery_days: offer.delivery.days,
+    warranty_code: offer.warranty.code,
+    warranty_months: offer.warranty.months,
+    bundle_code: offer.bundle?.code ?? null,
+    bundle_name: offer.bundle?.name ?? null,
+    return_code: offer.returns?.code ?? null,
+    return_days: offer.returns?.window_days ?? null,
+  };
+}
+
+function sameProduct(
+  product: RankedProductMatch,
+  sku: string | null | undefined,
+  name: string | null | undefined,
+) {
+  if (product.sku && sku) return product.sku === sku;
+  return Boolean(name) && product.product_name === name;
+}
+
+export function baselineTermsForProduct(
+  product: RankedProductMatch | null | undefined,
+  optimisation: OptimisationResponse | null | undefined,
+  construction: GenerateOffersResponse | null | undefined,
+): OfferTerms | null {
+  if (!product) return null;
+  const listed = construction?.product_baselines?.find((item: PublicOffer) =>
+    sameProduct(product, item.product.sku, item.product.name),
+  );
+  if (listed) {
+    return {
+      product_name: listed.product.name,
+      sku: listed.product.sku,
+      price_cents: listed.pricing.total_price_cents,
+      delivery_code: listed.delivery.code,
+      delivery_name: listed.delivery.name,
+      delivery_days: listed.delivery.days,
+      warranty_code: listed.warranty.code,
+      warranty_months: listed.warranty.months,
+      bundle_code: listed.bundle?.code ?? null,
+      bundle_name: listed.bundle?.name ?? null,
+      return_code: listed.returns?.code ?? null,
+      return_days: listed.returns?.window_days ?? null,
+    };
+  }
+  const scored = [
+    optimisation?.recommended_offer,
+    ...(optimisation?.pareto_offers ?? []),
+    ...(optimisation?.alternative_pareto_offers ?? []),
+  ].filter((item): item is PublicScoredOffer => Boolean(item));
+  const scoredBaseline = scored.find(
+    (item) => item.is_baseline && sameProduct(product, item.sku, item.product_name),
+  );
+  if (scoredBaseline) return termsFromScored(scoredBaseline);
+
+  const constructed = construction?.offers.find((item: PublicOffer) => {
+    if (!sameProduct(product, item.product.sku, item.product.name)) return false;
+    return isBaselineCodes(
+      item.delivery.code,
+      item.warranty.code,
+      item.bundle?.code,
+      item.returns?.code,
+      item.pricing.adjustment_type,
+    );
+  });
+  if (constructed) {
+    return {
+      product_name: constructed.product.name,
+      sku: constructed.product.sku,
+      price_cents: constructed.pricing.total_price_cents,
+      delivery_code: constructed.delivery.code,
+      delivery_name: constructed.delivery.name,
+      delivery_days: constructed.delivery.days,
+      warranty_code: constructed.warranty.code,
+      warranty_months: constructed.warranty.months,
+      bundle_code: constructed.bundle?.code ?? null,
+      bundle_name: constructed.bundle?.name ?? null,
+      return_code: constructed.returns?.code ?? null,
+      return_days: constructed.returns?.window_days ?? null,
+    };
+  }
+
+  const point = optimisation?.plot_points.find(
+    (item) =>
+      sameProduct(product, item.sku, item.product_name) &&
+      isBaselineCodes(
+        item.delivery_code,
+        item.warranty_code,
+        item.bundle_code,
+        item.return_policy_code,
+      ),
+  );
+  if (!point) return null;
+  return {
+    product_name: point.product_name,
+    sku: point.sku,
+    price_cents: point.total_price_cents,
+    delivery_code: point.delivery_code,
+    warranty_code: point.warranty_code,
+    bundle_code: point.bundle_code,
+    return_code: point.return_policy_code,
+  };
+}
+
+function termLabel(
+  field: CommercialDelta["field"],
+  terms: OfferTerms,
+): string | null {
+  if (field === "Price") {
+    if (terms.price_cents == null) return null;
+    return formatAudCents(terms.price_cents);
+  }
+  if (field === "Delivery") {
+    if (!terms.delivery_code && !terms.delivery_name) return null;
+    return (
+      terms.delivery_name ||
+      deliveryLabel(terms.delivery_code, terms.delivery_days ?? null)
+    );
+  }
+  if (field === "Warranty") {
+    if (!terms.warranty_code && terms.warranty_months == null) return null;
+    return warrantyLabel(terms.warranty_code, terms.warranty_months ?? null);
+  }
+  if (field === "Bundle") {
+    if (terms.bundle_name) return terms.bundle_name;
+    return bundleLabel(terms.bundle_code);
+  }
+  if (!terms.return_code && terms.return_days == null) return null;
+  return returnsLabel(terms.return_code, terms.return_days ?? null);
+}
+
+export function commercialDeltas(
+  from: OfferTerms | null,
+  to: OfferTerms | null,
+): CommercialDelta[] {
+  if (!from || !to) return [];
+  const fields: CommercialDelta["field"][] = [
+    "Price",
+    "Delivery",
+    "Warranty",
+    "Bundle",
+    "Returns",
+  ];
+  const rows: CommercialDelta[] = [];
+  for (const field of fields) {
+    const left = termLabel(field, from);
+    const right = termLabel(field, to);
+    if (!left || !right || left === right) continue;
+    rows.push({ field, from: left, to: right });
+  }
+  return rows;
+}
+
+function joinDimensions(items: string[]): string {
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+}
+
+export function winnerChangeSummary(
+  topName: string,
+  selectedName: string,
+  deltas: CommercialDelta[],
+): string {
+  const dims = deltas.filter((item) => item.field !== "Price");
+  if (!dims.length) {
+    return `${topName} is the stronger standalone product match. ${selectedName} is the stronger complete offer once merchant economics are considered.`;
+  }
+  return `${topName} is the stronger standalone product match. ${selectedName} wins the complete offer because it supports ${joinDimensions(dims.map((item) => item.to.toLowerCase()))} and a better buyer/merchant trade-off.`;
+}
+
+export function sameProductOfferSummary(
+  name: string,
+  deltas: CommercialDelta[],
+): string {
+  const dims = deltas.map((item) => item.field.toLowerCase());
+  if (!dims.length) {
+    return `${name} remained the strongest product. AstraOS selected its complete commercial configuration.`;
+  }
+  return `${name} remained the strongest product. AstraOS configured ${joinDimensions(dims)}.`;
 }
 
 export function conciseOfferReasons(lines: string[]): string[] {
@@ -183,8 +426,8 @@ export function humanizeCheck(code: string): string {
 
 export function offerVsProductCopy(differ: boolean): string {
   return differ
-    ? "Product ranking identifies the best products. Offer optimisation identifies the best commercial response."
-    : "Top product remained strongest after offer optimisation.";
+    ? "AstraOS optimises the complete merchant response, not the SKU alone."
+    : "Top product remained the best complete offer after commercial optimisation.";
 }
 
 export function counterfactualStory(rows: CounterfactualRow[]) {

@@ -43,6 +43,19 @@ def travel_intent():
     )
 
 
+def construction_intent():
+    """Same-day construction mechanics without a tight spend cap."""
+    return intent_with(
+        constraint(ConstraintField.ANC, ConstraintOperator.EQ, True),
+        constraint(
+            ConstraintField.DELIVERY_DAYS, ConstraintOperator.LTE, 0, unit="DAYS"
+        ),
+        context_items=[
+            IntentContext(label=ContextLabel.LONG_HAUL_TRAVEL, source_phrase="flight")
+        ],
+    )
+
+
 def wired_variant(
     *,
     stock: int = 8,

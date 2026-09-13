@@ -243,6 +243,7 @@ function EvidenceDrawer({
   match: RankedProductMatch | null;
   onClose: () => void;
 }) {
+  const items = match ? proofItems(match) : [];
   return (
     <Drawer
       open={Boolean(match)}
@@ -250,48 +251,63 @@ function EvidenceDrawer({
       onClose={onClose}
     >
       {match ? (
-        <div className="space-y-5">
-          {proofItems(match).map((item) => {
-            const badge = sourceBadge(item.source_type, item.source_name);
-            return (
-              <section key={`${item.claim_key}-${String(item.value)}`}>
-                <p className="eyebrow">Claim</p>
-                <p className="mt-1 text-sm font-medium">{item.display_claim}</p>
-                <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                  <dt className="text-muted">Canonical field</dt>
-                  <dd className="font-mono">{item.claim_key}</dd>
-                  <dt className="text-muted">Value</dt>
-                  <dd>
-                    {String(item.value)}
-                    {item.unit ? ` ${item.unit}` : ""}
-                  </dd>
-                  <dt className="text-muted">Source</dt>
-                  <dd>
-                    <EvidenceBadge source={badge} />{" "}
-                    {item.source_name ?? item.source_type}
-                  </dd>
-                  <dt className="text-muted">Source record</dt>
-                  <dd className="font-mono">
-                    {item.source_record_id ?? "—"}
-                  </dd>
-                  <dt className="text-muted">Verification</dt>
-                  <dd>{titleCase(item.verification_status)}</dd>
-                  <dt className="text-muted">Freshness</dt>
-                  <dd>{titleCase(item.freshness_status)}</dd>
-                  <dt className="text-muted">Observed</dt>
-                  <dd>{item.observed_at ?? "—"}</dd>
-                  <dt className="text-muted">Derived</dt>
-                  <dd>{item.derived ? "Yes" : "No"}</dd>
-                  {item.derived && item.derivation_rule ? (
-                    <>
-                      <dt className="text-muted">Derivation rule</dt>
-                      <dd className="font-mono">{item.derivation_rule}</dd>
-                    </>
-                  ) : null}
-                </dl>
-              </section>
-            );
-          })}
+        <div className="space-y-5 text-ink">
+          <div>
+            <p className="text-sm font-medium">{match.product_name}</p>
+            <p className="mt-1 font-mono text-[11px] text-muted">
+              {match.sku} · {formatAudCents(match.base_price_cents)}
+            </p>
+          </div>
+          {items.length ? (
+            items.map((item) => {
+              const badge = sourceBadge(item.source_type, item.source_name);
+              return (
+                <section
+                  key={`${item.claim_key}-${String(item.value)}`}
+                  className="border-b border-line pb-4"
+                >
+                  <p className="eyebrow">Claim</p>
+                  <p className="mt-1 text-sm font-medium">{item.display_claim}</p>
+                  <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                    <dt className="text-muted">Field</dt>
+                    <dd className="font-mono">{item.claim_key}</dd>
+                    <dt className="text-muted">Value</dt>
+                    <dd>
+                      {String(item.value)}
+                      {item.unit ? ` ${item.unit}` : ""}
+                    </dd>
+                    <dt className="text-muted">Source</dt>
+                    <dd>
+                      <EvidenceBadge source={badge} />{" "}
+                      {item.source_name ?? item.source_type}
+                    </dd>
+                    <dt className="text-muted">Source record</dt>
+                    <dd className="font-mono">
+                      {item.source_record_id ?? "—"}
+                    </dd>
+                    <dt className="text-muted">Verification</dt>
+                    <dd>{titleCase(item.verification_status)}</dd>
+                    <dt className="text-muted">Freshness</dt>
+                    <dd>{titleCase(item.freshness_status)}</dd>
+                    <dt className="text-muted">Observed</dt>
+                    <dd>{item.observed_at ?? "—"}</dd>
+                    <dt className="text-muted">Derived</dt>
+                    <dd>{item.derived ? "Yes" : "No"}</dd>
+                    {item.derived && item.derivation_rule ? (
+                      <>
+                        <dt className="text-muted">Derivation rule</dt>
+                        <dd className="font-mono">{item.derivation_rule}</dd>
+                      </>
+                    ) : null}
+                  </dl>
+                </section>
+              );
+            })
+          ) : (
+            <p className="text-sm text-muted">
+              No evidence records are attached to this match.
+            </p>
+          )}
           {match.unsupported_needs.length ? (
             <p className="text-sm text-uncertain">
               Limited evidence: {match.unsupported_needs.map(contextLabel).join(", ")}

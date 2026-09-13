@@ -87,8 +87,12 @@ Never invent a phrase the buyer did not write.
 
 PRICE
 Use numeric dollar amounts when the buyer stated them. Prefer operator LT
-for "under" and LTE for "or less" / "no more than". Do not convert
-"around A$300" into a hard bound.
+for "under" and LTE for "or less" / "no more than" / "budget is" / "maximum".
+Do not convert "around A$300" into a hard bound.
+The field "price" is a hard maximum on the buyer's final customer total
+(product + delivery + warranty + extras), not the catalogue base price,
+unless the buyer explicitly says "base price", "product-only price", or
+"before delivery/extras". Copy that explicit phrasing into source_phrase.
 
 CATEGORY
 If headphones or similar audio wearables are clearly requested, set

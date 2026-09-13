@@ -26,6 +26,18 @@ class ConstraintOperator(StrEnum):
     NOT_IN = "NOT_IN"
 
 
+class PriceBasis(StrEnum):
+    """What a price hard-constraint binds.
+
+    CUSTOMER_TOTAL is the default natural-language meaning of budget language
+    such as "under A$100". PRODUCT_BASE is only used when the buyer explicitly
+    limits the catalogue/base price and allows extras on top.
+    """
+
+    CUSTOMER_TOTAL = "CUSTOMER_TOTAL"
+    PRODUCT_BASE = "PRODUCT_BASE"
+
+
 class ConstraintField(StrEnum):
     """Allow-listed hard-constraint fields for the headphone MVP."""
 
@@ -78,6 +90,7 @@ class HardConstraint(BaseModel):
     source_phrase: str
     normalized_value: Any | None = None
     importance: Literal["MANDATORY"] = "MANDATORY"
+    applies_to: PriceBasis | None = None
 
 
 class SoftPreference(BaseModel):

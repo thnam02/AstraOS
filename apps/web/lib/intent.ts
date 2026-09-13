@@ -1,4 +1,4 @@
-import { formatAudCents } from "@/lib/money";
+import { centsToPlainDollars, formatAudCents } from "@/lib/money";
 import type { HardConstraint, ShoppingIntent } from "@/types";
 
 export const HERO_INTENT = `I'm flying from Sydney to Singapore tomorrow and need wireless noise-cancelling headphones under A$350. I need them delivered today. I'll wear them for hours, so comfort and reliability matter more than getting the absolute cheapest option.`;
@@ -54,7 +54,13 @@ export function formatConstraint(
 }
 
 export function constraintLabel(item: HardConstraint): string {
-  return `${fieldLabel(item.field)} ${formatConstraint(
+  const name =
+    item.field === "price" && item.applies_to === "PRODUCT_BASE"
+      ? "Base price"
+      : item.field === "price"
+        ? "Total"
+        : fieldLabel(item.field);
+  return `${name} ${formatConstraint(
     item.operator,
     item.normalized_value ?? item.value,
     item.unit,
@@ -77,6 +83,34 @@ export function buyerRequestHighlights(intent: ShoppingIntent): string[] {
     chips.push(`${priorities.join(" + ")} prioritised`);
   }
   return chips.slice(0, 5);
+}
+
+type PriceConstraintSource = {
+  hard_constraints?: Array<{
+    field: string;
+    value?: unknown;
+    normalized_value?: unknown;
+  }>;
+};
+
+export function intentPriceCeilingCents(
+  intent?: PriceConstraintSource | null,
+): number | null {
+  const prices = (intent?.hard_constraints ?? [])
+    .filter((item) => item.field === "price")
+    .map((item) => item.normalized_value ?? item.value)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  if (!prices.length) return null;
+  return Math.min(...prices);
+}
+
+export function defaultBuyerCounter(
+  intent?: PriceConstraintSource | null,
+  offerCents?: number | null,
+): string {
+  const cents = intentPriceCeilingCents(intent) ?? offerCents ?? null;
+  if (cents == null) return "Can you adjust the commercial terms?";
+  return `Can you get this below A$${centsToPlainDollars(cents)}?`;
 }
 
 export function importanceLabel(value: number): string {

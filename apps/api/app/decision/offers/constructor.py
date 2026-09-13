@@ -20,6 +20,7 @@ from app.decision.offers.dimensions import (
     load_returns,
     load_warranties,
 )
+from app.decision.offers.buyer_constraints import buyer_price_reasons
 from app.decision.offers.feasibility import combination_reasons, variant_blockers
 from app.decision.offers.models import (
     CONSTRUCTION_VERSION,
@@ -231,6 +232,22 @@ def _assemble(
         + warranty.customer_price_cents
         + bundle.customer_price_cents
     )
+    reasons = [
+        *reasons,
+        *buyer_price_reasons(
+            intent=intent,
+            total_customer_price_cents=total,
+            product_price_cents=price.final_price_cents,
+        ),
+    ]
+    seen_codes: set[str] = set()
+    unique_reasons: list[RejectionReason] = []
+    for reason in reasons:
+        if reason.code.value in seen_codes:
+            continue
+        seen_codes.add(reason.code.value)
+        unique_reasons.append(reason)
+    reasons = unique_reasons
     blocked = any(
         item.code
         in {

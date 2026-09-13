@@ -9,6 +9,7 @@ import {
   StageSection,
 } from "@/components/live/StageShell";
 import { negotiationConstraint } from "@/lib/decisionNarrative";
+import { defaultBuyerCounter } from "@/lib/intent";
 import { formatAudCents, formatRate } from "@/lib/money";
 import type { MerchantProposal, NegotiationResponse, NegotiationTurn } from "@/types";
 
@@ -163,7 +164,12 @@ export function NegotiationPanel({
   onMessage: (message: string) => void;
   onSimulate: (mode: "TRAVEL" | "BUDGET") => void;
 }) {
-  const [draft, setDraft] = useState("Can you get this below A$315?");
+  const intent =
+    negotiation.match?.intent ?? negotiation.construction?.intent ?? null;
+  const offerCents = negotiation.proposal?.offer?.pricing.total_price_cents;
+  const [draft, setDraft] = useState(() =>
+    defaultBuyerCounter(intent, offerCents),
+  );
   const commercial = negotiation.commercial;
   const turns = negotiation.turns.filter(
     (turn) => turn.structured_action !== "SESSION_OPENED",

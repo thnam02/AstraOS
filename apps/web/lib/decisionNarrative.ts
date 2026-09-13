@@ -297,13 +297,66 @@ export function sameProductOfferSummary(
   return `${name} remained the strongest product. AstraOS configured ${joinDimensions(dims)}.`;
 }
 
+const BUYER_PRICE_CODES = new Set([
+  "BUYER_MAX_TOTAL_EXCEEDED",
+  "BUYER_MAX_PRODUCT_PRICE_EXCEEDED",
+]);
+
+function compareBound(operator: string, observed: number, expected: number): boolean {
+  if (operator === "LT") return observed < expected;
+  if (operator === "LTE") return observed <= expected;
+  if (operator === "GT") return observed > expected;
+  if (operator === "GTE") return observed >= expected;
+  if (operator === "EQ") return observed === expected;
+  if (operator === "NE") return observed !== expected;
+  return true;
+}
+
+export function completeOfferMandatorySatisfied(
+  offer: Pick<
+    PublicScoredOffer,
+    "policy_safe" | "policy_rejection_codes" | "pricing"
+  >,
+  intent?: {
+    hard_constraints?: Array<{
+      field: string;
+      operator: string;
+      value?: unknown;
+      normalized_value?: unknown;
+      applies_to?: "CUSTOMER_TOTAL" | "PRODUCT_BASE" | null;
+    }>;
+  } | null,
+): boolean {
+  if (!offer.policy_safe) return false;
+  if (offer.policy_rejection_codes.some((code) => BUYER_PRICE_CODES.has(code))) {
+    return false;
+  }
+  for (const item of intent?.hard_constraints ?? []) {
+    if (item.field !== "price") continue;
+    const expected = item.normalized_value ?? item.value;
+    if (typeof expected !== "number" || !Number.isFinite(expected)) continue;
+    const observed =
+      item.applies_to === "PRODUCT_BASE"
+        ? offer.pricing.product_price_cents
+        : offer.pricing.total_price_cents;
+    if (!compareBound(item.operator, observed, expected)) return false;
+  }
+  return true;
+}
+
+export function mandatoryRequirementsCopy(ok: boolean): string {
+  return ok
+    ? "All mandatory requirements satisfied"
+    : "Mandatory requirements not fully satisfied";
+}
+
 export function conciseOfferReasons(lines: string[]): string[] {
   const mapped = lines
     .map((line) => {
       if (/probability|cold-start/i.test(line)) return null;
       if (/mandatory/i.test(line)) return "All mandatory requirements satisfied";
       if (/same-day|urgency/i.test(line)) return "Same-day delivery addresses urgency";
-      if (/semantic|product fit/i.test(line)) return "Strong travel-context product fit";
+      if (/semantic|product fit/i.test(line)) return "Strong product match";
       if (/warranty/i.test(line)) return "Extended warranty supports reliability";
       if (/pareto|frontier/i.test(line)) return "Pareto efficient";
       if (/margin/i.test(line)) return "Above merchant margin floor";
@@ -317,8 +370,8 @@ export function strengthHint(attribute: string): string | null {
   const key = attribute.toLowerCase();
   if (key.includes("battery")) return "Very strong endurance";
   if (key.includes("weight")) return "Lightweight for extended wear";
-  if (key === "anc") return "Supports long-haul travel";
-  if (key.includes("fold")) return "Travel convenience";
+  if (key === "anc") return "Active noise cancellation";
+  if (key.includes("fold")) return "Folds for packing";
   if (key.includes("same_day") || key.includes("delivery")) return "Fulfils urgency";
   if (key.includes("comfort")) return "Supports extended wear";
   return null;
@@ -416,6 +469,8 @@ export function humanizeCheck(code: string): string {
     MARGIN_POLICY_VIOLATION: "Merchant policy",
     MERCHANT_POLICY_CHANGED: "Merchant policy changed",
     NO_POLICY_SAFE_OFFER: "No policy-safe offer",
+    BUYER_MAX_TOTAL_EXCEEDED: "Buyer max total exceeded",
+    BUYER_MAX_PRODUCT_PRICE_EXCEEDED: "Buyer max product price exceeded",
     NO_ELIGIBLE_PRODUCT: "No eligible product",
     RESERVATION_FAILED: "Reservation conflict",
     ALREADY_TRANSACTED: "Already transacted",

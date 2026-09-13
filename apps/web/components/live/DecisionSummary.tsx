@@ -1,16 +1,23 @@
 import { StageResult } from "@/components/live/StageShell";
-import { commercialLevers } from "@/lib/decisionNarrative";
+import {
+  commercialLevers,
+  completeOfferMandatorySatisfied,
+  mandatoryRequirementsCopy,
+} from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
-import type { PublicScoredOffer } from "@/types";
+import type { PublicScoredOffer, ShoppingIntent } from "@/types";
 
 export function DecisionSummary({
   offer,
+  intent,
   hideEyebrow = false,
 }: {
   offer: PublicScoredOffer;
+  intent?: ShoppingIntent | null;
   hideEyebrow?: boolean;
 }) {
   const levers = commercialLevers(offer);
+  const mandatoryOk = completeOfferMandatorySatisfied(offer, intent);
 
   return (
     <StageResult
@@ -43,14 +50,10 @@ export function DecisionSummary({
     >
       <ul className="space-y-1.5 text-sm">
         <li className="flex gap-2">
-          <span aria-hidden className={offer.policy_safe ? "text-mark" : "text-danger"}>
-            {offer.policy_safe ? "✓" : "!"}
+          <span aria-hidden className={mandatoryOk ? "text-mark" : "text-danger"}>
+            {mandatoryOk ? "✓" : "!"}
           </span>
-          <span>
-            {offer.policy_safe
-              ? "All mandatory requirements satisfied"
-              : "Mandatory requirements not fully satisfied"}
-          </span>
+          <span>{mandatoryRequirementsCopy(mandatoryOk)}</span>
         </li>
         <li className="flex gap-2">
           <span

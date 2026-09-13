@@ -12,12 +12,13 @@ import {
   warrantyLabel,
 } from "@/lib/arenaDisplay";
 import { constructStory, dimensionLine, expansionSteps } from "@/lib/decisionNarrative";
-import { contextLabel } from "@/lib/intent";
-import { formatAudCents } from "@/lib/money";
+import { contextLabel, intentPriceCeilingCents } from "@/lib/intent";
+import { centsToPlainDollars, formatAudCents } from "@/lib/money";
 import type {
   GenerateOffersResponse,
   OfferDetailResponse,
   OfferRunResponse,
+  OptimisationResponse,
   PublicOffer,
 } from "@/types";
 
@@ -47,12 +48,13 @@ export function OfferExplorer({
 
   const rows = run?.offers ?? construction.offers;
   const story = constructStory(construction);
+  const priceCeiling = intentPriceCeilingCents(construction.intent);
   const steps = expansionSteps(construction, {
     summary: {
-      policy_safe: policySafe ?? 0,
-      pareto_efficient: pareto ?? 0,
+      policy_safe: policySafe,
+      pareto_efficient: pareto,
     },
-  } as never);
+  } as OptimisationResponse);
 
   async function applyFilters() {
     setBusy(true);
@@ -194,7 +196,9 @@ export function OfferExplorer({
           <input
             value={maxPrice}
             onChange={(event) => setMaxPrice(event.target.value)}
-            placeholder="350"
+            placeholder={
+              priceCeiling != null ? centsToPlainDollars(priceCeiling) : "Max"
+            }
             className="w-20 border border-line bg-surface px-2 py-1"
           />
         </label>

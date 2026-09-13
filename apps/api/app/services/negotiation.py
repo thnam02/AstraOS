@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.decision.intent.models import ConstraintField, ShoppingIntent
+from app.decision.intent.price import max_customer_total_cents
 from app.decision.negotiation.delta import (
     apply_working_intent,
     delta_from_turn,
@@ -437,6 +438,8 @@ class NegotiationService:
         working = apply_working_intent(original, deltas)
         row.working_intent = working.model_dump(mode="json")
         request = merged_constraints(deltas)
+        if request.max_total_price_cents is None:
+            request.max_total_price_cents = max_customer_total_cents(working)
         delta_ms = (time.perf_counter() - delta_started) * 1000
 
         reopt_started = time.perf_counter()

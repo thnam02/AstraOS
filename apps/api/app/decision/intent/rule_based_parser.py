@@ -294,6 +294,22 @@ _HARD_PATTERNS: list[
         "BOOL",
     ),
     (
+        rf"\b(?:base(?:\s+product)?\s+price|product[- ]only(?:\s+price)?)\s+"
+        rf"(?:under|less than|below)\s+{_MONEY}",
+        ConstraintField.PRICE,
+        ConstraintOperator.LT,
+        None,
+        "AUD_CENTS",
+    ),
+    (
+        rf"\b(?:base(?:\s+product)?\s+price|product[- ]only(?:\s+price)?)\s+"
+        rf"(?:up to|at most|no more than|maximum(?:\s+of)?)\s+{_MONEY}",
+        ConstraintField.PRICE,
+        ConstraintOperator.LTE,
+        None,
+        "AUD_CENTS",
+    ),
+    (
         rf"\b(?:under|less than|below)\s+{_MONEY}",
         ConstraintField.PRICE,
         ConstraintOperator.LT,
@@ -301,7 +317,15 @@ _HARD_PATTERNS: list[
         "AUD_CENTS",
     ),
     (
-        rf"\b(?:up to|at most|no more than)\s+{_MONEY}|{_MONEY}\s+or less\b",
+        rf"\b(?:up to|at most|no more than|maximum(?:\s+of)?|max(?:imum)?)\s+{_MONEY}"
+        rf"|{_MONEY}\s+or less\b",
+        ConstraintField.PRICE,
+        ConstraintOperator.LTE,
+        None,
+        "AUD_CENTS",
+    ),
+    (
+        rf"\bbudget(?:\s+is|\s+of)?\s+{_MONEY}",
         ConstraintField.PRICE,
         ConstraintOperator.LTE,
         None,

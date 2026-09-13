@@ -9,21 +9,8 @@ import {
   StageSection,
 } from "@/components/live/StageShell";
 import { qualifyIntent } from "@/lib/api";
+import { exclusionSummary } from "@/lib/qualifyDisplay";
 import type { MatchResponse, QualifyResponse } from "@/types";
-
-function exclusionCounts(detail: QualifyResponse | null) {
-  if (!detail) return [];
-  const counts = new Map<string, number>();
-  for (const item of detail.rejected_products) {
-    const reasons = item.exclusion_reasons.length
-      ? item.exclusion_reasons
-      : ["Unspecified constraint"];
-    for (const reason of reasons) {
-      counts.set(reason, (counts.get(reason) ?? 0) + 1);
-    }
-  }
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
-}
 
 export function QualifyStage({
   qualification,
@@ -41,7 +28,7 @@ export function QualifyStage({
   const eligible = qualification.eligible;
   const rate = checked ? Math.round((eligible / checked) * 1000) / 10 : 0;
   const eligibleWidth = checked ? Math.max(4, (eligible / checked) * 100) : 0;
-  const reasons = useMemo(() => exclusionCounts(detail), [detail]);
+  const reasons = useMemo(() => exclusionSummary(detail), [detail]);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,10 +78,15 @@ export function QualifyStage({
       {reasons.length ? (
         <StageSection title="Why variants were excluded">
           <dl className="max-w-lg space-y-2 text-sm">
-            {reasons.slice(0, 8).map(([reason, count]) => (
-              <div key={reason} className="flex justify-between gap-4">
-                <dt>{reason}</dt>
-                <dd className="font-mono tabular-nums">{count}</dd>
+            {reasons.slice(0, 8).map((row) => (
+              <div
+                key={row.label}
+                className="flex items-baseline justify-between gap-6"
+              >
+                <dt className="min-w-0">{row.label}</dt>
+                <dd className="shrink-0 font-mono tabular-nums text-muted">
+                  {row.count}
+                </dd>
               </div>
             ))}
           </dl>

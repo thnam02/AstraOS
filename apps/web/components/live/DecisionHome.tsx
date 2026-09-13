@@ -40,12 +40,15 @@ export function DecisionHome({
 
   return (
     <div className="space-y-10">
-      {offer ? <DecisionSummary offer={offer} /> : null}
+      {offer ? (
+        <DecisionSummary offer={offer} intent={offers?.intent ?? result.intent} />
+      ) : null}
       <div className="lg:hidden">
         {offer ? (
           <div className="border-t border-line pt-6">
             <SelectedOfferSummary
               offer={offer}
+              intent={offers?.intent ?? result.intent}
               onNegotiate={onNegotiate}
               onInspect={onInspect}
             />

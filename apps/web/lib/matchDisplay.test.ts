@@ -5,7 +5,9 @@ import {
   displayedCoverage,
   isSupportedFact,
   primaryReasons,
+  proofItems,
   sourceBadge,
+  tradeOffLine,
 } from "./matchDisplay";
 import type { RankedProductMatch } from "../types";
 
@@ -91,5 +93,52 @@ describe("displayed facts", () => {
     } as unknown as RankedProductMatch;
     assert.equal(displayedCoverage(match), 0.5);
     assert.equal(primaryReasons(match).length, 1);
+  });
+
+  it("falls back to reason facts when proof is empty", () => {
+    const items = proofItems({
+      proof: [],
+      reasons: [
+        {
+          need: "anc",
+          kind: "requirement",
+          facts: [
+            {
+              attribute: "anc",
+              value: true,
+              display: "ANC",
+              evidence_id: null,
+              source_name: "Harbor product feed",
+              source_type: "MERCHANT_PRODUCT_FEED",
+            },
+          ],
+        },
+      ],
+      evidence: [],
+      unsupported_needs: [],
+    } as unknown as RankedProductMatch);
+    assert.equal(items.length, 1);
+    assert.equal(items[0]?.claim_key, "anc");
+  });
+
+  it("compares context fit to the leading product name", () => {
+    const leader = {
+      variant_id: "a",
+      product_name: "Atlas Cabin 72",
+      preference_fit: 0.8,
+      context_fit: 0.9,
+      unsupported_needs: [],
+    } as unknown as RankedProductMatch;
+    const peer = {
+      variant_id: "b",
+      product_name: "Aurora Commute 06",
+      preference_fit: 0.8,
+      context_fit: 0.7,
+      unsupported_needs: [],
+    } as unknown as RankedProductMatch;
+    assert.equal(
+      tradeOffLine(peer, [leader, peer]),
+      "Weaker context fit than Atlas Cabin 72.",
+    );
   });
 });

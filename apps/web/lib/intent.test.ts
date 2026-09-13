@@ -3,10 +3,13 @@ import { describe, it } from "node:test";
 
 import {
   buyerRequestHighlights,
+  constraintLabel,
+  defaultBuyerCounter,
   formatConstraint,
   intentNarrative,
+  intentPriceCeilingCents,
 } from "./intent";
-import type { ShoppingIntent } from "@/types";
+import type { HardConstraint, ShoppingIntent } from "@/types";
 
 describe("buyer request highlights", () => {
   it("surfaces decision-relevant constraints without inventing values", () => {
@@ -98,5 +101,47 @@ describe("buyer request highlights", () => {
     assert.match(text, /The buyer needs headphones with ANC/);
     assert.match(text, /Comfort is prioritised/);
     assert.match(text, /Comfort matters more than minimising price/);
+  });
+});
+
+describe("price constraint labels", () => {
+  it("labels default price as total spend", () => {
+    const label = constraintLabel({
+      field: "price",
+      operator: "LT",
+      value: 10000,
+      normalized_value: 10000,
+      unit: "AUD_CENTS",
+    } as HardConstraint);
+    assert.match(label, /Total/);
+    assert.match(label, /A\$100/);
+  });
+});
+
+describe("computed buyer price prompts", () => {
+  it("reads the tightest price ceiling from intent", () => {
+    const intent = {
+      hard_constraints: [
+        {
+          field: "price",
+          operator: "LTE",
+          value: 35000,
+          normalized_value: 35000,
+        },
+      ],
+    };
+    assert.equal(intentPriceCeilingCents(intent), 35000);
+    assert.equal(defaultBuyerCounter(intent, 30185), "Can you get this below A$350?");
+  });
+
+  it("falls back to the current offer when intent has no price", () => {
+    assert.equal(
+      defaultBuyerCounter({ hard_constraints: [] }, 30185),
+      "Can you get this below A$301.85?",
+    );
+    assert.equal(
+      defaultBuyerCounter(null, null),
+      "Can you adjust the commercial terms?",
+    );
   });
 });

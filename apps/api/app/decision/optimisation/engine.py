@@ -6,6 +6,7 @@ from uuid import UUID
 
 from app.decision.economics.calculator import compute_economics
 from app.decision.intent.models import ConstraintField, ShoppingIntent
+from app.decision.offers.buyer_constraints import meets_buyer_price
 from app.decision.offers.feasibility import sellable_units as variant_sellable
 from app.decision.offers.models import OfferCandidate
 from app.decision.optimisation.baseline import is_conceptual_baseline
@@ -150,7 +151,16 @@ def score_space(
         )
     utility_ms = (time.perf_counter() - utility_started) * 1000
 
-    safe = [item for item in scored if item.policy.policy_safe]
+    safe = [
+        item
+        for item in scored
+        if item.policy.policy_safe
+        and meets_buyer_price(
+            intent=intent,
+            total_customer_price_cents=item.total_customer_price_cents,
+            product_price_cents=item.product_price_cents,
+        )
+    ]
     pareto_started = time.perf_counter()
     frontier_result = build_frontier(
         [item.offer_id for item in safe],

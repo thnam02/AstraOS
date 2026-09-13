@@ -1,17 +1,24 @@
 import { ArrowRight } from "@phosphor-icons/react";
 
+import {
+  completeOfferMandatorySatisfied,
+  mandatoryRequirementsCopy,
+} from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
-import type { PublicScoredOffer } from "@/types";
+import type { PublicScoredOffer, ShoppingIntent } from "@/types";
 
 export function SelectedOfferSummary({
   offer,
+  intent,
   onNegotiate,
   onInspect,
 }: {
   offer: PublicScoredOffer;
+  intent?: ShoppingIntent | null;
   onNegotiate?: () => void;
   onInspect?: () => void;
 }) {
+  const mandatoryOk = completeOfferMandatorySatisfied(offer, intent);
   return (
     <div className="space-y-5">
       <div>
@@ -37,12 +44,8 @@ export function SelectedOfferSummary({
       </dl>
       <ul className="space-y-1.5 text-sm">
         <li className="flex gap-2">
-          <span aria-hidden>{offer.policy_safe ? "✓" : "!"}</span>
-          <span>
-            {offer.policy_safe
-              ? "Requirements satisfied"
-              : "Requirements not fully satisfied"}
-          </span>
+          <span aria-hidden>{mandatoryOk ? "✓" : "!"}</span>
+          <span>{mandatoryRequirementsCopy(mandatoryOk)}</span>
         </li>
         <li className="flex gap-2">
           <span aria-hidden>{offer.is_pareto_efficient ? "✓" : "○"}</span>

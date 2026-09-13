@@ -333,6 +333,7 @@ export type HardConstraint = {
   source_phrase: string;
   normalized_value: unknown;
   importance: "MANDATORY";
+  applies_to?: "CUSTOMER_TOTAL" | "PRODUCT_BASE" | null;
 };
 
 export type SoftPreference = {

@@ -22,10 +22,19 @@ def offer_by_id(context: ArenaContext) -> dict[str, OfferCandidate]:
     return {str(item.id): item for item in context.offers}
 
 
+_BUYER_PRICE_CODES = {
+    "BUYER_MAX_TOTAL_EXCEEDED",
+    "BUYER_MAX_PRODUCT_PRICE_EXCEEDED",
+}
+
+
 def hard_ok(scored: ScoredOffer, offer: OfferCandidate) -> bool:
+    codes = set(scored.policy.rejection_codes)
+    if codes & _BUYER_PRICE_CODES:
+        return False
     if scored.policy.policy_safe:
         return True
-    delivery_ok = "INTENT_DELIVERY_INCOMPATIBLE" not in scored.policy.rejection_codes
+    delivery_ok = "INTENT_DELIVERY_INCOMPATIBLE" not in codes
     return offer.feasibility_status == FeasibilityStatus.FEASIBLE and delivery_ok
 
 

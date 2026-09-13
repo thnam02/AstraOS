@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   baselineTermsForProduct,
   commercialDeltas,
+  completeOfferMandatorySatisfied,
   conciseOfferReasons,
   constructStory,
   expansionSteps,
@@ -78,6 +79,27 @@ describe("product-to-offer bridge", () => {
     );
     assert.equal(steps[0]?.value, "8");
     assert.equal(steps.at(-1)?.label, "Selected response");
+    const constructOnly = expansionSteps(
+      {
+        input: { matched_products: 8 },
+        dimensions: {
+          price_options: 5,
+          delivery_options: 3,
+          warranty_options: 3,
+          bundle_options: 4,
+          return_options: 2,
+        },
+        summary: {
+          generated_candidates: 2416,
+          feasible_candidates: 1584,
+          estimated_candidates: 2416,
+        },
+      } as never,
+    );
+    assert.deepEqual(
+      constructOnly.map((item) => item.label),
+      ["Matched products", "Candidate offers", "Feasible"],
+    );
   });
 
   it("parses a buyer price constraint", () => {
@@ -227,5 +249,39 @@ describe("score terminology", () => {
       "Same-day delivery addresses urgency",
       "Pareto efficient",
     ]);
+  });
+
+  it("does not treat policy_safe alone as a complete-offer budget pass", () => {
+    const offer = {
+      policy_safe: true,
+      policy_rejection_codes: [],
+      pricing: { product_price_cents: 9200, total_price_cents: 12700, currency: "AUD" },
+    };
+    assert.equal(
+      completeOfferMandatorySatisfied(offer, {
+        hard_constraints: [
+          {
+            field: "price",
+            operator: "LTE",
+            normalized_value: 10000,
+            applies_to: "CUSTOMER_TOTAL",
+          },
+        ],
+      }),
+      false,
+    );
+    assert.equal(
+      completeOfferMandatorySatisfied(offer, {
+        hard_constraints: [
+          {
+            field: "price",
+            operator: "LTE",
+            normalized_value: 10000,
+            applies_to: "PRODUCT_BASE",
+          },
+        ],
+      }),
+      true,
+    );
   });
 });

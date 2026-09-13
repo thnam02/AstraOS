@@ -188,9 +188,8 @@ export function displayedCoverage(match: RankedProductMatch): number | null {
   return 1;
 }
 
-export function proofItems(match: RankedProductMatch): ProofItem[] {
-  if (match.proof?.length) return match.proof.filter((item) => !item.incomplete);
-  return uniqueFacts(match).map((fact) => ({
+function factToProof(fact: DisplayFact): ProofItem {
+  return {
     claim_key: fact.attribute,
     display_claim: prettyFactDisplay(fact.attribute, fact.display),
     value: fact.value,
@@ -204,7 +203,49 @@ export function proofItems(match: RankedProductMatch): ProofItem[] {
     derived: fact.derived,
     derivation_rule: fact.derivation_rule,
     group: "PRODUCT",
-  }));
+  };
+}
+
+function looseFacts(match: RankedProductMatch): DisplayFact[] {
+  const seen = new Set<string>();
+  const facts: DisplayFact[] = [];
+  const rows = [
+    ...(match.reasons ?? []).flatMap((reason) =>
+      (reason.facts ?? []).map((fact) => ({ fact, need: reason.need })),
+    ),
+    ...(match.evidence ?? []).map((fact) => ({ fact, need: fact.attribute })),
+  ];
+  for (const { fact, need } of rows) {
+    const key = (fact.display || fact.attribute).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    facts.push({
+      attribute: fact.attribute,
+      display: fact.display,
+      source_name: fact.source_name,
+      source_type: fact.source_type ?? null,
+      source_record_id: fact.source_record_id ?? null,
+      evidence_id: fact.evidence_id,
+      verification_status: fact.verification_status ?? null,
+      freshness: fact.freshness ?? null,
+      derived: Boolean(fact.derived),
+      derivation_rule: fact.derivation_rule ?? null,
+      observed_at: fact.observed_at ?? null,
+      need,
+      value: fact.value,
+    });
+  }
+  return facts;
+}
+
+export function proofItems(match: RankedProductMatch): ProofItem[] {
+  const proof = Array.isArray(match.proof) ? match.proof : [];
+  const complete = proof.filter((item) => !item.incomplete);
+  if (complete.length) return complete;
+  if (proof.length) return proof;
+  const supported = uniqueFacts(match);
+  if (supported.length) return supported.map(factToProof);
+  return looseFacts(match).map(factToProof);
 }
 
 export function tradeOffLine(
@@ -223,7 +264,7 @@ export function tradeOffLine(
     return `Lower preference fit than ${leader.product_name}.`;
   }
   if (match.context_fit + 0.04 < leader.context_fit) {
-    return `Weaker travel-context fit than the top match.`;
+    return `Weaker context fit than ${leader.product_name}.`;
   }
   return null;
 }

@@ -1,6 +1,7 @@
 """Deterministic 'why this offer' reasons. No LLM."""
 
 from app.decision.intent.models import ConstraintField, ShoppingIntent
+from app.decision.offers.buyer_constraints import meets_buyer_price
 from app.decision.optimisation.counterfactual import best_single_lever
 from app.decision.optimisation.models import CounterfactualRow, ScoredOffer
 from app.decision.utility.feature_mapping import intent_labels
@@ -14,9 +15,15 @@ def explain_recommendation(
     counterfactuals: list[CounterfactualRow],
     frontier: bool,
 ) -> list[str]:
-    reasons = [
-        "Satisfies all mandatory requirements and current merchant policy guardrails."
-    ]
+    reasons: list[str] = []
+    if meets_buyer_price(
+        intent=intent,
+        total_customer_price_cents=recommended.total_customer_price_cents,
+        product_price_cents=recommended.product_price_cents,
+    ) and recommended.policy.policy_safe:
+        reasons.append(
+            "Satisfies all mandatory requirements and current merchant policy guardrails."
+        )
     if recommended.product_fit >= 0.7:
         reasons.append(
             f"Strong semantic product fit ({recommended.product_fit:.2f}) "

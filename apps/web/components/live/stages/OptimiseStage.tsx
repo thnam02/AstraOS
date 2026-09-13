@@ -10,7 +10,12 @@ import {
   StagePrimaryAction,
   StageResult,
 } from "@/components/live/StageShell";
-import { METRIC_HELP, commercialLevers } from "@/lib/decisionNarrative";
+import {
+  METRIC_HELP,
+  commercialLevers,
+  completeOfferMandatorySatisfied,
+  mandatoryRequirementsCopy,
+} from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
 import type {
   BuyerProfile,
@@ -56,6 +61,10 @@ export function OptimiseStage({
   }
 
   const levers = commercialLevers(offer);
+  const mandatoryOk = completeOfferMandatorySatisfied(
+    offer,
+    construction?.intent,
+  );
 
   return (
     <>
@@ -143,14 +152,10 @@ export function OptimiseStage({
         </div>
         <ul className="mt-5 space-y-1.5 text-sm">
           <li className="flex gap-2">
-            <span aria-hidden className={offer.policy_safe ? "text-mark" : "text-danger"}>
-              {offer.policy_safe ? "✓" : "!"}
+            <span aria-hidden className={mandatoryOk ? "text-mark" : "text-danger"}>
+              {mandatoryOk ? "✓" : "!"}
             </span>
-            <span>
-              {offer.policy_safe
-                ? "All mandatory requirements satisfied"
-                : "Mandatory requirements not fully satisfied"}
-            </span>
+            <span>{mandatoryRequirementsCopy(mandatoryOk)}</span>
           </li>
           <li className="flex gap-2">
             <span

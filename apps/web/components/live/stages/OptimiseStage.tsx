@@ -74,7 +74,7 @@ export function OptimiseStage({
         actions={
           onContinue ? (
             <StagePrimaryAction
-              label="Continue to negotiation"
+              label="Continue to buyer response"
               onClick={onContinue}
             />
           ) : null
@@ -142,7 +142,7 @@ export function OptimiseStage({
         actions={
           <>
             <StagePrimaryAction
-              label="Continue to negotiation"
+              label="Present proposal to buyer"
               onClick={onContinue}
             />
             <button

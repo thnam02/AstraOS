@@ -776,6 +776,7 @@ class NegotiationService:
                     structured_action=item.structured_action,
                     structured_payload=item.structured_payload,
                     related_offer_id=item.related_offer_id,
+                    related_proposal_id=item.related_proposal_id,
                     created_at=item.created_at,
                 )
                 for item in row.turns
@@ -785,6 +786,7 @@ class NegotiationService:
             timing=timing,
             events=list(row.events),
             original_intent=row.original_intent,
+            working_intent=row.working_intent,
             merchant_policy_version=row.merchant_policy_version,
             match=match,
             construction=construction,

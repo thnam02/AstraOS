@@ -69,15 +69,15 @@ export const STAGE_META: Record<
     heading: "Commercial decision",
     description:
       "Select the strongest complete commercial response from policy-safe, efficient offers.",
-    continueLabel: "Continue to negotiation",
+    continueLabel: "Present proposal to buyer",
   },
   negotiate: {
     number: "06",
     title: "Negotiate",
     subtitle: "Terms",
-    heading: "Negotiation",
+    heading: "Agent-to-agent terms negotiation",
     description:
-      "Exchange terms with the buyer agent. Language is interpreted; commercial control stays deterministic.",
+      "The buyer agent may accept, counter, or reject the merchant proposal. Negotiation is optional.",
   },
   transact: {
     number: "07",

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx --yes tsx --test lib/arenaDisplay.test.ts lib/decisionNarrative.test.ts lib/processRail.test.ts lib/matchDisplay.test.ts lib/format.test.ts"
+    "test": "npx --yes tsx --test lib/arenaDisplay.test.ts lib/decisionNarrative.test.ts lib/negotiationStory.test.ts lib/processRail.test.ts lib/matchDisplay.test.ts lib/format.test.ts"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

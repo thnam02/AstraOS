@@ -872,6 +872,7 @@ export type NegotiationTurn = {
   structured_action: string;
   structured_payload: Record<string, unknown>;
   related_offer_id: string | null;
+  related_proposal_id?: string | null;
   created_at: string;
 };
 
@@ -897,6 +898,9 @@ export type NegotiationResponse = {
     total_turn_ms: number;
   } | null;
   events: { type: string; at: string; state: string }[];
+  original_intent?: ShoppingIntent | Record<string, unknown> | null;
+  working_intent?: ShoppingIntent | Record<string, unknown> | null;
+  merchant_policy_version?: string | null;
   match?: MatchResponse | null;
   construction?: GenerateOffersResponse | null;
   optimisation?: OptimisationResponse | null;

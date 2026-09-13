@@ -62,7 +62,7 @@ export function SelectedOfferSummary({
           className="btn-primary w-full"
           onClick={onNegotiate}
         >
-          Continue to negotiation
+          Present proposal to buyer
           <ArrowRight size={16} weight="bold" aria-hidden />
         </button>
       ) : null}

@@ -292,13 +292,11 @@ export function LiveWorkbench() {
         <NegotiationPanel
           negotiation={negotiation}
           busy={busy}
-          onMessage={(message) => {
+          onMessage={(payload) => {
             void (async () => {
               setBusy(true);
               try {
-                const next = await postNegotiationTurn(negotiation.session_id, {
-                  message,
-                });
+                const next = await postNegotiationTurn(negotiation.session_id, payload);
                 setNegotiation(next);
                 if (next.state === "READY_FOR_CHECKOUT" && next.proposal) {
                   await executeAcceptance(next);

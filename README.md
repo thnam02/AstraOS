@@ -1,247 +1,316 @@
 # AstraOS
 
-Merchant-side offer intelligence for AI commerce.
+AstraOS is a merchant-side AI agent for B2A (Business-to-Agent) commerce.
 
-**Product ≠ Offer.**
+It lets autonomous buyer agents send shopping requests directly to a merchant. AstraOS then:
 
-AstraOS is a merchant-side decision engine that optimises what a retailer
-should offer to autonomous AI shoppers.
+1. Understands buyer intent
+2. Checks hard constraints
+3. Matches suitable products
+4. Builds complete commercial offers
+5. Optimises the merchant response
+6. Negotiates with the buyer agent
+7. Completes the transaction through an API
 
-This repository is the technical foundation for UAVS Hackathon 2026.
+AstraOS is **not** a consumer shopping assistant. It represents the **merchant** in agent-to-agent commerce.
 
-## What is AstraOS?
+Built for UAVS Hackathon 2026: *The B2A Shift: Adapting Retail for AI Shopping Agents*.
 
-Traditional e-commerce is designed for people browsing pages. AstraOS is
-designed for the **Buyer Agent**.
+---
 
-It takes shopping intent, qualifies products against hard constraints,
-constructs commercial offers, enforces merchant policy, and selects a
-Pareto-efficient merchant response. It then negotiates with a Buyer Agent
-using structured actions. After acceptance it revalidates live merchant
-state, reserves inventory, and creates a local order snapshot.
+## How it works
 
-It is not a payment processor, OMS, ERP, chatbot, pricing engine, or
-conversion study.
-
-**LLMs interpret language. Deterministic AstraOS services control all
-commercial terms.**
-
-The Buyer Agent is an external evaluator/client. It is not the product.
-
-## Core thesis
-
-A product is not an offer. The unit of competition in agentic commerce is
-the entire commercial configuration: product, price, delivery, warranty,
-bundle, and returns — under merchant policy.
-
-## Architecture
-
-```
-Merchant Sources (JSON / CSV)
-      ↓
-Ingestion + Provenance
-      ↓
-Canonical Facts
-      ↓
-Eligibility / Matching / Offers
-      ↓
-Proof Compiler
-      ↓
-Machine-readable proposal
-      ↓
-External Buyer Agent
+```text
+Buyer Agent
+     ↓
+   AstraOS
+     ↓
+Understand → Qualify → Match → Construct → Optimise → Negotiate → Transact
 ```
 
-```
-Merchant Feed (JSON / CSV)
-      ↓
-Ingestion Adapter → Validation → Canonical AstraOS Model
-      ↓
-Natural Language
-      ↓
-LLM Interpretation        (structured JSON, validated)
-      ↓
-Validated ShoppingIntent
-      ↓
-Deterministic AstraOS Engine
-Qualification → Semantic Matching → Offer Construction
-  → Economics / Policy → Pareto Optimisation → Merchant Objective
-  → Negotiation → Transaction
-```
+A complete offer can include:
 
-AstraOS ships with a deterministic demo merchant for reproducibility.
-The decision engine is not coupled to that seed. JSON and CSV feeds
-upsert into the same canonical catalogue.
+**Product + Price + Delivery + Warranty + Bundle + Returns**
 
-AstraOS separates **merchant guardrails** from **merchant objective**.
-A guardrail such as a 15% minimum margin defines the safe offer space.
-Growth / Balanced / Margin then chooses among Pareto-efficient safe
-offers. Changing strategy does not change the frontier.
+LLMs help interpret language. Hard buyer constraints and merchant policy are enforced deterministically. AstraOS only acts inside merchant-approved boundaries.
 
-The LLM interprets buyer language only. It does not set prices, qualify
-products, choose offers, or override merchant policy. If the LLM is
-unavailable, AstraOS falls back to the deterministic rule parser.
+---
 
-The protocol adapter contains no pricing, eligibility, matching, Pareto,
-or policy logic.
+## Quick start (Docker)
 
-The **Buyer Agent is a separate process** in `apps/buyer-agent`. It is
-not the AstraOS UI. It discovers capabilities and negotiates only over
-`/api/v1/agent/*` (optional MCP adapter calls that same REST surface).
-
-See [docs/architecture.md](docs/architecture.md).
-
-## Tech stack
-
-- API: Python 3.12, FastAPI, SQLAlchemy, Alembic, PostgreSQL 16
-- Matching: local sentence-transformer embeddings over eligible products
-  (`BAAI/bge-small-en-v1.5`), with hashing fallback if the model is missing
-- Frontend: Next.js, TypeScript
-- Demo: Docker Compose or local processes
-- External Buyer Agent: independent Python process (`apps/buyer-agent`)
-
-## Run locally
+**Requirements:** Docker and Docker Compose.
 
 ```bash
-cp .env.example .env
-make up                 # docker compose up --build
+docker --version
+docker compose version
 ```
-
-Or without Docker (PostgreSQL 16 required):
 
 ```bash
+git clone https://github.com/thnam02/AstraOS.git
+cd AstraOS
 cp .env.example .env
-# set POSTGRES_HOST=localhost
-make migrate
-make seed
-make embeddings-model   # once: cache BAAI/bge-small-en-v1.5 locally
-make embeddings
-cd apps/api && source .venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-cd apps/web && npm run dev
+docker compose up --build
 ```
+
+Background:
+
+```bash
+docker compose up --build -d
+```
+
+### Local URLs
 
 | Surface | URL |
 | --- | --- |
-| LIVE | http://localhost:3000 |
-| ARENA | http://localhost:3000/arena |
-| LEARN | http://localhost:3000/learn |
-| Merchant data | http://localhost:3000/catalogue |
-| OpenAPI | http://localhost:8000/docs |
-| Agent capabilities | http://localhost:8000/api/v1/agent/capabilities |
+| Frontend (LIVE) | http://localhost:3000 |
+| API | http://localhost:8000 |
+| OpenAPI docs | http://localhost:8000/docs |
+| Health | http://localhost:8000/health |
+| Ready | http://localhost:8000/ready |
 
-## Demo mode
+Compose services: `db` (Postgres 16), `api`, `web`.
 
-`ASTRAOS_DEMO_MODE=true` uses the same business logic with deterministic
-seed `2026`. It does not hardcode winners, Pareto output, or orders.
+### Environment
 
-```bash
-make reset-demo         # remigrate + seed 2026
-python -m app.cli demo hero
-python -m app.cli demo hero --stop-before-accept
-```
+Copy `.env.example` → `.env`. Important defaults:
 
-Operator script: [docs/demo.md](docs/demo.md).
-Judge Q&A: [docs/judge_qa.md](docs/judge_qa.md).
-
-## Agent interface
-
-Guaranteed demo interface: REST `/api/v1/agent/*`
-
-| Operation | Endpoint |
+| Variable | Purpose |
 | --- | --- |
-| Discover | `GET /api/v1/agent/capabilities` |
-| Request offer | `POST /api/v1/agent/offers/request` |
-| Inspect | `GET /api/v1/agent/offers/{proposal_id}` |
-| Counter | `POST /api/v1/agent/offers/counter` |
-| Accept | `POST /api/v1/agent/offers/accept` |
-| Order | `GET /api/v1/agent/orders/{ref}` |
+| `NEXT_PUBLIC_API_URL` | Frontend → API base URL (default `http://localhost:8000`) |
+| `FRONTEND_URL` | CORS / frontend origin (default `http://localhost:3000`) |
+| `API_PORT` | Host port for the API (default `8000`) |
+| `POSTGRES_*` | Database name/user/password/host/port |
+| `INTENT_PARSER_MODE` | `llm` (default) or `rule_based` |
+| `LLM_API_KEY` / `OPENAI_API_KEY` | Optional; without a key, intent parsing falls back to rules |
+| `RESPONSE_MODEL_MODE` | Default `COLD_START` (production-safe LIVE path) |
+| `ASTRAOS_DEMO_MODE` | Demo catalogue / deterministic seed behaviour |
+| `SEMANTIC_EMBEDDING_*` | Embedding provider/model; hashing fallback if model missing |
 
-Optional MCP stdio adapter (calls REST only):
+Do not invent extra vars — see `.env.example`.
+
+### Database / seed
+
+On API container start, `apps/api/docker-entrypoint.sh` runs:
+
+1. `alembic upgrade head`
+2. Demo catalogue seed **if the catalogue is empty**
+
+So a fresh `docker compose up --build` migrates and seeds automatically.
+
+Manual (host / Makefile), from repo root with API deps available:
 
 ```bash
-python -m app.agent.mcp_server
+make migrate   # cd apps/api && alembic upgrade head
+make seed      # cd apps/api && python -m app.seed
 ```
 
-Existing Stage 2–9 REST routes remain for the frontend and debugging.
+Inside a running API container:
 
-## Capabilities
+```bash
+docker compose exec api alembic upgrade head
+docker compose exec api python -m app.seed
+```
 
-- Stage 0 — Scaffold — COMPLETE
-- Stage 1 — Merchant data + product truth — COMPLETE
-- Stage 2 — Intent + deterministic eligibility — COMPLETE
-- Stage 3 — Deep intent + semantic matching — COMPLETE
-- Stage 4 — Offer construction + bundling — COMPLETE
-- Stage 5 — Economics + simulated buyer utility + Pareto — COMPLETE
-- Stage 6 — B2A negotiation — COMPLETE
-- Stage 7 — Proposal acceptance + transaction loop — COMPLETE
-- Stage 8 — Agent Arena + synthetic benchmark — COMPLETE
-- Stage 9 — Intent → Offer → Outcome learning — COMPLETE
-- Stage 10 — Agent protocol adapter + demo hardening — COMPLETE
+---
 
-**Simulated Buyer Utility** is a transparent cold-start score. It is not
-P(win) or purchase probability.
+## Using AstraOS
 
-**Semantic Fit** ranks eligible products only. It never overrides a hard
-constraint.
+### LIVE — `/`
 
-**Synthetic Response Score** is trained on simulated Arena outcomes. It
-is experimental and not a real conversion model.
+Merchant operator view of **one** buyer-agent request end-to-end.
 
-## Synthetic-data disclaimers
+```text
+Understand → Qualify → Match → Construct → Optimise → Negotiate → Transact
+```
 
-Arena and LEARN use simulated buyer-agent outcomes. Results do not
-represent observed real-world conversion uplift, ChatGPT/Gemini purchase
-behaviour, or production sales impact.
+Stages are a **decision trace**, not steps a human performs manually. LIVE uses the transparent cold-start decision path (`RESPONSE_MODEL_MODE=COLD_START`). Experimental learned models do **not** control LIVE.
 
-## Limitations
+### INTEGRATIONS — `/integrations`
 
-- Headphone catalogue only
-- Local simulated payment (`NOT_REQUIRED_FOR_DEMO`)
-- No warehouse logistics
-- Learned model is experimental / synthetic
-- MCP is optional; REST is the guaranteed interface
-- Demo default is the structured LLM parser (`INTENT_PARSER_MODE=llm`)
-  with automatic rule-based fallback. CI and offline tests stay
-  `rule_based`.
+How external machines connect to AstraOS:
 
-## Future production path
+- Agent API status / readiness
+- Agent capabilities
+- REST Agent API
+- Optional MCP adapter (stdio; calls the same REST surface)
+- Recent agent activity
+- Exchange Inspector
+- API reference + link to OpenAPI
 
-Observed B2A outcomes → periodic retraining → calibrated response model
-→ A/B evaluation. No online bandit or reinforcement learning in this
-repository.
+### EVALUATE — `/arena`
 
-## Commands
+Compares merchant strategies under controlled conditions.
 
-| Command | Purpose |
+Default strategies: **DEFAULT**, **ALWAYS_DISCOUNT**, **SEMANTIC_ONLY**, **ASTRAOS**.
+
+Same buyer · same catalogue · same inventory · same merchant policy · same buyer model — only the strategy changes.
+
+Evaluation uses **simulated** buyer behaviour. It is not real production sales uplift.
+
+### LEARN — `/learn`
+
+Explores outcome-based **experimental** response models:
+
+- Synthetic outcome generation
+- Train / validation / test splits
+- Grouped split by mission (no mission leakage across splits)
+- Experimental learned response model
+- Held-out evaluation vs cold-start
+- Shadow / experimental use only
+
+**LIVE still uses the production-safe cold-start model.** Learned models do not drive LIVE decisions.
+
+### DATA — `/catalogue`
+
+Merchant truth: products, variants, prices, inventory signals, and feed ingestion status.
+
+### RULES — header **Rules** drawer
+
+Merchant authority: minimum margin, maximum discount, delivery / warranty / bundle / returns toggles, and objective (Growth / Balanced / Margin).
+
+AstraOS only proposes offers inside these guardrails.
+
+---
+
+## Agent API (external buyer agents)
+
+Public machine interface under `/api/v1/agent/*`:
+
+| Method | Path |
 | --- | --- |
-| `make up` | Compose build + start |
-| `make migrate` | Alembic upgrade head |
-| `make seed` | Deterministic catalogue seed 2026 |
-| `make ingest` | Dry-run Harbor Sound example feed (`APPLY=1` to persist) |
-| `make embeddings-model` | Install `[semantic]` extra and cache the local embedding model |
-| `make embeddings` | Refresh cached product embeddings for the configured provider |
-| `make eval-retrieval` | Hashing vs semantic retrieval benchmark |
-| `make buyer-demo-deterministic` | External Buyer Agent hero mission (no LLM) |
-| `make buyer-demo` | External Buyer Agent hero mission (LLM, hashing fallback) |
-| `make buyer-agent-test` | Buyer Agent unit tests |
-| `make buyer-eval` | Frozen 25-mission deterministic Buyer Agent eval |
-| `make reset-demo` | Destructive remigrate + seed |
-| `make test` | pytest |
-| `make lint` | ruff + mypy |
-| `make demo-hero` | Hero request → counter → accept |
+| `GET` | `/api/v1/agent/capabilities` |
+| `POST` | `/api/v1/agent/offers/request` |
+| `GET` | `/api/v1/agent/offers/{proposal_id}` |
+| `POST` | `/api/v1/agent/offers/counter` |
+| `POST` | `/api/v1/agent/offers/accept` |
+| `GET` | `/api/v1/agent/orders/{ref}` |
+| `GET` | `/api/v1/agent/transactions/{transaction_id}` |
+| `GET` | `/api/v1/agent/activity` |
 
-Internet is not required for the core deterministic flow, Arena, LEARN
-inspection, or transaction simulation once models are cached. Demo LLM
-parsing needs `INTENT_PARSER_MODE=llm` and `LLM_API_KEY` (or
-`OPENAI_API_KEY`). Without a key, the same API still runs via the
-rule-based fallback. Semantic matching needs
-`make embeddings-model` once; without a cached model AstraOS falls back
-to hashing and reports that fallback in `/ready` and match metadata.
+Interactive docs: http://localhost:8000/docs
 
-Intent evaluation (frozen labelled set):
+Optional MCP stdio adapter (API must already be running):
 
 ```bash
-cd apps/api && python -m app.eval.intent_benchmark --rule-only
-cd apps/api && python -m app.eval.intent_benchmark --llm --out ../../artifacts/eval/intent-rule-vs-llm-v1.json
+cd apps/api && python -m app.agent.mcp_server
 ```
+
+A separate sample buyer client lives in `apps/buyer-agent` (`make buyer-demo-deterministic`).
+
+---
+
+## Project structure
+
+```text
+AstraOS
+├── apps/
+│   ├── api/           # FastAPI backend
+│   ├── web/           # Next.js frontend
+│   └── buyer-agent/   # External buyer-agent client (not the merchant UI)
+├── docs/              # Architecture, demo, reliability notes
+├── examples/          # Sample merchant feeds
+├── docker-compose.yml
+├── .env.example
+└── README.md
+```
+
+---
+
+## Stack
+
+| Layer | Tech |
+| --- | --- |
+| Frontend | Next.js, TypeScript, Tailwind CSS |
+| Backend | FastAPI, Python 3.12, SQLAlchemy, Alembic |
+| Database | PostgreSQL 16 |
+| AI / decision | LLM intent parsing (optional), semantic embeddings, deterministic eligibility / policy / economics |
+
+---
+
+## Useful Docker commands
+
+```bash
+docker compose up --build      # start (foreground)
+docker compose up --build -d   # start (background)
+docker compose ps
+docker compose logs -f
+docker compose logs -f api
+docker compose logs -f web
+docker compose logs -f db
+docker compose down
+```
+
+Makefile shortcuts: `make up`, `make down`, `make logs`, `make migrate`, `make seed`, `make test`.
+
+---
+
+## Troubleshooting
+
+**Port already in use**
+
+```bash
+lsof -i :3000
+lsof -i :8000
+lsof -i :5432
+```
+
+Compose maps Postgres to `${POSTGRES_PORT:-5432}`. If local Postgres already uses 5432, set e.g. `POSTGRES_PORT=5433` in `.env`.
+
+**Database / API not ready**
+
+```bash
+docker compose ps
+docker compose logs -f db
+docker compose logs -f api
+curl -sS http://localhost:8000/health
+curl -sS http://localhost:8000/ready
+curl -sS http://localhost:8000/api/v1/agent/capabilities
+```
+
+`/ready` may report **degraded** when embeddings fall back to hashing (model not downloaded). Required checks can still pass.
+
+**Frontend cannot reach API**
+
+Web uses `NEXT_PUBLIC_API_URL` (see `.env.example` and `apps/web/lib/config.ts`). With Compose, rebuild web after changing it — the value is baked at image build time:
+
+```bash
+docker compose up --build -d web
+```
+
+**Empty catalogue**
+
+```bash
+docker compose exec api python -m app.seed
+# or: make seed
+```
+
+---
+
+## Important notes
+
+- AstraOS is merchant-side; the Buyer Agent is an external machine customer.
+- LLMs interpret language; they do not control merchant economics.
+- Hard constraints and merchant policy are enforced deterministically.
+- Arena / LEARN use synthetic outcomes — not real production conversion data.
+- Experimental learned models do **not** currently control LIVE decisions.
+
+---
+
+## Hackathon context
+
+Built for **UAVS Hackathon 2026**: *The B2A Shift: Adapting Retail for AI Shopping Agents*.
+
+AstraOS explores how retailers move from passive catalogues to autonomous merchant agents that understand, negotiate with, and sell directly to AI buyers.
+
+---
+
+## Further documentation
+
+| Doc | Topic |
+| --- | --- |
+| [docs/architecture.md](docs/architecture.md) | System overview |
+| [docs/demo.md](docs/demo.md) | Demo operator script |
+| [docs/judge_qa.md](docs/judge_qa.md) | Judge Q&A |
+| [docs/deploy-railway.md](docs/deploy-railway.md) | Railway deploy |
+| [docs/reliability-matrix.md](docs/reliability-matrix.md) | Reliability notes |
+| [docs/realification-baseline.md](docs/realification-baseline.md) | Reproducible baseline |

@@ -12,6 +12,13 @@ import {
 } from "recharts";
 
 import {
+  AstraCallout,
+  AstraDataTable,
+  AstraSectionHeader,
+  AstraStatusBadge,
+  type AstraTone,
+} from "@/components/astra";
+import {
   generateLearningDataset,
   getLearningOverview,
   trainLearningModels,
@@ -96,16 +103,11 @@ export function LearnWorkbench() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="eyebrow">Learn</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-          How AstraOS could improve after real outcomes exist
-        </h1>
-        <p className="mt-2 text-sm text-muted">
-          LIVE uses transparent cold-start logic today. LEARN records Intent →
-          Offer → Outcome. The learned score is experimental and synthetic.
-        </p>
-      </div>
+      <AstraSectionHeader
+        eyebrow="Learn"
+        title="How AstraOS could improve after real outcomes exist"
+        description="LIVE uses transparent cold-start logic today. LEARN records Intent → Offer → Outcome. The learned score is experimental and synthetic."
+      />
 
       <ol className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
         {LEARN_STORY.map((item, index) => (
@@ -118,26 +120,34 @@ export function LearnWorkbench() {
         ))}
       </ol>
 
-      <table className="w-full text-left text-xs">
+      <AstraDataTable>
         <thead>
           <tr className="border-b border-line text-muted">
-            <th className="py-2 font-medium">Capability</th>
-            <th className="py-2 font-medium">Status</th>
+            <th className="px-3 py-2 font-medium">Capability</th>
+            <th className="px-3 py-2 font-medium">Status</th>
           </tr>
         </thead>
         <tbody>
-          {LEARN_STATUS.map((item) => (
-            <tr key={item.label} className="border-b border-line">
-              <td className="py-2">{item.label}</td>
-              <td className="py-2">{item.state}</td>
-            </tr>
-          ))}
+          {LEARN_STATUS.map((item) => {
+            const tone: AstraTone =
+              item.state === "ACTIVE" || item.state === "PRIMARY"
+                ? "positive"
+                : item.state === "EXPERIMENTAL"
+                  ? "warning"
+                  : "neutral";
+            return (
+              <tr key={item.label} className="border-b border-line">
+                <td className="px-3 py-2">{item.label}</td>
+                <td className="px-3 py-2">
+                  <AstraStatusBadge tone={tone}>{item.state}</AstraStatusBadge>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
-      </table>
+      </AstraDataTable>
 
-      <p className="text-xs text-warning" title={DISCLAIMER}>
-        {DISCLAIMER}
-      </p>
+      <AstraCallout title="Synthetic evaluation">{DISCLAIMER}</AstraCallout>
 
       <ol className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         {(overview?.maturity ?? []).map((item) => (

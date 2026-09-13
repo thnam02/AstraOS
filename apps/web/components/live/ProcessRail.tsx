@@ -19,7 +19,7 @@ export const LIVE_STAGES: LiveStage[] = [
   "learn",
 ];
 
-export type RailState = "complete" | "active" | "future" | "failed";
+export type RailState = "complete" | "active" | "future" | "failed" | "blocked";
 
 export function processRailState(
   id: LiveStage,
@@ -83,13 +83,18 @@ export function ProcessRail({
             ? "✓"
             : state === "active"
               ? "●"
-              : state === "failed"
+              : state === "failed" || state === "blocked"
                 ? "!"
                 : "○";
         return (
           <li key={id} className="flex items-center">
             {index > 0 ? (
-              <span className="mx-1.5 text-[10px] text-line" aria-hidden>
+              <span
+                className={`mx-1.5 text-[10px] motion-safe:transition-colors ${
+                  state === "future" ? "text-line-muted" : "text-line"
+                }`}
+                aria-hidden
+              >
                 ──
               </span>
             ) : null}
@@ -98,12 +103,12 @@ export function ProcessRail({
               onClick={() => onSelect(id)}
               aria-current={state === "active" ? "step" : undefined}
               aria-label={`${STAGE_COPY[id]}, ${state}`}
-              className={`cursor-pointer text-[11px] uppercase tracking-[0.08em] ${
+              className={`cursor-pointer text-[11px] uppercase tracking-[0.08em] motion-safe:transition-colors ${
                 state === "active"
                   ? "font-semibold text-ink"
                   : state === "complete"
                     ? "text-ink"
-                    : state === "failed"
+                    : state === "failed" || state === "blocked"
                       ? "text-danger"
                       : "text-muted"
               }`}

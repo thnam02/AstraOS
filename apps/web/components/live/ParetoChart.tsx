@@ -74,19 +74,19 @@ export function ParetoChart({
       <div className="h-[320px] w-full" role="img" aria-label="Pareto scatter of merchant contribution versus simulated buyer utility">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-            <CartesianGrid stroke="#dddad2" />
+            <CartesianGrid stroke="var(--color-chart-grid)" />
             <XAxis
               type="number"
               dataKey="x"
               name="Contribution"
-              tick={{ fontSize: 11, fill: "#5c5a54" }}
+              tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
               tickFormatter={(value: number) => `$${value}`}
               label={{
                 value: "Merchant contribution (A$)",
                 position: "insideBottom",
                 offset: -2,
                 fontSize: 11,
-                fill: "#5c5a54",
+                fill: "var(--color-chart-axis)",
               }}
             />
             <YAxis
@@ -94,13 +94,13 @@ export function ParetoChart({
               dataKey="y"
               name="Utility"
               domain={[0, 1]}
-              tick={{ fontSize: 11, fill: "#5c5a54" }}
+              tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
               label={{
                 value: "Simulated buyer utility",
                 angle: -90,
                 position: "insideLeft",
                 fontSize: 11,
-                fill: "#5c5a54",
+                fill: "var(--color-chart-axis)",
               }}
             />
             <ZAxis type="number" dataKey="z" range={[20, 160]} />
@@ -114,7 +114,7 @@ export function ParetoChart({
                 y: item.buyer_utility,
                 z: Math.max(item.intervention_cost_cents, 80),
               }))}
-              fill="#c4c4be"
+              fill="var(--color-chart-muted)"
               fillOpacity={0.45}
               onClick={(item) => selectPoint(item, onSelect)}
             />
@@ -127,7 +127,7 @@ export function ParetoChart({
                 y: item.buyer_utility,
                 z: Math.max(item.intervention_cost_cents, 120),
               }))}
-              fill="#141413"
+              fill="var(--color-chart-selected)"
               onClick={(item) => selectPoint(item, onSelect)}
             />
             <Scatter

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { AstraInspector, AstraStageHeader } from "@/components/astra";
 import {
   getMerchantObjective,
   getMerchantPolicy,
@@ -130,37 +131,14 @@ export function MerchantPolicyDrawer({
     }
   }
 
-  if (!open) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-40 flex justify-end">
-      <button
-        type="button"
-        className="absolute inset-0 bg-ink/20"
-        aria-label="Close merchant rules"
-        onClick={onClose}
-      />
-      <aside className="relative z-50 flex h-full w-full max-w-md flex-col border-l border-line bg-surface">
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <div>
-            <p className="text-xs tracking-[0.14em] text-muted">MERCHANT</p>
-            <h2 className="text-base font-semibold text-ink">Rules</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs text-muted hover:text-ink"
-          >
-            Close
-          </button>
-        </div>
-        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
-          <p className="text-sm leading-6 text-muted">
-            Guardrails define what is allowed. The commercial objective
-            chooses among policy-safe Pareto offers.
-          </p>
+    <AstraInspector open={open} title="Merchant rules" onClose={onClose}>
+        <div className="space-y-5">
+          <AstraStageHeader
+            eyebrow="Merchant"
+            title="Commercial boundaries"
+            description="Guardrails define what is allowed. The commercial objective chooses among policy-safe Pareto offers."
+          />
           {objective ? (
             <div className="space-y-3 border border-line px-3 py-3">
               <div>
@@ -248,18 +226,17 @@ export function MerchantPolicyDrawer({
           {status === "saved" ? (
             <p className="text-sm text-success">Policy saved.</p>
           ) : null}
+          <div className="border-t border-line pt-4">
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={status === "saving"}
+              className="btn-primary w-full"
+            >
+              {status === "saving" ? "Saving…" : "Save rules"}
+            </button>
+          </div>
         </div>
-        <div className="border-t border-line px-5 py-4">
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={status === "saving"}
-            className="btn-primary w-full"
-          >
-            {status === "saving" ? "Saving…" : "Save rules"}
-          </button>
-        </div>
-      </aside>
-    </div>
+    </AstraInspector>
   );
 }

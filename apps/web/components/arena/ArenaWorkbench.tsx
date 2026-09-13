@@ -7,6 +7,7 @@ import { BuyerDecision } from "@/components/arena/BuyerDecision";
 import { ExperimentInspector } from "@/components/arena/ExperimentInspector";
 import { StrategyCard } from "@/components/arena/StrategyCard";
 import { StrategyComparison } from "@/components/arena/StrategyComparison";
+import { AstraCallout } from "@/components/astra";
 import { Disclosure } from "@/components/shared/Disclosure";
 import { ErrorState } from "@/components/shared/EmptyState";
 import {
@@ -194,10 +195,10 @@ export function ArenaWorkbench() {
             BENCHMARK
           </button>
         </div>
-        <p className="text-xs text-muted">
-          SYNTHETIC EVALUATION. Buyer selection uses a transparent simulated
-          utility model. Results are not observed real-world sales uplift.
-        </p>
+        <AstraCallout title="Synthetic evaluation">
+          Buyer selection uses a transparent simulated utility model. Results
+          are not observed real-world sales uplift.
+        </AstraCallout>
       </div>
 
       {mode === "duel" ? (

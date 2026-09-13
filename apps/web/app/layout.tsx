@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { AppHeader } from "@/components/shared/AppHeader";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
 
@@ -30,8 +31,10 @@ export default function RootLayout({
       <body
         className={`${inter.className} ${jetbrains.variable} min-h-screen bg-canvas text-ink antialiased`}
       >
-        <AppHeader />
-        {children}
+        <TooltipProvider>
+          <AppHeader />
+          {children}
+        </TooltipProvider>
       </body>
     </html>
   );

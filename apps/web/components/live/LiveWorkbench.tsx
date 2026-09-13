@@ -13,6 +13,7 @@ import { ProcessRail, type LiveStage } from "@/components/live/ProcessRail";
 import { QualificationInspect } from "@/components/live/QualificationInspect";
 import { RecommendedOffer } from "@/components/live/RecommendedOffer";
 import { TransactionPanel } from "@/components/live/TransactionPanel";
+import { AstraLoadingState } from "@/components/astra";
 import { Drawer } from "@/components/shared/Drawer";
 import { EmptyState, ErrorState } from "@/components/shared/EmptyState";
 import { StatStrip } from "@/components/shared/StatStrip";
@@ -188,19 +189,10 @@ export function LiveWorkbench() {
 
   if (!result && busy) {
     return (
-      <div className="mx-auto max-w-lg py-14">
-        <p className="eyebrow">AstraOS Live</p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight">
-          Creating a merchant response
-        </h1>
-        <ol className="mt-6 space-y-2 text-sm">
-          {PIPELINE_LOADING.map((line, index) => (
-            <li key={line} className={index === 0 ? "text-ink" : "text-muted"}>
-              {index === 0 ? "●" : "○"} {line}
-            </li>
-          ))}
-        </ol>
-      </div>
+      <AstraLoadingState
+        title="Creating a merchant response"
+        steps={PIPELINE_LOADING}
+      />
     );
   }
 
@@ -208,7 +200,7 @@ export function LiveWorkbench() {
     return (
       <div className="mx-auto max-w-2xl space-y-5 py-10">
         <p className="eyebrow">AstraOS Live</p>
-        <h1 className="text-3xl font-semibold tracking-tight">
+        <h1 className="type-page">
           Merchant-side offer intelligence for autonomous buyers
         </h1>
         <p className="text-sm text-muted">

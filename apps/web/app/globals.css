@@ -3,18 +3,82 @@
 @theme {
   --color-canvas: #f4f2ec;
   --color-surface: #ffffff;
+  --color-surface-2: #faf9f6;
+  --color-raised: #ffffff;
   --color-ink: #141413;
   --color-muted: #5c5a54;
   --color-line: #dddad2;
+  --color-line-muted: #ebe8e1;
   --color-success: #1b7f4a;
   --color-danger: #b42318;
   --color-warning: #b54708;
   --color-uncertain: #3d5a80;
+  --color-info: #3d5a80;
   --color-ring: #141413;
+  --color-chart-grid: #ebe8e1;
+  --color-chart-axis: #5c5a54;
+  --color-chart-muted: #b9b4a8;
+  --color-chart-selected: #141413;
   --font-sans: var(--font-sans-loaded, ui-sans-serif), system-ui, sans-serif;
   --font-mono: var(--font-mono-loaded, ui-monospace), monospace;
   --radius-control: 6px;
+  --radius-sm: 4px;
   --shadow-panel: 0 1px 0 rgb(20 20 19 / 0.04);
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --text-page: 1.5rem;
+  --text-section: 1.125rem;
+  --text-card: 0.9375rem;
+  --text-body: 0.875rem;
+  --text-small: 0.75rem;
+  --text-label: 0.6875rem;
+  --text-metric: 1.25rem;
+}
+
+:root {
+  --background: var(--color-canvas);
+  --foreground: var(--color-ink);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-ink);
+  --primary-foreground: var(--color-surface);
+  --secondary: var(--color-surface-2);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-surface-2);
+  --muted-foreground: var(--color-muted);
+  --accent: var(--color-surface-2);
+  --accent-foreground: var(--color-ink);
+  --destructive: var(--color-danger);
+  --border: var(--color-line);
+  --input: var(--color-line);
+  --ring: var(--color-ring);
+  --radius: 6px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
 }
 
 html,
@@ -74,11 +138,46 @@ html {
   }
 
   .eyebrow {
-    font-size: 11px;
+    font-size: var(--text-label);
     font-weight: 500;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-muted);
+  }
+
+  .type-page {
+    font-size: var(--text-page);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  .type-section {
+    font-size: var(--text-section);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .type-card {
+    font-size: var(--text-card);
+    font-weight: 600;
+  }
+
+  .type-body {
+    font-size: var(--text-body);
+    line-height: 1.55;
+  }
+
+  .type-small {
+    font-size: var(--text-small);
+    line-height: 1.45;
+  }
+
+  .type-metric {
+    font-family: var(--font-mono);
+    font-size: var(--text-metric);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 
   .btn-primary {

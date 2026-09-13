@@ -4,6 +4,7 @@ import { AstraDataTable, AstraStatusBadge, type AstraTone } from "@/components/a
 import { LIVE_STAGES } from "@/components/live/ProcessRail";
 import { StageResult, StageSection } from "@/components/live/StageShell";
 import { LEARN_STATUS } from "@/lib/decisionNarrative";
+import { formatUtilityShort, humanizeEnum } from "@/lib/format";
 import { STAGE_META } from "@/lib/liveStages";
 import { formatAudCents } from "@/lib/money";
 import type { AcceptProposalResponse, NegotiationResponse } from "@/types";
@@ -77,7 +78,7 @@ export function LearnStage({
             <div className="flex justify-between gap-3">
               <dt className="text-muted">Final utility</dt>
               <dd className="font-mono tabular-nums">
-                {offer.buyer_utility.toFixed(2)}
+                {formatUtilityShort(offer.buyer_utility)}
               </dd>
             </div>
             <div className="flex justify-between gap-3">
@@ -88,7 +89,11 @@ export function LearnStage({
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted">Negotiation</dt>
-              <dd>{negotiation?.state.replaceAll("_", " ") ?? "—"}</dd>
+              <dd>
+                {negotiation?.state
+                  ? humanizeEnum(negotiation.state)
+                  : "—"}
+              </dd>
             </div>
           </dl>
         ) : null}
@@ -108,7 +113,7 @@ export function LearnStage({
                 <td>{item.label}</td>
                 <td>
                   <AstraStatusBadge tone={statusTone(item.state)}>
-                    {item.state}
+                    {humanizeEnum(item.state)}
                   </AstraStatusBadge>
                 </td>
               </tr>

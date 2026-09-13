@@ -1,3 +1,5 @@
+import { formatUtilityShort } from "@/lib/format";
+
 export function FitBar({
   value,
   compact = false,
@@ -10,14 +12,14 @@ export function FitBar({
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <span className="eyebrow" title="Transparent simulated buyer utility">
-          Buyer fit
+          Buyer Utility
         </span>
         <span
           className={`font-mono tabular-nums ${
             compact ? "text-lg font-semibold" : "text-2xl font-semibold"
           }`}
         >
-          {value.toFixed(2)}
+          {formatUtilityShort(value)}
         </span>
       </div>
       <div

@@ -12,6 +12,7 @@ import {
 } from "recharts";
 
 import { bundleLabel, deliveryLabel, warrantyLabel } from "@/lib/arenaDisplay";
+import { formatUtilityShort } from "@/lib/format";
 import { formatAudCents } from "@/lib/money";
 import type { PlotPoint } from "@/types";
 
@@ -45,7 +46,7 @@ function TooltipBody({
         {deliveryLabel(point.delivery_code)} · {warrantyLabel(point.warranty_code)} ·{" "}
         {bundleLabel(point.bundle_code)}
       </p>
-      <p>Simulated utility {point.buyer_utility.toFixed(3)}</p>
+      <p>Simulated utility {formatUtilityShort(point.buyer_utility)}</p>
       <p>Merchant contribution {formatAudCents(point.contribution_margin_cents)}</p>
       <p>Intervention {formatAudCents(point.intervention_cost_cents)}</p>
     </div>
@@ -139,7 +140,7 @@ export function ParetoChart({
                 y: item.buyer_utility,
                 z: Math.max(item.intervention_cost_cents, 180),
               }))}
-              fill="#1b7f4a"
+              fill="var(--color-success)"
               onClick={(item) => selectPoint(item, onSelect)}
             />
           </ScatterChart>
@@ -154,7 +155,7 @@ export function ParetoChart({
         <p className="mt-2 font-mono text-xs tabular-nums">
           Selected {selected.product_name} · {formatAudCents(selected.total_price_cents)} ·
           contribution {formatAudCents(selected.contribution_margin_cents)} ·
-          utility {selected.buyer_utility.toFixed(3)}
+          utility {formatUtilityShort(selected.buyer_utility)}
         </p>
       ) : null}
       <p className="mt-1 text-[11px] text-muted">

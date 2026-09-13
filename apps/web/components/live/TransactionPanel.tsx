@@ -2,6 +2,7 @@
 
 import { StageDisclosure, StageResult, StageSection } from "@/components/live/StageShell";
 import { humanizeCheck } from "@/lib/decisionNarrative";
+import { humanizeEnum } from "@/lib/format";
 import { formatAudCents, formatRate } from "@/lib/money";
 import type { AcceptProposalResponse, NegotiationResponse } from "@/types";
 
@@ -10,6 +11,13 @@ function mark(status: "WAIT" | "ACTIVE" | "PASS" | "FAIL"): string {
   if (status === "ACTIVE") return "●";
   if (status === "FAIL") return "!";
   return "○";
+}
+
+function stepLabel(status: "WAIT" | "ACTIVE" | "PASS" | "FAIL"): string {
+  if (status === "WAIT") return "Waiting";
+  if (status === "ACTIVE") return "In progress";
+  if (status === "PASS") return "Passed";
+  return "Failed";
 }
 
 function revalidationState(
@@ -193,7 +201,7 @@ export function TransactionPanel({
                     item.status === "PASS" ? "text-success" : "text-danger"
                   }
                 >
-                  {item.status}
+                  {humanizeEnum(item.status)}
                 </span>
               </li>
             ))}
@@ -212,13 +220,16 @@ export function TransactionPanel({
             <dt className="text-muted">Inventory reserved</dt>
             <dd>
               {mark(reserved)}{" "}
-              {transaction?.reservation?.reservation_id ?? reserved}
+              {transaction?.reservation?.reservation_id ?? stepLabel(reserved)}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted">Order created</dt>
             <dd>
-              {mark(ordered)} {transaction?.order?.status ?? ordered}
+              {mark(ordered)}{" "}
+              {transaction?.order?.status
+                ? humanizeEnum(transaction.order.status)
+                : stepLabel(ordered)}
             </dd>
           </div>
           <div className="flex justify-between gap-3">

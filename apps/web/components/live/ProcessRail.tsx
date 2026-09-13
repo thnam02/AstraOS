@@ -62,12 +62,56 @@ export const STAGE_COPY: Record<LiveStage, string> = {
   learn: "Learn",
 };
 
-function stageClass(state: RailState, preview: boolean): string {
+function stageLabelClass(state: RailState, preview: boolean): string {
   if (preview) return "font-medium text-muted";
   if (state === "active") return "font-semibold text-ink";
   if (state === "complete") return "font-medium text-ink";
   if (state === "failed" || state === "blocked") return "font-medium text-danger";
   return "font-medium text-muted";
+}
+
+export function StageNode({
+  state,
+  preview = false,
+}: {
+  state: RailState;
+  preview?: boolean;
+}) {
+  if (preview) {
+    return (
+      <span
+        aria-hidden
+        className="relative z-10 flex h-3.5 w-3.5 shrink-0 rounded-full border border-line bg-canvas"
+      />
+    );
+  }
+  const mark =
+    state === "complete"
+      ? "✓"
+      : state === "active"
+        ? "●"
+        : state === "failed" || state === "blocked"
+          ? "!"
+          : "";
+  return (
+    <span
+      aria-hidden
+      className={[
+        "relative z-10 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border text-[8px] leading-none",
+        "motion-safe:transition-colors",
+        state === "complete" ? "border-mark bg-canvas text-mark" : "",
+        state === "active" ? "border-mark bg-mark text-surface" : "",
+        state === "failed" || state === "blocked"
+          ? "border-danger bg-canvas text-danger"
+          : "",
+        state === "future" ? "border-line bg-canvas text-muted" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {mark}
+    </span>
+  );
 }
 
 export function ProcessRail({
@@ -90,14 +134,6 @@ export function ProcessRail({
     >
       {LIVE_STAGES.map((id, index) => {
         const state = preview ? "future" : processRailState(id, flags, active);
-        const mark =
-          state === "complete"
-            ? "✓"
-            : state === "active"
-              ? "●"
-              : state === "failed" || state === "blocked"
-                ? "!"
-                : "○";
         const label = STAGE_COPY[id];
         const spoken = preview
           ? label
@@ -110,10 +146,28 @@ export function ProcessRail({
                     ? "error"
                     : "pending"
             }`;
+        const isLast = index === LIVE_STAGES.length - 1;
+        const connectorDone =
+          !preview && (state === "complete" || state === "active");
+        const body = (
+          <span className="inline-flex items-center gap-1.5">
+            <StageNode state={state} preview={preview} />
+            <span className={`text-[13px] ${stageLabelClass(state, preview)}`}>
+              {label}
+            </span>
+          </span>
+        );
+
         return (
-          <li key={id} className="flex items-center">
-            {index > 0 ? (
-              <span className="mx-2 h-px w-5 shrink-0 bg-line" aria-hidden />
+          <li key={id} className="relative flex items-center pr-5 last:pr-0">
+            {!isLast ? (
+              <span
+                aria-hidden
+                className={[
+                  "pointer-events-none absolute top-1/2 left-[calc(100%-1.15rem)] h-px w-5 -translate-y-1/2",
+                  connectorDone ? "bg-mark/45" : "bg-line",
+                ].join(" ")}
+              />
             ) : null}
             {interactive && onSelect && !preview ? (
               <button
@@ -121,25 +175,16 @@ export function ProcessRail({
                 onClick={() => onSelect(id)}
                 aria-current={state === "active" ? "step" : undefined}
                 aria-label={spoken}
-                className={`cursor-pointer text-[13px] motion-safe:transition-colors ${stageClass(state, preview)}`}
+                className="cursor-pointer rounded-[4px] px-0.5 py-0.5 motion-safe:transition-colors hover:bg-surface-2/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
-                <span className="mr-1.5" aria-hidden>
-                  {mark}
-                </span>
-                {label}
+                {body}
               </button>
             ) : (
               <span
                 aria-current={!preview && state === "active" ? "step" : undefined}
                 aria-label={spoken}
-                className={`text-[13px] ${stageClass(state, preview)}`}
               >
-                {preview ? null : (
-                  <span className="mr-1.5" aria-hidden>
-                    {mark}
-                  </span>
-                )}
-                {label}
+                {body}
               </span>
             )}
           </li>

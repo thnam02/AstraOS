@@ -16,6 +16,7 @@ import {
   StageSplit,
 } from "@/components/live/StageShell";
 import { METRIC_HELP } from "@/lib/decisionNarrative";
+import { formatUtilityShort } from "@/lib/format";
 import {
   activeConstraintLabels,
   buildNegotiationTimeline,
@@ -185,15 +186,19 @@ export function NegotiationPanel({
     currentTerms?.total ??
     (offer ? formatAudCents(offer.pricing.total_price_cents) : null);
 
-  let lastRound: number | null = null;
-  const rows = events.map((event) => {
+  const rows = events.reduce<
+    { event: (typeof events)[number]; showRound: boolean }[]
+  >((acc, event) => {
+    const lastRound = [...acc]
+      .reverse()
+      .find((row) => row.showRound)?.event.round;
     const showRound =
       event.actor === "ASTRAOS" &&
       event.round != null &&
       event.round !== lastRound;
-    if (showRound && event.round != null) lastRound = event.round;
-    return { event, showRound };
-  });
+    acc.push({ event, showRound });
+    return acc;
+  }, []);
 
   return (
     <>
@@ -269,7 +274,10 @@ export function NegotiationPanel({
             ))}
           </ol>
         ) : (
-          <p className="text-sm text-muted">Awaiting the merchant proposal.</p>
+          <AstraEmptyState
+            title="No negotiation turns yet"
+            body="Awaiting the merchant proposal."
+          />
         )}
       </StageSection>
 
@@ -315,7 +323,7 @@ export function NegotiationPanel({
                 <dt className="type-small text-muted">Simulated buyer utility</dt>
                 <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
                   {currentTerms.utility != null
-                    ? currentTerms.utility.toFixed(2)
+                    ? formatUtilityShort(currentTerms.utility)
                     : "—"}
                 </dd>
                 <p className="mt-1 text-xs text-muted">{METRIC_HELP.buyerUtility}</p>

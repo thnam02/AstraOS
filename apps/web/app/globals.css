@@ -94,7 +94,7 @@ body {
 }
 
 html {
-  scroll-padding-top: 4.5rem;
+  scroll-padding-top: 4rem;
 }
 
 :focus-visible {
@@ -283,5 +283,65 @@ html {
   .table-dense td {
     padding-top: 0.4rem;
     padding-bottom: 0.4rem;
+  }
+
+  .table-dense thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--color-surface);
+  }
+
+  .btn-danger {
+    cursor: pointer;
+    border: 1px solid var(--color-danger);
+    background: var(--color-surface);
+    padding: 0.5rem 0.75rem;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--color-danger);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+  }
+
+  .btn-danger:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface-2);
+    border-radius: var(--radius-sm);
+    padding: 0.15rem 0.45rem;
+    font-size: var(--text-small);
+    color: var(--color-ink);
+  }
+
+  .page-shell {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 1480px;
+    padding-inline: 1.5rem;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    background: var(--color-ink);
+    color: var(--color-surface);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-control);
+  }
+
+  .skip-link:focus {
+    top: 0.75rem;
   }
 }

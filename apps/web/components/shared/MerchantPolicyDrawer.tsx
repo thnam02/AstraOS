@@ -36,14 +36,15 @@ function Toggle({
       <span className="text-sm text-ink">{label}</span>
       <button
         type="button"
+        role="switch"
+        aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-5 w-9 rounded-full border ${
+        className={`relative h-5 w-9 rounded-[var(--radius-control)] border ${
           checked ? "border-ink bg-ink" : "border-line bg-canvas"
         }`}
-        aria-pressed={checked}
       >
         <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface transition-transform ${
+          className={`absolute top-0.5 h-4 w-4 rounded-[var(--radius-control)] bg-surface transition-transform ${
             checked ? "left-4" : "left-0.5"
           }`}
         />
@@ -78,10 +79,10 @@ export function MerchantPolicyDrawer({
     if (!open) {
       return;
     }
-    setStatus("idle");
-    setError(null);
+    let cancelled = false;
     Promise.all([getMerchantPolicy(), getMerchantObjective()])
       .then(([data, currentObjective]) => {
+        if (cancelled) return;
         setPolicy(data);
         setObjective(currentObjective);
         setMargin(String(Math.round(data.minimum_margin_rate * 100)));
@@ -90,11 +91,20 @@ export function MerchantPolicyDrawer({
         setWarranty(data.warranty_upgrade_enabled);
         setBundles(data.bundle_enabled);
         setReturns(data.flexible_returns_enabled);
+        setStatus("idle");
+        setError(null);
       })
       .catch(() => {
+        if (cancelled) return;
         setError("Unable to load merchant rules.");
+        setStatus("error");
       });
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
+
+  const loading = open && !policy && !error;
 
   async function onObjective(mode: MerchantObjectiveMode) {
     setStatus("saving");
@@ -139,6 +149,11 @@ export function MerchantPolicyDrawer({
             title="Commercial boundaries"
             description="Guardrails define what is allowed. The commercial objective chooses among policy-safe Pareto offers."
           />
+          {loading && !policy ? (
+            <p className="text-sm text-muted" role="status">
+              Loading merchant policy…
+            </p>
+          ) : null}
           {objective ? (
             <div className="space-y-3 border border-line px-3 py-3">
               <div>
@@ -201,7 +216,7 @@ export function MerchantPolicyDrawer({
               max={99}
               value={margin}
               onChange={(event) => setMargin(event.target.value)}
-              className="w-full rounded-[6px] border border-line bg-canvas px-3 py-2 text-sm text-ink"
+              className="control w-full px-3 py-2 text-sm"
             />
           </label>
           <label className="block space-y-1.5">
@@ -212,7 +227,7 @@ export function MerchantPolicyDrawer({
               max={100}
               value={discount}
               onChange={(event) => setDiscount(event.target.value)}
-              className="w-full rounded-[6px] border border-line bg-canvas px-3 py-2 text-sm text-ink"
+              className="control w-full px-3 py-2 text-sm"
             />
           </label>
           <p className="eyebrow">Fulfilment & commercial options</p>
@@ -230,7 +245,7 @@ export function MerchantPolicyDrawer({
             <button
               type="button"
               onClick={onSave}
-              disabled={status === "saving"}
+              disabled={status === "saving" || loading}
               className="btn-primary w-full"
             >
               {status === "saving" ? "Saving…" : "Save rules"}

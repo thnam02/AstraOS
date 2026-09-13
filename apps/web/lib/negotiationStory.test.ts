@@ -58,24 +58,36 @@ function offer(partial: Partial<PublicScoredOffer> & { total: number }): PublicS
 function proposal(
   partial: Partial<MerchantProposal> & { version: number; total?: number },
 ): MerchantProposal {
+  const {
+    total,
+    offer: offerOverride,
+    offer_id: offerIdOverride,
+    proposal_type,
+    outcome,
+    reason_codes,
+    explanation,
+    next_allowed_actions,
+    version,
+    ...rest
+  } = partial;
   return {
-    proposal_id: `p${partial.version}`,
+    proposal_id: `p${version}`,
     negotiation_session_id: "s1",
-    version: partial.version,
-    proposal_type: partial.proposal_type ?? (partial.version === 1 ? "INITIAL" : "COUNTER"),
-    outcome: partial.outcome ?? (partial.version === 1 ? "INITIAL" : "COUNTEROFFER"),
-    offer_id: partial.offer ? "o1" : partial.offer_id ?? "o1",
+    version,
+    proposal_type: proposal_type ?? (version === 1 ? "INITIAL" : "COUNTER"),
+    outcome: outcome ?? (version === 1 ? "INITIAL" : "COUNTEROFFER"),
+    offer_id: offerOverride ? "o1" : offerIdOverride ?? "o1",
     offer:
-      partial.offer === null
+      offerOverride === null
         ? null
-        : (partial.offer ?? offer({ total: partial.total ?? 9240 })),
-    reason_codes: partial.reason_codes ?? [],
-    explanation: partial.explanation ?? [],
-    next_allowed_actions: partial.next_allowed_actions ?? ["ACCEPT", "REJECT", "COUNTER"],
+        : (offerOverride ?? offer({ total: total ?? 9240 })),
+    reason_codes: reason_codes ?? [],
+    explanation: explanation ?? [],
+    next_allowed_actions: next_allowed_actions ?? ["ACCEPT", "REJECT", "COUNTER"],
     compromise: null,
     expires_at: null,
     created_at: "2026-09-13T00:00:00Z",
-    ...partial,
+    ...rest,
   };
 }
 

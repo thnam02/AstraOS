@@ -25,12 +25,14 @@ import {
   headline,
   moneyDelta,
   qualitativePriorities,
+  returnsLabel,
   selectedStrategy,
   signedDelta,
   strongestBaseline,
   validResponses,
   warrantyLabel,
 } from "@/lib/arenaDisplay";
+import { formatUtilityShort } from "@/lib/format";
 import { formatAudCents } from "@/lib/money";
 import type {
   ArenaBenchmarkResponse,
@@ -174,11 +176,19 @@ export function ArenaWorkbench() {
 
   return (
     <div className="space-y-4">
+      <div className="border border-line bg-canvas px-4 py-3">
+        <p className="eyebrow">Controlled experiment</p>
+        <p className="mt-1 text-sm">
+          Same buyer · same catalogue · same inventory · same policy · same
+          buyer model. Only merchant strategy changes.
+        </p>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1">
           <button
             type="button"
-            className={`rounded-[6px] px-3 py-1.5 text-xs tracking-[0.06em] ${
+            className={`rounded-[var(--radius-control)] px-3 py-1.5 text-xs tracking-[0.06em] ${
               mode === "duel" ? "bg-ink text-surface" : "btn-ghost"
             }`}
             onClick={() => setMode("duel")}
@@ -187,7 +197,7 @@ export function ArenaWorkbench() {
           </button>
           <button
             type="button"
-            className={`rounded-[6px] px-3 py-1.5 text-xs tracking-[0.06em] ${
+            className={`rounded-[var(--radius-control)] px-3 py-1.5 text-xs tracking-[0.06em] ${
               mode === "benchmark" ? "bg-ink text-surface" : "btn-ghost"
             }`}
             onClick={() => setMode("benchmark")}
@@ -205,9 +215,8 @@ export function ArenaWorkbench() {
         <div className="space-y-4">
           <section className="panel space-y-3">
             <p className="text-sm text-muted">
-              Controlled experiment. Same buyer, catalogue, inventory, policy,
-              and buyer model. Only merchant strategy changes: Default → Discount
-              → Semantic Only → AstraOS.
+              Ablation order: Default → Always Discount → Semantic Only →
+              AstraOS. More strategies can include Cheapest Eligible.
             </p>
             <div className="flex flex-wrap items-end gap-3">
               <label className="text-xs text-muted">
@@ -316,13 +325,6 @@ export function ArenaWorkbench() {
 
           {duel ? (
             <div className="space-y-4">
-              <div className="border border-line bg-canvas px-4 py-3">
-                <p className="eyebrow">Controlled experiment</p>
-                <p className="mt-1 text-sm">
-                  Same buyer · same merchant · same rules. Only strategy differs.
-                </p>
-              </div>
-
               {summary ? (
                 <section className="panel">
                   <p className="eyebrow">Result</p>
@@ -332,13 +334,15 @@ export function ArenaWorkbench() {
                   {winner ? (
                     <dl className="mt-3 flex flex-wrap gap-6 text-sm">
                       <div>
-                        <dt className="text-muted">Buyer fit</dt>
+                        <dt className="text-muted">Buyer Utility</dt>
                         <dd className="font-mono text-2xl font-semibold tabular-nums">
-                          {winner.buyer_utility?.toFixed(2)}
+                          {winner.buyer_utility != null
+                            ? formatUtilityShort(winner.buyer_utility)
+                            : "—"}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-muted">Merchant contribution</dt>
+                        <dt className="text-muted">Contribution</dt>
                         <dd className="font-mono text-2xl font-semibold tabular-nums">
                           {formatAudCents(
                             winner.merchant_contribution_cents ?? 0,
@@ -501,43 +505,64 @@ function SemanticOfferDelta({ duel }: { duel: ArenaRunResponse }) {
   const astraos = findStrategy(duel, "ASTRAOS");
   if (!semantic || !astraos) return null;
   const sameProduct = semantic.sku === astraos.sku;
+  const diffs = commercialDifference(semantic, astraos);
+  const changed = diffs.filter((row) => row.changed);
+
   return (
     <section className="panel space-y-3">
-      <p className="eyebrow">What changed · Semantic Only vs AstraOS</p>
+      <p className="eyebrow">Semantic Only vs AstraOS</p>
+      <h2 className="text-lg font-semibold tracking-tight">
+        Commercial delta
+      </h2>
       <p className="text-xs text-muted">
-        Semantic search finds a product. AstraOS builds the commercial response.
-        {sameProduct ? " Same product; offer terms differ." : " Product also changed."}
+        Semantic Only improves product matching with standard terms. AstraOS
+        optimises the full offer vector.
+        {sameProduct
+          ? " Same product; commercial terms differ."
+          : " Product selection also differs."}
       </p>
-      <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-start">
+      <div className="grid gap-4 md:grid-cols-2">
         <OfferSnapshot title="Semantic Only" response={semantic} />
-        <p className="self-center text-center text-xs text-muted">↓</p>
-        <OfferSnapshot title="AstraOS" response={astraos} />
+        <OfferSnapshot title="AstraOS" response={astraos} highlight />
       </div>
-      <div>
-        <p className="eyebrow">Commercial difference</p>
-        <ul className="mt-2 space-y-1 text-sm">
-          {commercialDifference(semantic, astraos)
-            .filter((row) => row.changed)
-            .map((row) => (
-              <li key={row.label} className="flex justify-between gap-3">
-                <span className="text-muted">{row.label}</span>
-                <span>
-                  {row.from} → {row.to}
-                </span>
-              </li>
+      <div className="overflow-x-auto">
+        <table className="table-dense w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-line text-xs text-muted">
+              <th className="py-2 font-medium">Field</th>
+              <th className="py-2 font-medium">Semantic Only</th>
+              <th className="py-2 font-medium">AstraOS</th>
+              <th className="py-2 font-medium">Delta</th>
+            </tr>
+          </thead>
+          <tbody>
+            {diffs.map((row) => (
+              <tr
+                key={row.label}
+                className={`border-b border-line ${
+                  row.changed ? "bg-canvas" : ""
+                }`}
+              >
+                <th className="py-2 font-medium text-muted">{row.label}</th>
+                <td className="py-2">{row.from}</td>
+                <td className={`py-2 ${row.changed ? "font-medium" : ""}`}>
+                  {row.to}
+                </td>
+                <td className="py-2 font-mono text-xs tabular-nums">
+                  {row.changed
+                    ? row.delta ?? `${row.from} → ${row.to}`
+                    : "—"}
+                </td>
+              </tr>
             ))}
-        </ul>
-        <p className="mt-2 font-mono text-xs tabular-nums text-muted">
-          Buyer utility{" "}
-          {signedDelta((astraos.buyer_utility ?? 0) - (semantic.buyer_utility ?? 0))}
-          {" · "}
-          Contribution{" "}
-          {moneyDelta(
-            (astraos.merchant_contribution_cents ?? 0) -
-              (semantic.merchant_contribution_cents ?? 0),
-          )}
-        </p>
+          </tbody>
+        </table>
       </div>
+      {changed.length === 0 ? (
+        <p className="text-sm text-muted">
+          No commercial field differences in this run.
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -545,26 +570,85 @@ function SemanticOfferDelta({ duel }: { duel: ArenaRunResponse }) {
 function OfferSnapshot({
   title,
   response,
+  highlight = false,
 }: {
   title: string;
   response: NonNullable<ReturnType<typeof findStrategy>>;
+  highlight?: boolean;
 }) {
   return (
-    <div>
+    <div
+      className={`border px-3 py-3 ${
+        highlight ? "border-ink bg-surface" : "border-line bg-canvas"
+      }`}
+    >
       <p className="text-xs font-medium tracking-[0.06em]">{title}</p>
       <h3 className="mt-1 text-base font-semibold">
         {response.product_name ?? "No offer"}
       </h3>
-      <p className="font-mono text-sm tabular-nums">
-        {response.total_customer_price_cents != null
-          ? formatAudCents(response.total_customer_price_cents)
-          : "—"}
-      </p>
-      <ul className="mt-2 space-y-0.5 text-sm text-muted">
-        <li>{deliveryLabel(response.delivery, response.delivery_days)}</li>
-        <li>{warrantyLabel(response.warranty, response.warranty_months)}</li>
-        <li>{bundleLabel(response.bundle)}</li>
-      </ul>
+      {response.sku ? (
+        <p className="font-mono text-[11px] text-muted">{response.sku}</p>
+      ) : null}
+      <dl className="mt-2 space-y-1 text-sm">
+        {response.total_customer_price_cents != null ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Price</dt>
+            <dd className="font-mono tabular-nums">
+              {formatAudCents(response.total_customer_price_cents)}
+            </dd>
+          </div>
+        ) : null}
+        {response.delivery != null || response.delivery_days != null ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Delivery</dt>
+            <dd>{deliveryLabel(response.delivery, response.delivery_days)}</dd>
+          </div>
+        ) : null}
+        {response.warranty != null || response.warranty_months != null ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Warranty</dt>
+            <dd>
+              {warrantyLabel(response.warranty, response.warranty_months)}
+            </dd>
+          </div>
+        ) : null}
+        {response.bundle != null || response.offer_id ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Bundle</dt>
+            <dd>{bundleLabel(response.bundle)}</dd>
+          </div>
+        ) : null}
+        {response.returns != null ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Returns</dt>
+            <dd>{returnsLabel(response.returns)}</dd>
+          </div>
+        ) : null}
+        {response.buyer_utility != null ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Buyer Utility</dt>
+            <dd className="font-mono tabular-nums">
+              {formatUtilityShort(response.buyer_utility)}
+            </dd>
+          </div>
+        ) : null}
+        {response.merchant_contribution_cents != null ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Contribution</dt>
+            <dd className="font-mono tabular-nums">
+              {formatAudCents(response.merchant_contribution_cents)}
+            </dd>
+          </div>
+        ) : null}
+        {response.intervention_cost_cents != null ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Intervention</dt>
+            <dd className="font-mono tabular-nums">
+              {formatAudCents(response.intervention_cost_cents)}
+            </dd>
+          </div>
+        ) : null}
+      </dl>
     </div>
   );
 }

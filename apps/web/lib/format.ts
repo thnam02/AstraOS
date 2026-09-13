@@ -13,6 +13,17 @@ export function formatUtility(value: number): string {
   return `${value.toFixed(2)} utility`;
 }
 
+/** Compact utility for dense table cells (no " utility" suffix). */
+export function formatUtilityShort(value: number): string {
+  return value.toFixed(2);
+}
+
+/** Sentence-case enum labels: "NO_POLICY_SAFE" → "No policy safe". */
+export function humanizeEnum(value: string): string {
+  const spaced = value.replaceAll("_", " ").toLowerCase();
+  return spaced.replace(/^\w/, (char) => char.toUpperCase());
+}
+
 export function formatHours(value: number): string {
   return `${Number.isInteger(value) ? value : value.toFixed(0)}h`;
 }

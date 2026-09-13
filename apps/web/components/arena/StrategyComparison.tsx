@@ -11,8 +11,10 @@ import type { ArenaRunResponse } from "@/types";
 export function StrategyComparison({ duel }: { duel: ArenaRunResponse }) {
   const winner = selectedStrategy(duel);
   const semantic = findStrategy(duel, "SEMANTIC_ONLY");
+  const comparingSemantic =
+    winner?.strategy_name === "ASTRAOS" && Boolean(semantic?.offer_id);
   const baseline =
-    winner?.strategy_name === "ASTRAOS" && semantic && semantic.offer_id
+    comparingSemantic && semantic
       ? semantic
       : strongestBaseline(duel);
   if (!winner || !baseline) return null;
@@ -20,10 +22,20 @@ export function StrategyComparison({ duel }: { duel: ArenaRunResponse }) {
 
   return (
     <section className="panel space-y-3">
-      <p className="eyebrow">Merchant result</p>
+      <p className="eyebrow">
+        {comparingSemantic
+          ? "Semantic Only vs AstraOS"
+          : "Merchant result"}
+      </p>
       <h2 className="text-lg font-semibold tracking-tight">
         {strategyTitle(baseline.strategy_name)} · {strategyTitle(winner.strategy_name)}
       </h2>
+      {comparingSemantic ? (
+        <p className="text-xs text-muted">
+          Same controlled experiment. Semantic Only improves product matching;
+          AstraOS optimises the full commercial offer.
+        </p>
+      ) : null}
       <div className="overflow-x-auto">
         <table className="table-dense w-full text-left text-sm">
           <thead>
@@ -38,13 +50,18 @@ export function StrategyComparison({ duel }: { duel: ArenaRunResponse }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.label} className="border-b border-line">
-                <th className="py-2 font-medium text-muted">{row.label}</th>
-                <td className="py-2">{row.left}</td>
-                <td className="py-2 font-medium">{row.right}</td>
-              </tr>
-            ))}
+            {rows.map((row) => {
+              const changed = row.left !== row.right;
+              return (
+                <tr key={row.label} className="border-b border-line">
+                  <th className="py-2 font-medium text-muted">{row.label}</th>
+                  <td className="py-2">{row.left}</td>
+                  <td className={`py-2 ${changed ? "font-medium" : ""}`}>
+                    {row.right}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

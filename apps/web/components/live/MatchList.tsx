@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Drawer } from "@/components/shared/Drawer";
 import { EvidenceBadge } from "@/components/shared/EvidenceBadge";
@@ -33,25 +33,30 @@ export function MatchList({
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [handledInspect, setHandledInspect] = useState(0);
+  const [handledCompare, setHandledCompare] = useState(0);
 
-  useEffect(() => {
-    if (!inspectNonce) return;
+  if (inspectNonce > handledInspect) {
     const top = matches[0];
-    if (!top) return;
-    setExpanded(top.variant_id);
-    setInspect(top);
-  }, [inspectNonce, matches]);
+    setHandledInspect(inspectNonce);
+    if (top) {
+      setExpanded(top.variant_id);
+      setInspect(top);
+    }
+  }
 
-  useEffect(() => {
-    if (!compareNonce) return;
+  if (compareNonce > handledCompare) {
     const ids = matches.slice(0, 2).map((item) => item.variant_id);
-    if (ids.length < 2) return;
-    setCompareIds(ids);
-    setCompareOpen(true);
-  }, [compareNonce, matches]);
+    setHandledCompare(compareNonce);
+    if (ids.length >= 2) {
+      setCompareIds(ids);
+      setCompareOpen(true);
+    }
+  }
 
   const compareSet = matches.filter((item) => compareIds.includes(item.variant_id));
-  const visible = showAll ? matches : matches.slice(0, 3);
+  const others = matches.slice(1);
+  const visible = showAll ? others : others.slice(0, 3);
 
   function toggleCompare(id: string) {
     setCompareIds((current) => {
@@ -63,6 +68,21 @@ export function MatchList({
 
   if (!matches.length) {
     return <p className="text-sm text-muted">No eligible products to rank.</p>;
+  }
+
+  if (!others.length) {
+    return (
+      <div className="space-y-1">
+        <p className="text-sm text-muted">No other ranked products.</p>
+        <EvidenceDrawer match={inspect} onClose={() => setInspect(null)} />
+        <CompareDrawer
+          open={compareOpen}
+          matches={compareSet}
+          peers={matches}
+          onClose={() => setCompareOpen(false)}
+        />
+      </div>
+    );
   }
 
   return (
@@ -94,7 +114,7 @@ export function MatchList({
         );
       })}
 
-      {matches.length > 3 ? (
+      {others.length > 3 ? (
         <button
           type="button"
           className="btn-quiet mt-2"
@@ -102,8 +122,8 @@ export function MatchList({
           aria-expanded={showAll}
         >
           {showAll
-            ? "Show top 3 products"
-            : `View all ${matches.length} products`}
+            ? "Show top alternatives"
+            : `View all ${others.length} alternatives`}
         </button>
       ) : null}
       <div className="flex items-center justify-between gap-3">

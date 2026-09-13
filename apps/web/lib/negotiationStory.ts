@@ -1,4 +1,5 @@
 import { constraintLabel } from "@/lib/intent";
+import { formatUtilityShort } from "@/lib/format";
 import { formatAudCents } from "@/lib/money";
 import type {
   HardConstraint,
@@ -718,14 +719,14 @@ export function commercialChanges(
     current.utility != null &&
     previous.utility !== current.utility
   ) {
-    const from = previous.utility.toFixed(2);
-    const to = current.utility.toFixed(2);
-    const delta = Number(to) - Number(from);
+    const from = formatUtilityShort(previous.utility);
+    const to = formatUtilityShort(current.utility);
+    const delta = current.utility - previous.utility;
     rows.push({
       label: "Buyer utility",
       from,
       to,
-      delta: `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}`,
+      delta: `${delta >= 0 ? "+" : ""}${formatUtilityShort(delta)}`,
     });
   }
   if (

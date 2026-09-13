@@ -209,8 +209,11 @@ describe("winner and comparison", () => {
     const winner = hero.strategies[3].response;
     assert.ok(baseline);
     const rows = comparisonRows(baseline, winner);
-    assert.equal(rows[0].left, "0.77");
-    assert.equal(rows[0].right, "0.87");
+    const utility = rows.find((row) => row.label === "Buyer Utility");
+    assert.equal(utility?.left, "0.77");
+    assert.equal(utility?.right, "0.87");
+    assert.ok(rows.some((row) => row.label === "Returns"));
+    assert.ok(rows.some((row) => row.label === "Policy Status"));
     const summary = tradeOffSummary(winner, baseline);
     assert.equal(summary.fitDelta, "+0.10");
     assert.match(summary.contributionDelta, /\+A\$58\.87|\+\$58\.87/);
@@ -278,11 +281,18 @@ describe("strategy titles", () => {
 });
 
 describe("semantic vs astraos delta", () => {
-  it("lists only changed commercial fields", () => {
+  it("lists commercial fields with money and utility deltas", () => {
     const left = hero.strategies[0].response;
     const right = hero.strategies[3].response;
     const rows = commercialDifference(left, right);
     assert.ok(rows.some((row) => row.label === "Delivery" && row.changed));
     assert.ok(rows.some((row) => row.label === "Warranty" && row.changed));
+    assert.ok(rows.some((row) => row.label === "Returns"));
+    const price = rows.find((row) => row.label === "Price");
+    assert.ok(price?.changed);
+    assert.ok(price?.delta);
+    const utility = rows.find((row) => row.label === "Buyer Utility");
+    assert.ok(utility?.changed);
+    assert.equal(utility?.delta, "+0.31");
   });
 });

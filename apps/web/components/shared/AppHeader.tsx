@@ -14,6 +14,9 @@ const NAV_ITEMS = [
   { href: "/learn", label: "LEARN" },
 ] as const;
 
+const FOCUS_RING =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+
 export function AppHeader() {
   const pathname = usePathname();
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -21,10 +24,10 @@ export function AppHeader() {
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-line bg-surface">
-        <div className="mx-auto flex h-14 w-full max-w-[1480px] items-center gap-6 px-6">
+        <div className="page-shell flex h-12 items-center gap-6">
           <Link
             href="/"
-            className="text-sm font-semibold tracking-[0.12em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            className={cn("text-sm font-semibold tracking-[0.12em]", FOCUS_RING)}
           >
             ASTRAOS
           </Link>
@@ -40,7 +43,8 @@ export function AppHeader() {
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "px-2.5 py-1 text-xs font-semibold tracking-[0.08em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+                    "px-2.5 py-1 text-xs font-semibold tracking-[0.08em]",
+                    FOCUS_RING,
                     isActive
                       ? "bg-ink text-surface"
                       : "text-muted hover:text-ink",
@@ -57,7 +61,8 @@ export function AppHeader() {
               href="/catalogue"
               aria-label="Merchant Data"
               className={cn(
-                "text-[11px] tracking-[0.04em] text-muted hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+                "text-[11px] tracking-[0.04em] text-muted hover:text-ink",
+                FOCUS_RING,
                 pathname.startsWith("/catalogue") && "text-ink",
               )}
             >
@@ -67,7 +72,10 @@ export function AppHeader() {
               type="button"
               onClick={() => setRulesOpen(true)}
               aria-label="Merchant Rules"
-              className="cursor-pointer text-[11px] tracking-[0.04em] text-muted hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              className={cn(
+                "cursor-pointer text-[11px] tracking-[0.04em] text-muted hover:text-ink",
+                FOCUS_RING,
+              )}
             >
               Rules
             </button>

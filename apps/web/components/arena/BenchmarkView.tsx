@@ -12,6 +12,7 @@ import {
 } from "recharts";
 
 import { strategyTitle } from "@/lib/arenaDisplay";
+import { formatUtilityShort } from "@/lib/format";
 import { formatAudCents } from "@/lib/money";
 import type { ArenaBenchmarkResponse } from "@/types";
 
@@ -55,32 +56,32 @@ export function BenchmarkView({
         </p>
         <ResponsiveContainer width="100%" height="88%">
           <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
-            <CartesianGrid stroke="#dddad2" />
+            <CartesianGrid stroke="var(--color-chart-grid)" />
             <XAxis
               type="number"
               dataKey="x"
               name="Selection"
               unit="%"
-              tick={{ fontSize: 11, fill: "#5c5a54" }}
+              tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
               label={{
                 value: "Simulated selection rate (%)",
                 position: "insideBottom",
                 offset: -2,
                 fontSize: 11,
-                fill: "#5c5a54",
+                fill: "var(--color-chart-axis)",
               }}
             />
             <YAxis
               type="number"
               dataKey="y"
               name="Contribution"
-              tick={{ fontSize: 11, fill: "#5c5a54" }}
+              tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
               label={{
                 value: "Contribution / opportunity (A$)",
                 angle: -90,
                 position: "insideLeft",
                 fontSize: 11,
-                fill: "#5c5a54",
+                fill: "var(--color-chart-axis)",
               }}
             />
             <Tooltip
@@ -98,7 +99,7 @@ export function BenchmarkView({
                 );
               }}
             />
-            <Scatter data={chart} fill="#141413" />
+            <Scatter data={chart} fill="var(--color-chart-selected)" />
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -133,7 +134,7 @@ export function BenchmarkView({
                 <td>
                   {formatAudCents(row.contribution_per_opportunity_cents)}
                 </td>
-                <td>{row.avg_buyer_utility?.toFixed(2) ?? "—"}</td>
+                <td>{row.avg_buyer_utility != null ? formatUtilityShort(row.avg_buyer_utility) : "—"}</td>
                 <td>{formatAudCents(row.avg_intervention_cost_cents ?? 0)}</td>
                 <td>{pct(row.no_offer_rate)}</td>
                 <td>{pct(row.policy_violation_rate)}</td>

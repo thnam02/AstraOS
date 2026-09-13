@@ -3,6 +3,7 @@
 import { Disclosure } from "@/components/shared/Disclosure";
 import { StatStrip } from "@/components/shared/StatStrip";
 import { counterfactualStory } from "@/lib/decisionNarrative";
+import { formatUtility, formatUtilityShort, humanizeEnum } from "@/lib/format";
 import { formatAudCents } from "@/lib/money";
 import type {
   BuyerProfile,
@@ -79,7 +80,9 @@ export function OptimisationPanel({
 
       {optimisation.failure && !rec ? (
         <div className="border border-danger px-4 py-3 text-sm">
-          <p className="tracking-[0.12em] text-danger">NO POLICY-SAFE OFFER</p>
+          <p className="font-medium text-danger">
+            {humanizeEnum(optimisation.failure.code)}
+          </p>
           <p className="mt-2">{optimisation.failure.message}</p>
           {optimisation.failure.requested_max_price_cents != null ? (
             <p className="mt-2 text-muted">
@@ -137,7 +140,7 @@ export function OptimisationPanel({
       </div>
 
       {showRecommendation && rec ? (
-        <div className="border border-line px-4 py-4">
+        <div>
           <RecommendedOffer
             offer={rec}
             explanation={optimisation.explanation}
@@ -168,10 +171,12 @@ export function OptimisationPanel({
               {optimisation.counterfactuals.map((row) => (
                 <tr key={`${row.lever}-${row.label}-${row.offer_id}`} className="border-b border-line">
                   <td className="py-2">{row.label}</td>
-                  <td className="py-2 tabular-nums">{row.buyer_utility.toFixed(3)}</td>
+                  <td className="py-2 tabular-nums">
+                    {formatUtilityShort(row.buyer_utility)}
+                  </td>
                   <td className="py-2 tabular-nums">
                     {row.delta_utility >= 0 ? "+" : ""}
-                    {row.delta_utility.toFixed(3)}
+                    {formatUtilityShort(row.delta_utility)}
                   </td>
                   <td className="py-2 tabular-nums">
                     {formatAudCents(row.contribution_margin_cents)}
@@ -193,12 +198,10 @@ function ObjectiveStrip({
 }: {
   objective: MerchantObjectiveSnapshot;
 }) {
-  const label =
-    objective.mode.charAt(0) + objective.mode.slice(1).toLowerCase();
   return (
-    <div className="border border-line px-4 py-3">
+    <div>
       <p className="eyebrow">Merchant objective</p>
-      <p className="mt-1 text-sm font-medium">{label}</p>
+      <p className="mt-1 text-sm font-medium">{humanizeEnum(objective.mode)}</p>
       <dl className="mt-2 grid grid-cols-2 gap-3 text-sm">
         <div>
           <dt className="text-xs text-muted">Buyer fit</dt>
@@ -228,7 +231,7 @@ function ObjectiveComparisonTable({
 }) {
   const distinct = new Set(rows.map((row) => row.offer_id).filter(Boolean));
   return (
-    <div className="border border-line px-4 py-3">
+    <div>
       <p className="eyebrow">Same frontier, different strategy</p>
       <p className="mt-1 text-xs text-muted">
         {distinct.size > 1
@@ -247,10 +250,12 @@ function ObjectiveComparisonTable({
         <tbody>
           {rows.map((row) => (
             <tr key={row.mode} className="border-b border-line">
-              <td className="py-2">{row.mode}</td>
+              <td className="py-2">{humanizeEnum(row.mode)}</td>
               <td className="py-2">{row.product_name ?? "—"}</td>
               <td className="py-2 tabular-nums">
-                {row.buyer_utility != null ? row.buyer_utility.toFixed(2) : "—"}
+                {row.buyer_utility != null
+                  ? formatUtilityShort(row.buyer_utility)
+                  : "—"}
               </td>
               <td className="py-2 tabular-nums">
                 {row.contribution_margin_cents != null
@@ -273,21 +278,21 @@ function CounterfactualStory({
   const story = counterfactualStory(rows);
   if (!story) return null;
   return (
-    <div className="bg-canvas px-4 py-3 text-sm">
+    <div className="text-sm">
       <p className="eyebrow">What should the merchant change?</p>
       <div className="mt-2 grid gap-3 md:grid-cols-3">
         <div>
           <p className="text-xs text-muted">Baseline</p>
-          <p>Fit {story.baseline.buyer_utility.toFixed(2)}</p>
+          <p>{formatUtility(story.baseline.buyer_utility)}</p>
           <p>Contribution {formatAudCents(story.baseline.contribution_margin_cents)}</p>
         </div>
         <div>
           <p className="text-xs text-muted">Discount</p>
           <p>
-            Fit {story.discount.buyer_utility.toFixed(2)}{" "}
+            {formatUtility(story.discount.buyer_utility)}{" "}
             <span className="text-muted">
               ({story.discount.delta_utility >= 0 ? "+" : ""}
-              {story.discount.delta_utility.toFixed(2)})
+              {formatUtilityShort(story.discount.delta_utility)})
             </span>
           </p>
           <p>
@@ -297,10 +302,10 @@ function CounterfactualStory({
         <div>
           <p className="text-xs text-muted">Same-day</p>
           <p>
-            Fit {story.delivery.buyer_utility.toFixed(2)}{" "}
+            {formatUtility(story.delivery.buyer_utility)}{" "}
             <span className="text-muted">
               ({story.delivery.delta_utility >= 0 ? "+" : ""}
-              {story.delivery.delta_utility.toFixed(2)})
+              {formatUtilityShort(story.delivery.delta_utility)})
             </span>
           </p>
           <p>

@@ -90,6 +90,7 @@ export function ConstructStage({
       <StageSection
         title="Offer explorer"
         description="Feasible configurations only. No offer is recommended here."
+        boxed={false}
       >
         <OfferExplorer
           construction={construction}

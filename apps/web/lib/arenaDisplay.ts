@@ -1,3 +1,4 @@
+import { formatUtilityShort } from "@/lib/format";
 import { formatAudCents } from "./money";
 import type {
   ArenaRunResponse,
@@ -262,7 +263,27 @@ export function componentDeltaLines(
 export function commercialDifference(
   left: ArenaStrategyResponse,
   right: ArenaStrategyResponse,
-): { label: string; from: string; to: string; changed: boolean }[] {
+): { label: string; from: string; to: string; changed: boolean; delta?: string }[] {
+  const priceDeltaCents =
+    left.total_customer_price_cents != null &&
+    right.total_customer_price_cents != null
+      ? right.total_customer_price_cents - left.total_customer_price_cents
+      : null;
+  const utilityDelta =
+    left.buyer_utility != null && right.buyer_utility != null
+      ? right.buyer_utility - left.buyer_utility
+      : null;
+  const contributionDeltaCents =
+    left.merchant_contribution_cents != null &&
+    right.merchant_contribution_cents != null
+      ? right.merchant_contribution_cents - left.merchant_contribution_cents
+      : null;
+  const interventionDeltaCents =
+    left.intervention_cost_cents != null &&
+    right.intervention_cost_cents != null
+      ? right.intervention_cost_cents - left.intervention_cost_cents
+      : null;
+
   return [
     {
       label: "Product",
@@ -282,6 +303,7 @@ export function commercialDifference(
           : "—",
       changed:
         left.total_customer_price_cents !== right.total_customer_price_cents,
+      delta: priceDeltaCents != null ? moneyDelta(priceDeltaCents) : undefined,
     },
     {
       label: "Delivery",
@@ -300,6 +322,58 @@ export function commercialDifference(
       from: bundleLabel(left.bundle),
       to: bundleLabel(right.bundle),
       changed: (left.bundle ?? "NONE") !== (right.bundle ?? "NONE"),
+    },
+    {
+      label: "Returns",
+      from: returnsLabel(left.returns),
+      to: returnsLabel(right.returns),
+      changed: (left.returns ?? "") !== (right.returns ?? ""),
+    },
+    {
+      label: "Buyer Utility",
+      from:
+        left.buyer_utility != null
+          ? formatUtilityShort(left.buyer_utility)
+          : "—",
+      to:
+        right.buyer_utility != null
+          ? formatUtilityShort(right.buyer_utility)
+          : "—",
+      changed: left.buyer_utility !== right.buyer_utility,
+      delta: utilityDelta != null ? signedDelta(utilityDelta) : undefined,
+    },
+    {
+      label: "Contribution",
+      from:
+        left.merchant_contribution_cents != null
+          ? formatAudCents(left.merchant_contribution_cents)
+          : "—",
+      to:
+        right.merchant_contribution_cents != null
+          ? formatAudCents(right.merchant_contribution_cents)
+          : "—",
+      changed:
+        left.merchant_contribution_cents !== right.merchant_contribution_cents,
+      delta:
+        contributionDeltaCents != null
+          ? moneyDelta(contributionDeltaCents)
+          : undefined,
+    },
+    {
+      label: "Intervention",
+      from:
+        left.intervention_cost_cents != null
+          ? formatAudCents(left.intervention_cost_cents)
+          : "—",
+      to:
+        right.intervention_cost_cents != null
+          ? formatAudCents(right.intervention_cost_cents)
+          : "—",
+      changed: left.intervention_cost_cents !== right.intervention_cost_cents,
+      delta:
+        interventionDeltaCents != null
+          ? moneyDelta(interventionDeltaCents)
+          : undefined,
     },
   ];
 }
@@ -390,12 +464,12 @@ export function comparisonRows(
 ) {
   return [
     {
-      label: "Buyer fit",
-      left: left.buyer_utility?.toFixed(2) ?? "—",
-      right: right.buyer_utility?.toFixed(2) ?? "—",
+      label: "Product",
+      left: left.product_name ?? "—",
+      right: right.product_name ?? "—",
     },
     {
-      label: "Customer price",
+      label: "Price",
       left:
         left.total_customer_price_cents != null
           ? formatAudCents(left.total_customer_price_cents)
@@ -421,7 +495,23 @@ export function comparisonRows(
       right: bundleLabel(right.bundle),
     },
     {
-      label: "Merchant contribution",
+      label: "Returns",
+      left: returnsLabel(left.returns),
+      right: returnsLabel(right.returns),
+    },
+    {
+      label: "Buyer Utility",
+      left:
+        left.buyer_utility != null
+          ? formatUtilityShort(left.buyer_utility)
+          : "—",
+      right:
+        right.buyer_utility != null
+          ? formatUtilityShort(right.buyer_utility)
+          : "—",
+    },
+    {
+      label: "Contribution",
       left:
         left.merchant_contribution_cents != null
           ? formatAudCents(left.merchant_contribution_cents)
@@ -432,7 +522,7 @@ export function comparisonRows(
           : "—",
     },
     {
-      label: "Intervention cost",
+      label: "Intervention",
       left:
         left.intervention_cost_cents != null
           ? formatAudCents(left.intervention_cost_cents)
@@ -441,6 +531,11 @@ export function comparisonRows(
         right.intervention_cost_cents != null
           ? formatAudCents(right.intervention_cost_cents)
           : "—",
+    },
+    {
+      label: "Policy Status",
+      left: isSelectable(left) ? "Policy safe" : "No safe offer",
+      right: isSelectable(right) ? "Policy safe" : "No safe offer",
     },
   ];
 }

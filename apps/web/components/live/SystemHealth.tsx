@@ -56,13 +56,13 @@ export function SystemHealth() {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={label}
-        className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-[6px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-[var(--radius-control)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
       >
         <span className={cn("h-1.5 w-1.5 rounded-full", tone)} aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-72 space-y-3 rounded-[6px] border-line p-3 shadow-none"
+        className="w-72 space-y-3 rounded-[var(--radius-control)] border-line p-3 shadow-none"
       >
         <div>
           <p className="eyebrow mb-2">System status</p>

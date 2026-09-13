@@ -22,6 +22,8 @@ import type {
   PublicOffer,
 } from "@/types";
 
+const DEFAULT_STATUS = "FEASIBLE";
+
 export function OfferExplorer({
   construction,
   heroProduct,
@@ -35,7 +37,7 @@ export function OfferExplorer({
   pareto?: number;
   explorerOnly?: boolean;
 }) {
-  const [status, setStatus] = useState("FEASIBLE");
+  const [status, setStatus] = useState(DEFAULT_STATUS);
   const [productId, setProductId] = useState("");
   const [delivery, setDelivery] = useState("");
   const [warranty, setWarranty] = useState("");
@@ -79,6 +81,17 @@ export function OfferExplorer({
     }
   }
 
+  function clearFilters() {
+    setStatus(DEFAULT_STATUS);
+    setProductId("");
+    setDelivery("");
+    setWarranty("");
+    setBundle("");
+    setReturns("");
+    setMaxPrice("");
+    setRun(null);
+  }
+
   const products = useMemo(() => {
     const seen = new Map<string, string>();
     for (const item of construction.offers) {
@@ -104,9 +117,68 @@ export function OfferExplorer({
   );
   const featured = heroProduct ?? products[0]?.[1] ?? "Matched product";
 
+  const viewProductCount = useMemo(() => {
+    const ids = new Set(rows.map((offer) => offer.product.product_id));
+    return ids.size;
+  }, [rows]);
+
+  const selectedProductName = productId
+    ? products.find(([id]) => id === productId)?.[1]
+    : undefined;
+
+  const activeFilterChips: string[] = [];
+  activeFilterChips.push(
+    status === "ALL"
+      ? "Status: all"
+      : status === "REJECTED"
+        ? "Status: rejected"
+        : "Status: feasible",
+  );
+  if (selectedProductName) {
+    activeFilterChips.push(selectedProductName);
+  }
+  if (delivery) {
+    activeFilterChips.push(deliveryLabel(delivery));
+  }
+  if (warranty) {
+    activeFilterChips.push(warrantyLabel(warranty));
+  }
+  if (bundle) {
+    activeFilterChips.push(bundleLabel(bundle));
+  }
+  if (returns) {
+    activeFilterChips.push(returnsLabel(returns));
+  }
+  if (maxPrice.trim()) {
+    activeFilterChips.push(`Max A$${maxPrice.trim()}`);
+  }
+
   return (
     <section className="space-y-4">
-      {explorerOnly ? null : (
+      {explorerOnly ? (
+        <div className="space-y-2 text-sm">
+          <p>
+            Full offer space: {story.products} products ·{" "}
+            {story.generated.toLocaleString()} offers
+          </p>
+          <p>
+            Current view: {viewProductCount} products · {rows.length} offers
+            {run != null
+              ? ` · ${run.total_offers.toLocaleString()} matching filter`
+              : null}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilterChips.map((chip) => (
+              <span key={chip} className="filter-chip">
+                {chip}
+              </span>
+            ))}
+            <button type="button" onClick={clearFilters} className="btn-ghost">
+              Clear filters
+            </button>
+          </div>
+        </div>
+      ) : (
         <>
           <div>
             <p className="eyebrow">Construct</p>
@@ -169,7 +241,7 @@ export function OfferExplorer({
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
-            className="border border-line bg-surface px-2 py-1"
+            className="control px-2 py-1"
           >
             <option value="FEASIBLE">Feasible</option>
             <option value="REJECTED">Rejected</option>
@@ -181,7 +253,7 @@ export function OfferExplorer({
           <select
             value={productId}
             onChange={(event) => setProductId(event.target.value)}
-            className="border border-line bg-surface px-2 py-1"
+            className="control px-2 py-1"
           >
             <option value="">All</option>
             {products.map(([id, name]) => (
@@ -199,7 +271,7 @@ export function OfferExplorer({
             placeholder={
               priceCeiling != null ? centsToPlainDollars(priceCeiling) : "Max"
             }
-            className="w-20 border border-line bg-surface px-2 py-1"
+            className="control w-20 px-2 py-1"
           />
         </label>
         <label className="space-y-1">
@@ -207,7 +279,7 @@ export function OfferExplorer({
           <select
             value={delivery}
             onChange={(event) => setDelivery(event.target.value)}
-            className="border border-line bg-surface px-2 py-1"
+            className="control px-2 py-1"
           >
             <option value="">All</option>
             {deliveryOptions.map((code) => (
@@ -222,7 +294,7 @@ export function OfferExplorer({
           <select
             value={warranty}
             onChange={(event) => setWarranty(event.target.value)}
-            className="border border-line bg-surface px-2 py-1"
+            className="control px-2 py-1"
           >
             <option value="">All</option>
             {warrantyOptions.map((code) => (
@@ -237,7 +309,7 @@ export function OfferExplorer({
           <select
             value={bundle}
             onChange={(event) => setBundle(event.target.value)}
-            className="border border-line bg-surface px-2 py-1"
+            className="control px-2 py-1"
           >
             <option value="">All</option>
             {bundleOptions.map((code) => (
@@ -252,7 +324,7 @@ export function OfferExplorer({
           <select
             value={returns}
             onChange={(event) => setReturns(event.target.value)}
-            className="border border-line bg-surface px-2 py-1"
+            className="control px-2 py-1"
           >
             <option value="">All</option>
             {returnsOptions.map((code) => (
@@ -274,7 +346,7 @@ export function OfferExplorer({
 
       <div className="overflow-x-auto">
         <table className="table-dense w-full min-w-[720px] text-left text-xs">
-          <thead>
+          <thead className="sticky top-0 z-[1] bg-surface">
             <tr className="border-b border-line text-[11px] tracking-[0.08em] text-muted">
               <th className="py-2 font-medium">Product</th>
               <th className="py-2 font-medium">Product price</th>
@@ -282,13 +354,14 @@ export function OfferExplorer({
               <th className="py-2 font-medium">Warranty</th>
               <th className="py-2 font-medium">Bundle</th>
               <th className="py-2 font-medium">Returns</th>
-              <th className="py-2 font-medium">Total</th>
-              <th className="py-2 font-medium">Intervention</th>
+              <th className="py-2 font-medium">Customer total</th>
+              <th className="py-2 font-medium">Merchant intervention</th>
               <th className="py-2 font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((offer) => (
+            {rows.length ? (
+              rows.map((offer) => (
               <tr
                 key={offer.offer_id}
                 className="cursor-pointer border-b border-line hover:bg-canvas"
@@ -319,7 +392,14 @@ export function OfferExplorer({
                 </td>
                 <td className="py-2">{feasibilityLabel(offer.feasibility_status)}</td>
               </tr>
-            ))}
+              ))
+            ) : (
+              <tr>
+                <td colSpan={9} className="py-6 text-sm text-muted">
+                  No offers match the current filters.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

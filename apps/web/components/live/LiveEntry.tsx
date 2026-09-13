@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SCENARIOS } from "@/lib/decisionNarrative";
-import { HERO_INTENT } from "@/lib/intent";
 import { cn } from "@/lib/utils";
 import type { BuyerProfile } from "@/types";
 
@@ -97,7 +96,7 @@ export function LiveEntry({
                 onClick={() => onScenario(item.intent, item.profile)}
                 className={cn(
                   "inline-flex cursor-pointer items-center gap-2 border px-3 py-2 text-sm motion-safe:transition-colors",
-                  "rounded-[6px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+                  "rounded-[var(--radius-control)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
                   active
                     ? "border-ink bg-ink text-surface"
                     : "border-line bg-surface text-ink hover:border-ink",
@@ -114,7 +113,7 @@ export function LiveEntry({
             onClick={onCustom}
             className={cn(
               "inline-flex cursor-pointer items-center gap-2 border px-3 py-2 text-sm motion-safe:transition-colors",
-              "rounded-[6px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+              "rounded-[var(--radius-control)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
               selected === "custom"
                 ? "border-ink bg-ink text-surface"
                 : "border-line bg-surface text-ink hover:border-ink",
@@ -146,7 +145,7 @@ export function LiveEntry({
               value={text}
               onChange={(event) => onText(event.target.value)}
               rows={5}
-              className="min-h-[8rem] resize-y rounded-[6px] border-line bg-canvas text-[15px] leading-6 shadow-none"
+              className="min-h-[8rem] resize-y rounded-[var(--radius-control)] border-line bg-canvas text-[15px] leading-6 shadow-none"
             />
           </label>
           <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -163,7 +162,7 @@ export function LiveEntry({
                 <SelectTrigger
                   size="sm"
                   aria-labelledby="parser-label"
-                  className="rounded-[6px] border-line bg-surface shadow-none"
+                  className="rounded-[var(--radius-control)] border-line bg-surface shadow-none"
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -177,7 +176,7 @@ export function LiveEntry({
               type="submit"
               size="lg"
               disabled={!canRun}
-              className="h-10 rounded-[6px] px-5"
+              className="h-10 rounded-[var(--radius-control)] px-5"
             >
               Analyse request
               <ArrowRight size={16} weight="bold" aria-hidden />

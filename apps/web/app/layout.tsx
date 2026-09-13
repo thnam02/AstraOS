@@ -32,8 +32,11 @@ export default function RootLayout({
         className={`${inter.className} ${jetbrains.variable} min-h-screen bg-canvas text-ink antialiased`}
       >
         <TooltipProvider>
+          <a href="#main-content" className="skip-link">
+            Skip to content
+          </a>
           <AppHeader />
-          {children}
+          <div id="main-content">{children}</div>
         </TooltipProvider>
       </body>
     </html>

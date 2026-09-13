@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Drawer } from "@/components/shared/Drawer";
 import { EvidenceBadge } from "@/components/shared/EvidenceBadge";
 import { conciseOfferReasons, commercialLevers, offerVsProductCopy } from "@/lib/decisionNarrative";
+import { formatUtilityShort, humanizeEnum } from "@/lib/format";
 import { sourceBadge } from "@/lib/matchDisplay";
 import { formatAudCents } from "@/lib/money";
 import type {
@@ -65,8 +66,7 @@ export function RecommendedOffer({
             className="mt-2 text-[11px] text-muted"
             title="Selection from Pareto-efficient offers using the merchant's configured commercial objective."
           >
-            Selected under {objective.mode.charAt(0)}
-            {objective.mode.slice(1).toLowerCase()} objective
+            Selected under {humanizeEnum(objective.mode)} objective
             {selection
               ? ` · score ${selection.score.toFixed(3)}`
               : ""}
@@ -98,7 +98,7 @@ export function RecommendedOffer({
             Simulated buyer utility
           </dt>
           <dd className="font-mono text-3xl font-semibold tabular-nums">
-            {offer.buyer_utility.toFixed(2)}
+            {formatUtilityShort(offer.buyer_utility)}
           </dd>
           <p className="text-[11px] text-muted">Cold-start score — not purchase probability.</p>
         </div>

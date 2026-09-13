@@ -30,7 +30,7 @@ export function AstraStatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[6px] border px-1.5 py-0.5 text-[11px] font-medium",
+        "inline-flex items-center gap-1.5 rounded-[var(--radius-control)] border px-1.5 py-0.5 text-[11px] font-medium",
         TONE[tone],
       )}
     >

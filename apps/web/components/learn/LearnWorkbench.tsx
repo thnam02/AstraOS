@@ -14,6 +14,8 @@ import {
 import {
   AstraCallout,
   AstraDataTable,
+  AstraErrorState,
+  AstraLoadingState,
   AstraSectionHeader,
   AstraStatusBadge,
   type AstraTone,
@@ -25,6 +27,7 @@ import {
 } from "@/lib/api";
 import { LEARN_STATUS, LEARN_STORY } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
+import { formatUtilityShort, humanizeEnum } from "@/lib/format";
 import type {
   LearningOverview,
   LearningTrainResponse,
@@ -33,15 +36,36 @@ import type {
 const DISCLAIMER =
   "Trained on simulated buyer-agent outcomes — not a real conversion model.";
 
+/** Token-mapped chart colors (Recharts needs hex; map to Astra tokens). */
+const CHART_MARK = "#1f6b5a"; // --color-mark
+const CHART_GRID = "#ebe8e1"; // near --color-line / canvas tint
+const CHART_AXIS = "#5c5a54"; // muted ink for axes
+
 function metric(value: number | undefined): string {
   if (value == null || Number.isNaN(value)) return "—";
-  return value.toFixed(3);
+  return formatUtilityShort(value);
+}
+
+function learnStatusLabel(state: (typeof LEARN_STATUS)[number]["state"]): string {
+  switch (state) {
+    case "ACTIVE":
+      return "Active";
+    case "PRIMARY":
+      return "Primary (cold-start)";
+    case "EXPERIMENTAL":
+      return "Experimental";
+    case "FUTURE":
+      return "Future";
+    default:
+      return humanizeEnum(state);
+  }
 }
 
 export function LearnWorkbench() {
   const [overview, setOverview] = useState<LearningOverview | null>(null);
   const [train, setTrain] = useState<LearningTrainResponse | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState(200);
 
@@ -50,9 +74,22 @@ export function LearnWorkbench() {
   }
 
   useEffect(() => {
-    void refresh().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : "Unable to load learning");
-    });
+    let cancelled = false;
+    void getLearningOverview()
+      .then((data) => {
+        if (!cancelled) setOverview(data);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Unable to load learning");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function onGenerate() {
@@ -101,6 +138,19 @@ export function LearnWorkbench() {
     [];
   const associations = overview?.associations ?? [];
 
+  if (loading && !overview) {
+    return (
+      <AstraLoadingState
+        title="Loading learning workbench"
+        steps={[
+          "Fetching overview",
+          "Reading synthetic datasets",
+          "Ready to evaluate",
+        ]}
+      />
+    );
+  }
+
   return (
     <div className="space-y-8">
       <AstraSectionHeader
@@ -108,6 +158,14 @@ export function LearnWorkbench() {
         title="How AstraOS could improve after real outcomes exist"
         description="LIVE uses transparent cold-start logic today. LEARN records Intent → Offer → Outcome. The learned score is experimental and synthetic."
       />
+
+      {error ? (
+        <AstraErrorState
+          title="Learning request failed"
+          message={error}
+          next="Retry generate or train once the API is available."
+        />
+      ) : null}
 
       <ol className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
         {LEARN_STORY.map((item, index) => (
@@ -139,7 +197,9 @@ export function LearnWorkbench() {
               <tr key={item.label} className="border-b border-line">
                 <td className="px-3 py-2">{item.label}</td>
                 <td className="px-3 py-2">
-                  <AstraStatusBadge tone={tone}>{item.state}</AstraStatusBadge>
+                  <AstraStatusBadge tone={tone}>
+                    {learnStatusLabel(item.state)}
+                  </AstraStatusBadge>
                 </td>
               </tr>
             );
@@ -242,7 +302,7 @@ export function LearnWorkbench() {
           Held-out synthetic test. Cold-start utility may be strong because it
           generated the labels.
         </p>
-        <table className="mt-2 w-full text-left text-xs">
+        <AstraDataTable bordered={false} className="mt-2 text-xs">
           <thead>
             <tr className="border-b border-line text-muted">
               <th className="py-2">Model</th>
@@ -282,7 +342,7 @@ export function LearnWorkbench() {
                   </tr>
                 ))}
           </tbody>
-        </table>
+        </AstraDataTable>
       </section>
 
       {calibration.length ? (
@@ -297,11 +357,11 @@ export function LearnWorkbench() {
                 y: item.observed,
               }))}
             >
-              <CartesianGrid stroke="#e4e4e0" />
-              <XAxis dataKey="x" name="Predicted" />
-              <YAxis dataKey="y" name="Observed" />
+              <CartesianGrid stroke={CHART_GRID} />
+              <XAxis dataKey="x" name="Predicted" stroke={CHART_AXIS} />
+              <YAxis dataKey="y" name="Observed" stroke={CHART_AXIS} />
               <Tooltip />
-              <Line type="monotone" dataKey="y" stroke="#171717" dot />
+              <Line type="monotone" dataKey="y" stroke={CHART_MARK} dot />
             </LineChart>
           </ResponsiveContainer>
         </section>
@@ -329,7 +389,7 @@ export function LearnWorkbench() {
       {ablations ? (
         <section>
           <h2 className="text-sm font-semibold">Feature ablation</h2>
-          <table className="mt-2 w-full text-left text-xs">
+          <AstraDataTable bordered={false} className="mt-2 text-xs">
             <thead>
               <tr className="border-b border-line text-muted">
                 <th className="py-2">Subset</th>
@@ -346,7 +406,7 @@ export function LearnWorkbench() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </AstraDataTable>
         </section>
       ) : null}
 
@@ -354,7 +414,7 @@ export function LearnWorkbench() {
         <section>
           <h2 className="text-sm font-semibold">Held-out mission</h2>
           <p className="text-xs text-muted">{hero.note}</p>
-          <table className="mt-2 w-full text-left text-xs">
+          <AstraDataTable bordered={false} className="mt-2 text-xs">
             <thead>
               <tr className="border-b border-line text-muted">
                 <th className="py-2">Offer</th>
@@ -376,7 +436,7 @@ export function LearnWorkbench() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </AstraDataTable>
         </section>
       ) : null}
 
@@ -385,7 +445,7 @@ export function LearnWorkbench() {
         <p className="text-xs text-muted">
           Synthetic Arena rows. Not observed customer purchases.
         </p>
-        <table className="mt-2 w-full text-left text-xs">
+        <AstraDataTable bordered={false} className="mt-2 text-xs">
           <thead>
             <tr className="border-b border-line text-muted">
               <th className="py-2">Intent</th>
@@ -406,9 +466,8 @@ export function LearnWorkbench() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </AstraDataTable>
       </section>
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
     </div>
   );
 }

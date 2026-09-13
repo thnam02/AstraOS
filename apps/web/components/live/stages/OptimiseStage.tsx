@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { AstraPanel } from "@/components/astra";
 import { DecisionBridge } from "@/components/live/DecisionBridge";
 import { MetricHint } from "@/components/live/MetricHint";
 import { OptimisationPanel } from "@/components/live/OptimisationPanel";
@@ -10,6 +9,7 @@ import { WhyDifferentDrawer } from "@/components/live/RecommendedOffer";
 import {
   StagePrimaryAction,
   StageResult,
+  StageSection,
 } from "@/components/live/StageShell";
 import {
   METRIC_HELP,
@@ -21,6 +21,7 @@ import {
   selectableCompleteOffer,
 } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
+import { formatUtilityShort } from "@/lib/format";
 import type {
   BuyerProfile,
   GenerateOffersResponse,
@@ -176,7 +177,7 @@ export function OptimiseStage({
                   />
                 </dt>
                 <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
-                  {selected.buyer_utility.toFixed(2)}
+                  {formatUtilityShort(selected.buyer_utility)}
                 </dd>
               </div>
               <div>
@@ -246,7 +247,11 @@ export function OptimiseStage({
       />
 
       {detailOpen ? (
-        <AstraPanel>
+        <StageSection
+          title="Optimisation detail"
+          description="Frontier, objective comparisons, and counterfactuals."
+          boxed={false}
+        >
           <OptimisationPanel
             optimisation={optimisation}
             profile={profile}
@@ -256,7 +261,7 @@ export function OptimiseStage({
             selectedOfferId={selectedOfferId}
             onSelectOffer={onSelectOffer}
           />
-        </AstraPanel>
+        </StageSection>
       ) : null}
 
       <WhyDifferentDrawer

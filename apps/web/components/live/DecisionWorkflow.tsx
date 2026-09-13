@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import {
   LIVE_STAGES,
   processRailState,
+  StageNode,
   type LiveStage,
   type RailState,
 } from "./ProcessRail";
@@ -50,14 +51,28 @@ function FullWorkflow({
 }) {
   return (
     <nav className="overflow-x-auto" aria-label="Decision workflow">
-      <p className="eyebrow mb-2">Decision workflow</p>
-      <ol className="flex min-w-max items-stretch">
-        {LIVE_STAGES.map((id) => {
+      <ol className="flex min-h-[56px] min-w-max items-stretch">
+        {LIVE_STAGES.map((id, index) => {
           const meta = STAGE_META[id];
           const state = processRailState(id, flags, active);
           const disabled = !stageReachable(id, flags, active);
+          const connectorDone = state === "complete" || state === "active";
+          const isLast = index === LIVE_STAGES.length - 1;
+
           return (
-            <li key={id} className="min-w-[6.5rem] flex-1">
+            <li
+              key={id}
+              className="relative flex min-w-[5.75rem] flex-1 basis-0 justify-center"
+            >
+              {!isLast ? (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "pointer-events-none absolute top-[13px] left-[calc(50%+0.55rem)] right-[-50%] h-px",
+                    connectorDone ? "bg-mark/45" : "bg-line",
+                  )}
+                />
+              ) : null}
               <button
                 type="button"
                 disabled={disabled}
@@ -65,46 +80,44 @@ function FullWorkflow({
                 aria-current={state === "active" ? "step" : undefined}
                 aria-label={`${meta.number} ${meta.title}, ${spokenState(state)}`}
                 className={cn(
-                  "flex h-full w-full flex-col items-start border-l px-2.5 py-1.5 text-left",
+                  "group relative flex w-full max-w-[7rem] flex-col items-center px-1 py-1 text-center",
                   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+                  "motion-safe:transition-colors",
                   disabled
-                    ? "cursor-not-allowed border-line text-muted"
-                    : "cursor-pointer border-line hover:bg-surface",
-                  state === "active" && "border-l-mark bg-surface text-ink",
-                  state === "complete" && "border-l-line",
-                  state === "failed" && "border-l-danger",
+                    ? "cursor-not-allowed opacity-55"
+                    : "cursor-pointer hover:bg-surface-2/80",
+                  state === "active" &&
+                    "border-b-2 border-mark pb-[calc(0.25rem-2px)]",
                 )}
               >
+                <StageNode state={state} />
                 <span
                   className={cn(
-                    "flex items-center gap-1.5 text-[11px] tracking-[0.08em]",
-                    state === "active" ? "text-mark" : "text-muted",
+                    "mt-0.5 text-[9px] font-medium leading-none tracking-[0.08em]",
+                    state === "active"
+                      ? "text-mark"
+                      : state === "failed" || state === "blocked"
+                        ? "text-danger"
+                        : "text-muted",
                   )}
                 >
-                  {state === "complete" ? (
-                    <span aria-hidden className="text-mark">
-                      ✓
-                    </span>
-                  ) : state === "active" ? (
-                    <span aria-hidden>●</span>
-                  ) : state === "failed" ? (
-                    <span aria-hidden className="text-danger">
-                      !
-                    </span>
-                  ) : (
-                    <span aria-hidden>○</span>
-                  )}
                   {meta.number}
                 </span>
                 <span
                   className={cn(
-                    "mt-0.5 text-[13px] font-semibold",
-                    disabled ? "text-muted" : "text-ink",
+                    "mt-0.5 text-[12px] leading-none",
+                    state === "active" && "font-semibold text-ink",
+                    state === "complete" && "font-medium text-ink",
+                    (state === "failed" || state === "blocked") &&
+                      "font-medium text-danger",
+                    state === "future" && "font-medium text-muted",
                   )}
                 >
                   {meta.title}
                 </span>
-                <span className="text-[11px] text-muted">{meta.subtitle}</span>
+                <span className="mt-0.5 text-[10px] leading-none text-muted">
+                  {meta.subtitle}
+                </span>
               </button>
             </li>
           );
@@ -146,7 +159,7 @@ function WorkflowPicker({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="center"
-        className="w-56 rounded-[6px] border-line p-1 shadow-none"
+        className="w-56 rounded-[var(--radius-control)] border-line p-1 shadow-none"
       >
         {LIVE_STAGES.map((id) => {
           const meta = STAGE_META[id];
@@ -194,7 +207,7 @@ function CompactWorkflow({
   return (
     <div
       className={cn(
-        "fixed inset-x-0 top-14 z-20 border-b border-line bg-surface transition duration-150 ease-out",
+        "fixed inset-x-0 top-12 z-20 border-b border-line bg-surface transition duration-150 ease-out",
         visible
           ? "translate-y-0 opacity-100"
           : "pointer-events-none -translate-y-1 opacity-0",
@@ -203,7 +216,7 @@ function CompactWorkflow({
       inert={!visible || undefined}
     >
       <nav
-        className="mx-auto flex h-12 w-full max-w-[1480px] items-center justify-between gap-3 px-6"
+        className="page-shell flex h-12 items-center justify-between gap-3"
         aria-label="Compact decision workflow"
       >
         <button
@@ -255,7 +268,7 @@ export function DecisionWorkflow({
       ([entry]) => {
         setCompact(!entry.isIntersecting);
       },
-      { rootMargin: "-56px 0px 0px 0px", threshold: 0 },
+      { rootMargin: "-48px 0px 0px 0px", threshold: 0 },
     );
     observer.observe(node);
     return () => observer.disconnect();
@@ -265,7 +278,7 @@ export function DecisionWorkflow({
     <>
       <div
         ref={fullRef}
-        className="-mx-6 border-b border-line bg-surface px-6 py-3"
+        className="-mx-6 border-b border-line-muted px-6 py-1"
       >
         <FullWorkflow active={active} flags={flags} onSelect={onSelect} />
       </div>

@@ -11,6 +11,7 @@ import {
   termsFromScored,
   winnerChangeSummary,
 } from "@/lib/decisionNarrative";
+import { formatUtilityShort } from "@/lib/format";
 import { formatAudCents } from "@/lib/money";
 import type {
   GenerateOffersResponse,
@@ -106,7 +107,7 @@ export function DecisionBridge({
             <p className="type-small text-muted">5 · Selected</p>
             <p className="mt-1 font-semibold">{offer.product_name}</p>
             <p className="mt-1 font-mono text-sm tabular-nums">
-              {offer.buyer_utility.toFixed(2)}
+              {formatUtilityShort(offer.buyer_utility)}
             </p>
             <p className="mt-1 text-xs text-muted">
               <MetricHint
@@ -165,7 +166,7 @@ export function DecisionBridge({
                     />
                   </dt>
                   <dd className="font-mono tabular-nums">
-                    {offer.buyer_utility.toFixed(2)}
+                    {formatUtilityShort(offer.buyer_utility)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">

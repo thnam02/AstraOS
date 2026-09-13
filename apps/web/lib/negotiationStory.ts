@@ -68,6 +68,7 @@ export type TimelineEvent = {
   kind:
     | "INITIAL_PROPOSAL"
     | "BUYER_COUNTER"
+    | "BUYER_ASK"
     | "COUNTEROFFER"
     | "NO_SAFE_COUNTER"
     | "BUYER_ACCEPTED"
@@ -164,6 +165,11 @@ const REASON_COPY: Record<string, string> = {
   ALTERNATIVE_PRODUCT_SELECTED: "An alternative product was selected.",
   NEGOTIATION_LIMIT_REACHED: "Negotiation turn limit reached.",
   PROPOSAL_EXPIRED: "The previous proposal expired.",
+  AMBIGUOUS_REQUEST:
+    "The buyer message is not a commercial change AstraOS can apply.",
+  PROMPT_INJECTION_IGNORED:
+    "A buyer instruction that tried to override merchant policy was ignored.",
+  UNSUPPORTED_INSTRUCTION: "That instruction is not a supported commercial change.",
 };
 
 const BUYER_ACTORS = new Set(["BUYER", "BUYER_AGENT"]);
@@ -323,6 +329,27 @@ function isOpeningRequest(turn: NegotiationTurn, index: number): boolean {
   return index === 0 && turn.structured_action === "REQUEST";
 }
 
+function payloadStrings(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim() !== "")
+    : [];
+}
+
+function clarifyCopy(payload: Record<string, unknown>): {
+  explanation: string[];
+  reasonCodes: string[];
+} {
+  const reasonCodes = payloadStrings(payload.reason_codes);
+  const explanation = payloadStrings(payload.explanation);
+  const fromCodes = reasonCodes
+    .map((code) => REASON_COPY[code])
+    .filter((item): item is string => Boolean(item));
+  return {
+    reasonCodes,
+    explanation: explanation.length ? explanation : fromCodes,
+  };
+}
+
 export function buildNegotiationTimeline(
   negotiation: NegotiationResponse,
 ): TimelineEvent[] {
@@ -349,6 +376,24 @@ export function buildNegotiationTimeline(
         kind: "BUYER_COUNTER",
         title: "Buyer agent counter",
         subtitle: "Counter",
+        message: turn.raw_message,
+        parsed,
+        terms: null,
+        explanation: [],
+        reasonCodes: [],
+        createdAt: turn.created_at,
+        inspectPayload: turn.structured_payload,
+      });
+      continue;
+    }
+    if (buyer && action === "ASK_CLARIFICATION") {
+      events.push({
+        id: turn.turn_id,
+        round: negotiation.proposal?.version ?? null,
+        actor: "BUYER",
+        kind: "BUYER_ASK",
+        title: "Buyer agent message",
+        subtitle: "Not a commercial counter",
         message: turn.raw_message,
         parsed,
         terms: null,
@@ -433,18 +478,20 @@ export function buildNegotiationTimeline(
       continue;
     }
     if (!buyer && action === "CLARIFY") {
+      const payload = asRecord(turn.structured_payload);
+      const copy = clarifyCopy(payload);
       events.push({
         id: turn.turn_id,
         round: negotiation.proposal?.version ?? null,
         actor: "ASTRAOS",
         kind: "CLARIFY",
         title: "Clarification required",
-        subtitle: "Clarify",
+        subtitle: "Clarification required",
         message: null,
         parsed: [],
         terms: null,
-        explanation: [],
-        reasonCodes: [],
+        explanation: copy.explanation,
+        reasonCodes: copy.reasonCodes,
         createdAt: turn.created_at,
         inspectPayload: turn.structured_payload,
       });

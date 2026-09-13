@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
-
 import { OfferExplorer } from "@/components/live/OfferExplorer";
 import {
   StagePrimaryAction,
   StageResult,
   StageSection,
 } from "@/components/live/StageShell";
-import { constructStory } from "@/lib/decisionNarrative";
+import { constructStory, expansionSteps } from "@/lib/decisionNarrative";
 import type { GenerateOffersResponse, OptimisationResponse } from "@/types";
 
 export function ConstructStage({
@@ -22,14 +20,21 @@ export function ConstructStage({
   heroProduct?: string;
   onContinue?: () => void;
 }) {
-  const [explore, setExplore] = useState(false);
   const story = constructStory(construction);
-  const pareto = optimisation?.summary.pareto_efficient;
+  const steps = expansionSteps(construction, optimisation).filter((step) =>
+    [
+      "Matched products",
+      "Candidate offers",
+      "Feasible",
+      "Buyer-compliant",
+      "Policy-safe",
+    ].includes(step.label),
+  );
 
   return (
     <>
       <StageResult
-        label="Offer space created"
+        label="Offer space summary"
         title={`${story.products} matched products generated`}
         value={story.generated.toLocaleString()}
         explanation={
@@ -39,46 +44,21 @@ export function ConstructStage({
           </p>
         }
         actions={
-          <>
-            <StagePrimaryAction
-              label="Continue to optimisation"
-              onClick={onContinue}
-            />
-            <button
-              type="button"
-              className="btn-quiet"
-              aria-expanded={explore}
-              onClick={() => setExplore((current) => !current)}
-            >
-              {explore ? "Hide offer space" : "Explore offer space"}
-            </button>
-          </>
+          <StagePrimaryAction
+            label="Continue to optimisation"
+            onClick={onContinue}
+          />
         }
       >
-        <ol className="grid gap-4 sm:grid-cols-3">
-          <li>
-            <p className="type-small text-muted">Matched products</p>
-            <p className="mt-1 font-mono text-xl font-semibold tabular-nums">
-              {story.products}
-            </p>
-          </li>
-          <li>
-            <p className="type-small text-muted">Generated offers</p>
-            <p className="mt-1 font-mono text-xl font-semibold tabular-nums">
-              {story.generated.toLocaleString()}
-            </p>
-          </li>
-          <li>
-            <p className="type-small text-muted">Feasible</p>
-            <p className="mt-1 font-mono text-xl font-semibold tabular-nums">
-              {story.feasible.toLocaleString()}
-            </p>
-            {pareto != null ? (
-              <p className="mt-1 text-xs text-muted">
-                {pareto} later marked Pareto-efficient
+        <ol className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          {steps.map((step) => (
+            <li key={step.label}>
+              <p className="type-small text-muted">{step.label}</p>
+              <p className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                {step.value}
               </p>
-            ) : null}
-          </li>
+            </li>
+          ))}
         </ol>
       </StageResult>
 
@@ -107,15 +87,18 @@ export function ConstructStage({
         </dl>
       </StageSection>
 
-      {explore ? (
+      <StageSection
+        title="Offer explorer"
+        description="Feasible configurations only. No offer is recommended here."
+      >
         <OfferExplorer
           construction={construction}
           heroProduct={heroProduct}
           policySafe={optimisation?.summary.policy_safe}
-          pareto={pareto}
+          pareto={optimisation?.summary.pareto_efficient}
           explorerOnly
         />
-      ) : null}
+      </StageSection>
     </>
   );
 }

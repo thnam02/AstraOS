@@ -42,10 +42,10 @@ export function DecisionBridge({
 
   return (
     <>
-      <StageSection title="How did AstraOS get here?">
-        <ol className="grid gap-5 lg:grid-cols-4">
+      <StageSection title="How AstraOS got here">
+        <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
           <li>
-            <p className="type-small text-muted">1 · Best product match</p>
+            <p className="type-small text-muted">1 · Product</p>
             <p className="mt-1 font-semibold">{topMatch.product_name}</p>
             <p className="mt-1 font-mono text-sm tabular-nums">
               {productScore.value} {productScore.suffix}
@@ -53,7 +53,7 @@ export function DecisionBridge({
             <p className="mt-1 text-xs text-muted">Product match</p>
           </li>
           <li>
-            <p className="type-small text-muted">2 · Build complete offers</p>
+            <p className="type-small text-muted">2 · Offer</p>
             {story ? (
               <>
                 <p className="mt-1 font-mono text-xl font-semibold tabular-nums">
@@ -79,32 +79,31 @@ export function DecisionBridge({
             )}
           </li>
           <li>
-            <p className="type-small text-muted">3 · Optimise buyer × merchant</p>
+            <p className="type-small text-muted">3 · Safe</p>
             {optimisation ? (
-              <dl className="mt-1 space-y-1 text-sm">
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted">Policy-safe</dt>
-                  <dd className="font-mono tabular-nums">
-                    {optimisation.summary.policy_safe.toLocaleString()}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt>
-                    <MetricHint label="Pareto-efficient" hint={METRIC_HELP.pareto} />
-                  </dt>
-                  <dd className="font-mono tabular-nums">
-                    {optimisation.summary.pareto_efficient}
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="mt-1 text-sm text-muted">
-                Policy and efficiency filters applied.
+              <p className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                {optimisation.summary.policy_safe.toLocaleString()}
               </p>
+            ) : (
+              <p className="mt-1 text-sm text-muted">—</p>
             )}
+            <p className="mt-1 text-xs text-muted">Policy-safe offers</p>
           </li>
           <li>
-            <p className="type-small text-muted">4 · Best complete offer</p>
+            <p className="type-small text-muted">4 · Pareto</p>
+            {optimisation ? (
+              <p className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                {optimisation.summary.pareto_efficient}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-muted">—</p>
+            )}
+            <p className="mt-1 text-xs text-muted">
+              <MetricHint label="Pareto-efficient" hint={METRIC_HELP.pareto} />
+            </p>
+          </li>
+          <li>
+            <p className="type-small text-muted">5 · Selected</p>
             <p className="mt-1 font-semibold">{offer.product_name}</p>
             <p className="mt-1 font-mono text-sm tabular-nums">
               {offer.buyer_utility.toFixed(2)}
@@ -136,7 +135,7 @@ export function DecisionBridge({
       </StageSection>
 
       {differ ? (
-        <StageSection title="Why did the winner change?">
+        <StageSection title="Why the winner changed">
           <div className="grid gap-8 md:grid-cols-2">
             <div>
               <p className="type-small text-muted">Best product match</p>
@@ -203,7 +202,7 @@ export function DecisionBridge({
           </p>
         </StageSection>
       ) : (
-        <StageSection title="Top product remained the best complete offer">
+        <StageSection title="Counterfactual">
           {deltas.length ? (
             <dl className="max-w-xl space-y-2 text-sm">
               {deltas.map((row) => (

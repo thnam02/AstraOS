@@ -1,7 +1,9 @@
 import Link from "next/link";
 
+import { AstraDataTable, AstraStatusBadge, type AstraTone } from "@/components/astra";
 import { LIVE_STAGES } from "@/components/live/ProcessRail";
 import { StageResult, StageSection } from "@/components/live/StageShell";
+import { LEARN_STATUS } from "@/lib/decisionNarrative";
 import { STAGE_META } from "@/lib/liveStages";
 import { formatAudCents } from "@/lib/money";
 import type { AcceptProposalResponse, NegotiationResponse } from "@/types";
@@ -31,6 +33,12 @@ function outcomeCopy(
   };
 }
 
+function statusTone(state: string): AstraTone {
+  if (state === "ACTIVE" || state === "PRIMARY") return "positive";
+  if (state === "EXPERIMENTAL") return "warning";
+  return "neutral";
+}
+
 export function LearnStage({
   negotiation,
   transaction,
@@ -45,24 +53,9 @@ export function LearnStage({
   return (
     <>
       <StageResult
-        label="Outcome"
+        label="Outcome record"
         title={outcome.title}
         explanation={<p>{outcome.explanation}</p>}
-        metrics={
-          offer
-            ? [
-                { label: "Final utility", value: offer.buyer_utility.toFixed(2) },
-                {
-                  label: "Merchant contribution",
-                  value: formatAudCents(offer.contribution_margin_cents),
-                },
-                {
-                  label: "Negotiation",
-                  value: negotiation?.state.replaceAll("_", " ") ?? "—",
-                },
-              ]
-            : undefined
-        }
         actions={
           <Link href="/learn" className="btn-quiet">
             Open LEARN
@@ -70,19 +63,67 @@ export function LearnStage({
         }
       >
         {offer ? (
-          <p className="text-sm">
-            {offer.product_name}
-            <span className="mx-2 text-muted">·</span>
-            <span className="font-mono tabular-nums">
-              {formatAudCents(offer.pricing.total_price_cents)}
-            </span>
-          </p>
+          <dl className="max-w-md space-y-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Product</dt>
+              <dd>{offer.product_name}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Final price</dt>
+              <dd className="font-mono tabular-nums">
+                {formatAudCents(offer.pricing.total_price_cents)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Final utility</dt>
+              <dd className="font-mono tabular-nums">
+                {offer.buyer_utility.toFixed(2)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Merchant contribution</dt>
+              <dd className="font-mono tabular-nums">
+                {formatAudCents(offer.contribution_margin_cents)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Negotiation</dt>
+              <dd>{negotiation?.state.replaceAll("_", " ") ?? "—"}</dd>
+            </div>
+          </dl>
         ) : null}
       </StageResult>
 
+      <StageSection title="Learning status">
+        <AstraDataTable bordered={false}>
+          <thead>
+            <tr>
+              <th>Capability</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {LEARN_STATUS.map((item) => (
+              <tr key={item.label}>
+                <td>{item.label}</td>
+                <td>
+                  <AstraStatusBadge tone={statusTone(item.state)}>
+                    {item.state}
+                  </AstraStatusBadge>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </AstraDataTable>
+        <p className="mt-3 text-sm text-muted">
+          LIVE uses transparent cold-start scoring. The learned response model is
+          experimental. A real observed-data model is future work.
+        </p>
+      </StageSection>
+
       <StageSection
-        title="What happened"
-        description="A compact trace of this decision run. No fabricated learning metrics."
+        title="Model / evaluation"
+        description="Trace of this decision run. No fabricated learning metrics."
       >
         <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           {LIVE_STAGES.filter((id) => id !== "learn").map((id, index) => (

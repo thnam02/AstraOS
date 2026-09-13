@@ -24,6 +24,41 @@ def test_price_counter() -> None:
     assert result.constraints.max_total_price_cents == 31500
 
 
+def test_stated_currency_amount_is_a_price_counter() -> None:
+    result = INTERP.interpret(BuyerTurnInput(message="I want $250"))
+    assert result.action == BuyerAction.COUNTER
+    assert result.constraints.max_total_price_cents == 25000
+    assert result.ambiguous is False
+
+
+def test_stated_aud_amount_is_a_price_counter() -> None:
+    result = INTERP.interpret(BuyerTurnInput(message="I want A$250"))
+    assert result.action == BuyerAction.COUNTER
+    assert result.constraints.max_total_price_cents == 25000
+
+
+def test_want_it_bare_number_is_a_price_counter() -> None:
+    result = INTERP.interpret(BuyerTurnInput(message="i want it 180"))
+    assert result.action == BuyerAction.COUNTER
+    assert result.constraints.max_total_price_cents == 18000
+    assert result.ambiguous is False
+
+
+def test_standalone_number_is_a_price_counter() -> None:
+    result = INTERP.interpret(BuyerTurnInput(message="180"))
+    assert result.action == BuyerAction.COUNTER
+    assert result.constraints.max_total_price_cents == 18000
+
+
+def test_want_warranty_months_is_not_a_price() -> None:
+    result = INTERP.interpret(
+        BuyerTurnInput(message="I want 36 month warranty")
+    )
+    assert result.action == BuyerAction.COUNTER
+    assert result.constraints.max_total_price_cents is None
+    assert result.constraints.requested_warranty_months == 36
+
+
 def test_warranty_counter() -> None:
     result = INTERP.interpret(
         BuyerTurnInput(message="Same price but give me a longer warranty")

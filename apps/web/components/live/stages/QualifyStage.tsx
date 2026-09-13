@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { QualificationInspect } from "@/components/live/QualificationInspect";
+import { QualificationResults } from "@/components/live/QualificationResults";
 import {
   StagePrimaryAction,
   StageResult,
   StageSection,
 } from "@/components/live/StageShell";
 import { qualifyIntent } from "@/lib/api";
-import { exclusionSummary } from "@/lib/qualifyDisplay";
 import type { MatchResponse, QualifyResponse } from "@/types";
 
 export function QualifyStage({
@@ -24,20 +24,26 @@ export function QualifyStage({
   onContinue?: () => void;
 }) {
   const [detail, setDetail] = useState<QualifyResponse | null>(null);
+  const [detailError, setDetailError] = useState(false);
   const checked = qualification.variants_checked;
   const eligible = qualification.eligible;
   const rate = checked ? Math.round((eligible / checked) * 1000) / 10 : 0;
   const eligibleWidth = checked ? Math.max(4, (eligible / checked) * 100) : 0;
-  const reasons = useMemo(() => exclusionSummary(detail), [detail]);
 
   useEffect(() => {
     let cancelled = false;
     qualifyIntent(intentText, parserMode)
       .then((payload) => {
-        if (!cancelled) setDetail(payload);
+        if (!cancelled) {
+          setDetail(payload);
+          setDetailError(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setDetail(null);
+        if (!cancelled) {
+          setDetail(null);
+          setDetailError(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -47,7 +53,7 @@ export function QualifyStage({
   return (
     <>
       <StageResult
-        label="Qualification result"
+        label="Qualification summary"
         title={`${eligible} of ${checked} variants remain eligible`}
         value={`${rate}%`}
         explanation={
@@ -57,7 +63,7 @@ export function QualifyStage({
         }
         metrics={[
           { label: "Eligible", value: eligible },
-          { label: "Rejected", value: qualification.violated },
+          { label: "Violated", value: qualification.violated },
           { label: "Unknown", value: qualification.uncertain },
         ]}
         actions={
@@ -75,23 +81,17 @@ export function QualifyStage({
         </div>
       </StageResult>
 
-      {reasons.length ? (
-        <StageSection title="Why variants were excluded">
-          <dl className="max-w-lg space-y-2 text-sm">
-            {reasons.slice(0, 8).map((row) => (
-              <div
-                key={row.label}
-                className="flex items-baseline justify-between gap-6"
-              >
-                <dt className="min-w-0">{row.label}</dt>
-                <dd className="shrink-0 font-mono tabular-nums text-muted">
-                  {row.count}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </StageSection>
-      ) : null}
+      <StageSection title="Qualification results">
+        {detail ? (
+          <QualificationResults detail={detail} />
+        ) : detailError ? (
+          <p className="text-sm text-muted">
+            Eligibility detail is unavailable for this run.
+          </p>
+        ) : (
+          <p className="text-sm text-muted">Loading eligibility detail…</p>
+        )}
+      </StageSection>
     </>
   );
 }

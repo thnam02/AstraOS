@@ -44,6 +44,20 @@ _PRICE_BARE = re.compile(
     re.IGNORECASE,
 )
 
+# "I want it 180" / "want 250" / "take it for 200" — dollars without a $ mark.
+_PRICE_STATED = re.compile(
+    r"(?:want(?:\s+(?:it|this|them))?|for|pay(?:\s+up\s+to)?|"
+    r"take(?:\s+it)?(?:\s+for)?|offer(?:\s+me)?)\s+"
+    r"(?:a\$|aud\s*|\$)?\s*([\d,]+)(?!\d)(?!\s*(?:month|mo|year|yr))",
+    re.IGNORECASE,
+)
+
+# Entire message is just an amount, e.g. "180" or "A$180".
+_PRICE_STANDALONE = re.compile(
+    r"^\s*(?:a\$|aud\s*|\$)?\s*([\d,]+)\s*[.!?]?\s*$",
+    re.IGNORECASE,
+)
+
 _WARRANTY_MONTHS = re.compile(
     r"(\d+)\s*(?:month|mo)s?\s+warranty",
     re.IGNORECASE,
@@ -112,9 +126,12 @@ class RuleBasedNegotiationInterpreter:
             notes.append("Ignored an instruction that tried to override policy.")
 
         if text:
-            priced = _PRICE.search(text)
-            if priced is None and injection:
-                priced = _PRICE_BARE.search(text)
+            priced = (
+                _PRICE.search(text)
+                or _PRICE_BARE.search(text)
+                or _PRICE_STATED.search(text)
+                or _PRICE_STANDALONE.search(text)
+            )
             if priced:
                 extracted.max_total_price_cents = _cents(priced.group(1))
             if match := _WARRANTY_MONTHS.search(text):

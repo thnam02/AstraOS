@@ -438,7 +438,15 @@ export function LiveWorkbench() {
           />
         ) : null}
         <StageHeader stage={stage} />
-        <StageLayout wide={stage === "construct"}>{stageMain}</StageLayout>
+        <StageLayout
+          wide={
+            stage === "construct" ||
+            stage === "negotiate" ||
+            stage === "optimise"
+          }
+        >
+          {stageMain}
+        </StageLayout>
         <StageFooter stage={stage} flags={flags} onSelect={setStage} />
       </div>
       <Drawer open={inspect} title="Inspect decision" onClose={() => setInspect(false)}>

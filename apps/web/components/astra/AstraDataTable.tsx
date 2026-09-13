@@ -5,12 +5,14 @@ import { cn } from "@/lib/utils";
 export function AstraDataTable({
   children,
   className,
+  bordered = true,
 }: {
   children: ReactNode;
   className?: string;
+  bordered?: boolean;
 }) {
   return (
-    <div className="overflow-x-auto border border-line">
+    <div className={cn("overflow-x-auto", bordered && "border border-line")}>
       <table className={cn("table-dense w-full text-left text-sm", className)}>
         {children}
       </table>

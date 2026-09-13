@@ -7,6 +7,8 @@ import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { STAGE_META, stageReachable } from "@/lib/liveStages";
 import { cn } from "@/lib/utils";
 
+import { AstraPanel } from "@/components/astra";
+
 import {
   LIVE_STAGES,
   processRailState,
@@ -104,20 +106,30 @@ export function StageSection({
   title,
   description,
   children,
+  tone = "secondary",
+  boxed = true,
 }: {
   title: string;
   description?: string;
   children: ReactNode;
+  tone?: "primary" | "secondary";
+  boxed?: boolean;
 }) {
-  return (
-    <section>
+  const body = (
+    <>
       <p className="eyebrow">{title}</p>
       {description ? (
         <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p>
       ) : null}
       <div className="mt-4">{children}</div>
-    </section>
+    </>
   );
+  if (!boxed) return <section>{body}</section>;
+  return <AstraPanel tone={tone}>{body}</AstraPanel>;
+}
+
+export function StageSplit({ children }: { children: ReactNode }) {
+  return <div className="grid gap-8 lg:grid-cols-2">{children}</div>;
 }
 
 export function StageDisclosure({
@@ -173,7 +185,7 @@ export function StageLayout({
   wide?: boolean;
 }) {
   return (
-    <div className={cn("space-y-8", wide ? "max-w-[1280px]" : "max-w-[1120px]")}>
+    <div className={cn("space-y-10", wide ? "max-w-[1280px]" : "max-w-[1120px]")}>
       {children}
     </div>
   );

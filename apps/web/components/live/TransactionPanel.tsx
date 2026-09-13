@@ -5,49 +5,38 @@ import { humanizeCheck } from "@/lib/decisionNarrative";
 import { formatAudCents, formatRate } from "@/lib/money";
 import type { AcceptProposalResponse, NegotiationResponse } from "@/types";
 
-type Step = "ACCEPTED" | "REVALIDATION" | "RESERVED" | "ORDER CREATED" | "CONFIRMED";
-
-const STEPS: Step[] = [
-  "ACCEPTED",
-  "REVALIDATION",
-  "RESERVED",
-  "ORDER CREATED",
-  "CONFIRMED",
-];
-
-function stepState(
-  transaction: AcceptProposalResponse | null,
-  label: Step,
-): "WAIT" | "ACTIVE" | "PASS" | "FAIL" {
-  if (!transaction) {
-    return label === "ACCEPTED" ? "ACTIVE" : "WAIT";
-  }
-  const state = transaction.state;
-  const failed = transaction.failure_codes.length > 0;
-  if (label === "ACCEPTED") return "PASS";
-  if (label === "REVALIDATION") {
-    if (!transaction.revalidation) return "ACTIVE";
-    return transaction.revalidation.status === "PASSED" ? "PASS" : "FAIL";
-  }
-  if (label === "RESERVED") {
-    if (state === "RESERVATION_FAILED") return "FAIL";
-    if (transaction.reservation) return "PASS";
-    return state === "READY_TO_RESERVE" || state === "RESERVING" ? "ACTIVE" : "WAIT";
-  }
-  if (label === "ORDER CREATED") {
-    if (state === "ORDER_FAILED") return "FAIL";
-    if (transaction.order) return "PASS";
-    return state === "CREATING_ORDER" ? "ACTIVE" : "WAIT";
-  }
-  if (state === "CONFIRMED") return "PASS";
-  return failed ? "FAIL" : "WAIT";
-}
-
-function mark(status: ReturnType<typeof stepState>): string {
+function mark(status: "WAIT" | "ACTIVE" | "PASS" | "FAIL"): string {
   if (status === "PASS") return "✓";
   if (status === "ACTIVE") return "●";
   if (status === "FAIL") return "!";
   return "○";
+}
+
+function revalidationState(
+  transaction: AcceptProposalResponse | null,
+): "WAIT" | "ACTIVE" | "PASS" | "FAIL" {
+  if (!transaction?.revalidation) return transaction ? "ACTIVE" : "WAIT";
+  return transaction.revalidation.status === "PASSED" ? "PASS" : "FAIL";
+}
+
+function reservationState(
+  transaction: AcceptProposalResponse | null,
+): "WAIT" | "ACTIVE" | "PASS" | "FAIL" {
+  if (!transaction) return "WAIT";
+  if (transaction.state === "RESERVATION_FAILED") return "FAIL";
+  if (transaction.reservation) return "PASS";
+  return transaction.state === "READY_TO_RESERVE" || transaction.state === "RESERVING"
+    ? "ACTIVE"
+    : "WAIT";
+}
+
+function orderState(
+  transaction: AcceptProposalResponse | null,
+): "WAIT" | "ACTIVE" | "PASS" | "FAIL" {
+  if (!transaction) return "WAIT";
+  if (transaction.state === "ORDER_FAILED") return "FAIL";
+  if (transaction.order) return "PASS";
+  return transaction.state === "CREATING_ORDER" ? "ACTIVE" : "WAIT";
 }
 
 export function TransactionPanel({
@@ -77,11 +66,14 @@ export function TransactionPanel({
     : failed
       ? "Cannot be executed"
       : "Ready for confirmation";
+  const reserved = reservationState(transaction);
+  const ordered = orderState(transaction);
+  const revalidated = revalidationState(transaction);
 
   return (
     <>
       <StageResult
-        label="Transaction status"
+        label="Accepted agreement"
         title={status}
         value={
           offer
@@ -103,24 +95,6 @@ export function TransactionPanel({
               ) : null}
             </p>
           ) : undefined
-        }
-        metrics={
-          offer
-            ? [
-                {
-                  label: "Contribution",
-                  value: formatAudCents(offer.contribution_margin_cents),
-                },
-                {
-                  label: "Delivery",
-                  value: offer.delivery.name,
-                },
-                {
-                  label: "Warranty",
-                  value: `${offer.warranty.months}-month`,
-                },
-              ]
-            : undefined
         }
         actions={
           <>
@@ -147,26 +121,7 @@ export function TransactionPanel({
           </>
         }
       >
-        {failed && transaction && !confirmed ? (
-          <div>
-            <p className="text-sm text-danger">
-              {transaction.failure_codes.map(humanizeCheck).join(" · ") ||
-                humanizeCheck(transaction.state)}
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              The accepted proposal was not silently rewritten.
-            </p>
-            {transaction.recovery_proposal ? (
-              <p className="mt-2 text-sm">
-                New proposal #{transaction.recovery_proposal.version} is ready.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </StageResult>
-
-      {offer ? (
-        <StageSection title="Final commercial terms">
+        {offer ? (
           <dl className="max-w-md space-y-2 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-muted">Product</dt>
@@ -201,61 +156,79 @@ export function TransactionPanel({
                   : "Standard"}
               </dd>
             </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Contribution</dt>
+              <dd className="font-mono tabular-nums">
+                {formatAudCents(offer.contribution_margin_cents)}
+              </dd>
+            </div>
           </dl>
-        </StageSection>
-      ) : null}
+        ) : null}
+        {failed && transaction && !confirmed ? (
+          <div className="mt-5">
+            <p className="text-sm text-danger">
+              {transaction.failure_codes.map(humanizeCheck).join(" · ") ||
+                humanizeCheck(transaction.state)}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              The accepted proposal was not silently rewritten.
+            </p>
+            {transaction.recovery_proposal ? (
+              <p className="mt-2 text-sm">
+                New proposal #{transaction.recovery_proposal.version} is ready.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </StageResult>
 
-      <StageDisclosure title="Order pipeline">
-        <ol className="space-y-2" aria-label="Transaction pipeline">
-          {STEPS.map((label, index) => {
-            const statusMark = stepState(transaction, label);
-            return (
-              <li key={label}>
-                {index > 0 ? (
-                  <p className="pl-1 text-muted" aria-hidden>
-                    ↓
-                  </p>
-                ) : null}
-                <div className="flex items-center justify-between py-1 text-sm">
-                  <span className="tracking-[0.06em]">
-                    <span className="mr-2" aria-hidden>
-                      {mark(statusMark)}
-                    </span>
-                    {label}
-                  </span>
-                  <span
-                    className={
-                      statusMark === "PASS"
-                        ? "text-[11px] text-success"
-                        : statusMark === "FAIL"
-                          ? "text-[11px] text-danger"
-                          : "text-[11px] text-muted"
-                    }
-                  >
-                    {statusMark}
-                  </span>
-                </div>
-                {label === "REVALIDATION" && transaction?.revalidation ? (
-                  <ul className="mt-1 grid gap-1 pl-6 text-xs sm:grid-cols-2">
-                    {transaction.revalidation.checks.map((item) => (
-                      <li key={item.check} className="flex justify-between gap-3">
-                        <span>{humanizeCheck(item.check)}</span>
-                        <span
-                          className={
-                            item.status === "PASS" ? "text-success" : "text-danger"
-                          }
-                        >
-                          {item.status}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
+      <StageSection title="Revalidation">
+        {transaction?.revalidation ? (
+          <ul className="space-y-2 text-sm">
+            {transaction.revalidation.checks.map((item) => (
+              <li key={item.check} className="flex items-baseline justify-between gap-4">
+                <span>{humanizeCheck(item.check)}</span>
+                <span
+                  className={
+                    item.status === "PASS" ? "text-success" : "text-danger"
+                  }
+                >
+                  {item.status}
+                </span>
               </li>
-            );
-          })}
-        </ol>
-      </StageDisclosure>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted">
+            {mark(revalidated)} Price, inventory, delivery, and merchant policy
+            are checked together at execution.
+          </p>
+        )}
+      </StageSection>
+
+      <StageSection title="Execution result">
+        <dl className="max-w-md space-y-2 text-sm">
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Inventory reserved</dt>
+            <dd>
+              {mark(reserved)}{" "}
+              {transaction?.reservation?.reservation_id ?? reserved}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Order created</dt>
+            <dd>
+              {mark(ordered)} {transaction?.order?.status ?? ordered}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Order reference</dt>
+            <dd className="font-mono tabular-nums">
+              {transaction?.order?.order_number ?? "—"}
+            </dd>
+          </div>
+        </dl>
+      </StageSection>
 
       <StageDisclosure title="Recovery controls">
         <div className="flex flex-wrap gap-2">

@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import {
-  AstraCallout,
   AstraDataTable,
   AstraDelta,
   AstraEmptyState,
@@ -13,8 +12,8 @@ import {
   AstraStatusBadge,
 } from "@/components/astra";
 import {
-  StageResult,
   StageSection,
+  StageSplit,
 } from "@/components/live/StageShell";
 import { METRIC_HELP } from "@/lib/decisionNarrative";
 import {
@@ -96,10 +95,20 @@ function TimelineCard({
             <TermsList terms={event.terms} />
           </div>
         ) : null}
+        {event.kind === "BUYER_ASK" && !event.parsed.length ? (
+          <p className="text-muted">No commercial change was extracted.</p>
+        ) : null}
         {event.kind === "NO_SAFE_COUNTER" ? (
           <p className="text-muted">
             No merchant-policy-safe configuration can satisfy this request.
           </p>
+        ) : null}
+        {event.kind === "CLARIFY" && event.explanation.length ? (
+          <div>
+            {event.explanation.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
         ) : null}
         {event.inspectPayload ? (
           <button
@@ -129,8 +138,15 @@ export function NegotiationPanel({
   const [draft, setDraft] = useState("");
   const [inspect, setInspect] = useState<TimelineEvent | null>(null);
   const events = buildNegotiationTimeline(negotiation);
-  const status = negotiationStatus(negotiation.state);
   const current = currentMerchantEvent(events);
+  const status =
+    current?.kind === "CLARIFY"
+      ? {
+          code: "CLARIFICATION_REQUIRED",
+          label: "Clarification required",
+          tone: "warning" as const,
+        }
+      : negotiationStatus(negotiation.state);
   const buyer = latestBuyerCounter(events);
   const proposal = negotiation.proposal;
   const offer = proposal?.offer ?? null;
@@ -165,12 +181,6 @@ export function NegotiationPanel({
   const accepted =
     negotiation.state === "BUYER_ACCEPTED" ||
     negotiation.state === "READY_FOR_CHECKOUT";
-  const counterLabel =
-    current?.kind === "INITIAL_PROPOSAL"
-      ? "Initial proposal"
-      : noSafe
-        ? "No safe counter"
-        : "Merchant counter";
   const acceptPrice =
     currentTerms?.total ??
     (offer ? formatAudCents(offer.pricing.total_price_cents) : null);
@@ -238,20 +248,23 @@ export function NegotiationPanel({
       <StageSection
         title="Negotiation timeline"
         description="Structured protocol exchange. Language is interpreted; commercial control stays deterministic."
+        tone="primary"
       >
         {events.length ? (
-          <ol className="space-y-6">
+          <ol className="space-y-5">
             {rows.map(({ event, showRound }, index) => (
-              <li key={event.id}>
+              <li
+                key={event.id}
+                className={
+                  index < rows.length - 1
+                    ? "border-b border-line-muted pb-5"
+                    : undefined
+                }
+              >
                 {showRound ? (
                   <p className="eyebrow mb-3">Round {event.round}</p>
                 ) : null}
                 <TimelineCard event={event} onInspect={setInspect} />
-                {index < rows.length - 1 ? (
-                  <p className="mt-4 text-center text-muted" aria-hidden>
-                    ↓
-                  </p>
-                ) : null}
               </li>
             ))}
           </ol>
@@ -269,72 +282,97 @@ export function NegotiationPanel({
               : "No merchant-policy-safe configuration can satisfy this request. Requires buyer relaxation."
           }
         />
-      ) : offer && currentTerms ? (
-        <StageResult
-          label={counterLabel}
-          title={currentTerms.productName ?? offer.product_name}
-          value={currentTerms.total}
-          explanation={<TermsList terms={currentTerms} />}
-          metrics={[
-            {
-              label: "Simulated buyer utility",
-              value:
-                currentTerms.utility != null
-                  ? currentTerms.utility.toFixed(2)
-                  : "—",
-              hint: METRIC_HELP.buyerUtility,
-            },
-            {
-              label: "Merchant contribution",
-              value: currentTerms.contribution ?? "—",
-              hint: METRIC_HELP.contribution,
-            },
-          ]}
-        >
-          {why ? (
-            <AstraCallout title={why.title}>
-              <dl className="grid gap-3 sm:grid-cols-3">
-                <div>
-                  <dt>Requested maximum</dt>
-                  <dd className="font-mono tabular-nums text-ink">
-                    {why.requested ?? "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Lowest safe configuration</dt>
-                  <dd className="font-mono tabular-nums text-ink">
-                    {why.closest ?? "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Gap</dt>
-                  <dd className="font-mono tabular-nums text-ink">{why.gap ?? "—"}</dd>
-                </div>
-              </dl>
-              {why.reasons.length ? (
-                <p className="mt-2">{why.reasons[0]}</p>
-              ) : null}
-            </AstraCallout>
-          ) : null}
-          {guardrails.length ? (
-            <ul className="mt-4 space-y-1 text-sm">
-              {guardrails.map((item) => (
-                <li key={item.label} className="flex gap-2">
-                  <span aria-hidden className={item.ok ? "text-mark" : "text-danger"}>
-                    {item.ok ? "✓" : "!"}
-                  </span>
-                  <span>{item.label}</span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </StageResult>
+      ) : null}
+
+      {currentTerms && !noSafe ? (
+        <StageSplit>
+          <StageSection
+            title={
+              current?.kind === "INITIAL_PROPOSAL"
+                ? "Current proposal terms"
+                : "Current counter terms"
+            }
+          >
+            <p className="font-medium">{currentTerms.productName}</p>
+            <p className="mt-1 font-mono text-xl font-semibold tabular-nums">
+              {currentTerms.total}
+            </p>
+            <div className="mt-4">
+              <AstraKeyValue
+                rows={[
+                  { label: "Price", value: currentTerms.total ?? "—" },
+                  { label: "Delivery", value: currentTerms.delivery ?? "—" },
+                  { label: "Warranty", value: currentTerms.warranty ?? "—" },
+                  { label: "Bundle", value: currentTerms.bundle ?? "None" },
+                  { label: "Returns", value: currentTerms.returns ?? "—" },
+                ]}
+              />
+            </div>
+          </StageSection>
+          <StageSection title="Commercial health">
+            <dl className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <dt className="type-small text-muted">Simulated buyer utility</dt>
+                <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                  {currentTerms.utility != null
+                    ? currentTerms.utility.toFixed(2)
+                    : "—"}
+                </dd>
+                <p className="mt-1 text-xs text-muted">{METRIC_HELP.buyerUtility}</p>
+              </div>
+              <div>
+                <dt className="type-small text-muted">Merchant contribution</dt>
+                <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                  {currentTerms.contribution ?? "—"}
+                </dd>
+                <p className="mt-1 text-xs text-muted">{METRIC_HELP.contribution}</p>
+              </div>
+            </dl>
+            {why ? (
+              <div className="mt-5">
+                <p className="type-small text-muted">{why.title}</p>
+                <dl className="mt-2 grid gap-3 sm:grid-cols-3">
+                  <div>
+                    <dt className="text-xs text-muted">Requested maximum</dt>
+                    <dd className="font-mono tabular-nums">{why.requested ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted">Lowest safe configuration</dt>
+                    <dd className="font-mono tabular-nums">{why.closest ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted">Gap</dt>
+                    <dd className="font-mono tabular-nums">{why.gap ?? "—"}</dd>
+                  </div>
+                </dl>
+                {why.reasons.length ? (
+                  <p className="mt-2 text-sm">{why.reasons[0]}</p>
+                ) : null}
+              </div>
+            ) : null}
+            {guardrails.length ? (
+              <ul className="mt-4 space-y-1 text-sm">
+                {guardrails.map((item) => (
+                  <li key={item.label} className="flex gap-2">
+                    <span
+                      aria-hidden
+                      className={item.ok ? "text-mark" : "text-danger"}
+                    >
+                      {item.ok ? "✓" : "!"}
+                    </span>
+                    <span>{item.label}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </StageSection>
+        </StageSplit>
       ) : null}
 
       {deltaRows.length && previousTerms && (buyer || changes.length) ? (
         <StageSection title="What changed?">
           <div className="overflow-x-auto">
-            <AstraDataTable>
+            <AstraDataTable bordered={false}>
               <thead>
                 <tr>
                   <th>Term</th>
@@ -379,32 +417,16 @@ export function NegotiationPanel({
         </StageSection>
       ) : null}
 
-      {currentTerms && !noSafe ? (
-        <StageSection
-          title={
-            current?.kind === "INITIAL_PROPOSAL"
-              ? "Current proposal terms"
-              : "Current counter terms"
-          }
-        >
-          <AstraKeyValue
-            rows={[
-              { label: "Price", value: currentTerms.total ?? "—" },
-              { label: "Delivery", value: currentTerms.delivery ?? "—" },
-              { label: "Warranty", value: currentTerms.warranty ?? "—" },
-              { label: "Bundle", value: currentTerms.bundle ?? "None" },
-              { label: "Returns", value: currentTerms.returns ?? "—" },
-            ]}
-          />
+      {accepted ? (
+        <StageSection title="Buyer action">
+          <p className="text-sm">
+            Buyer accepted {acceptPrice ?? "the current proposal"}.
+          </p>
         </StageSection>
       ) : null}
 
-      {accepted ? (
-        <p className="text-sm">Buyer accepted {acceptPrice ?? "the current proposal"}.</p>
-      ) : null}
-
       {!terminal && !accepted ? (
-        <StageSection title="Buyer actions">
+        <StageSection title="Buyer action">
           <form
             className="space-y-4"
             onSubmit={(event) => {
@@ -418,6 +440,12 @@ export function NegotiationPanel({
               <label htmlFor="buyer-counter" className="eyebrow">
                 Buyer counter
               </label>
+              {current?.kind === "CLARIFY" ? (
+                <p className="mt-1 text-sm text-muted">
+                  Last message was not a commercial change. Specify a price,
+                  delivery, warranty, bundle, or product change.
+                </p>
+              ) : null}
               <textarea
                 id="buyer-counter"
                 value={draft}

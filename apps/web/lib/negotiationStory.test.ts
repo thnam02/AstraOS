@@ -291,6 +291,62 @@ describe("timeline cases", () => {
     assert.equal(events.at(-1)?.kind, "NO_SAFE_COUNTER");
     assert.equal(events.at(-1)?.terms, null);
   });
+
+  it("CASE H — ambiguous buyer message is a clarification event", () => {
+    const initial = proposal({ version: 1, total: 9240, proposal_type: "INITIAL" });
+    const events = buildNegotiationTimeline(
+      session({
+        proposal: initial,
+        proposals: [initial],
+        turns: [
+          {
+            turn_id: "t1",
+            turn_number: 2,
+            actor: "MERCHANT_AGENT",
+            raw_message: null,
+            structured_action: "PROPOSE",
+            structured_payload: {},
+            related_offer_id: "o1",
+            related_proposal_id: "p1",
+            created_at: "2026-09-13T00:00:01Z",
+          },
+          {
+            turn_id: "t2",
+            turn_number: 3,
+            actor: "BUYER_AGENT",
+            raw_message: "make it better",
+            structured_action: "ASK_CLARIFICATION",
+            structured_payload: { action: "ASK_CLARIFICATION", ambiguous: true },
+            related_offer_id: null,
+            created_at: "2026-09-13T00:00:02Z",
+          },
+          {
+            turn_id: "t3",
+            turn_number: 4,
+            actor: "MERCHANT_AGENT",
+            raw_message: null,
+            structured_action: "CLARIFY",
+            structured_payload: {
+              outcome: "CLARIFICATION_REQUIRED",
+              reason_codes: ["AMBIGUOUS_REQUEST"],
+              explanation: [
+                "The buyer message is not machine-actionable. Specify a price, delivery, warranty, bundle, or product change.",
+              ],
+            },
+            related_offer_id: null,
+            created_at: "2026-09-13T00:00:03Z",
+          },
+        ],
+      }),
+    );
+    assert.deepEqual(
+      events.map((item) => item.kind),
+      ["INITIAL_PROPOSAL", "BUYER_ASK", "CLARIFY"],
+    );
+    assert.equal(events[1]?.message, "make it better");
+    assert.equal(events[2]?.explanation[0]?.includes("not machine-actionable"), true);
+    assert.deepEqual(events[2]?.reasonCodes, ["AMBIGUOUS_REQUEST"]);
+  });
 });
 
 describe("term delta", () => {

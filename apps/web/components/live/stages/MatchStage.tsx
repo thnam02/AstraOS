@@ -43,7 +43,7 @@ export function MatchStage({
   return (
     <>
       <StageResult
-        label="Top product match"
+        label="Best product match"
         title={top.product_name}
         value={
           <>
@@ -84,8 +84,8 @@ export function MatchStage({
       />
 
       <StageSection
-        title="Top candidates"
-        description="Standalone product ranking — not a commercial offer."
+        title="Other matches"
+        description="Compact ranked list. Evidence stays in the inspector."
       >
         <MatchList
           matches={matches}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { AstraPanel } from "@/components/astra";
 import { DecisionBridge } from "@/components/live/DecisionBridge";
 import { MetricHint } from "@/components/live/MetricHint";
 import { OptimisationPanel } from "@/components/live/OptimisationPanel";
@@ -245,15 +246,17 @@ export function OptimiseStage({
       />
 
       {detailOpen ? (
-        <OptimisationPanel
-          optimisation={optimisation}
-          profile={profile}
-          onProfile={onProfile}
-          busy={busy}
-          showRecommendation={false}
-          selectedOfferId={selectedOfferId}
-          onSelectOffer={onSelectOffer}
-        />
+        <AstraPanel>
+          <OptimisationPanel
+            optimisation={optimisation}
+            profile={profile}
+            onProfile={onProfile}
+            busy={busy}
+            showRecommendation={false}
+            selectedOfferId={selectedOfferId}
+            onSelectOffer={onSelectOffer}
+          />
+        </AstraPanel>
       ) : null}
 
       <WhyDifferentDrawer

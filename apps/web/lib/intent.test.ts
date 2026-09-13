@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buyerRequestHighlights, formatConstraint } from "./intent";
+import {
+  buyerRequestHighlights,
+  formatConstraint,
+  intentNarrative,
+} from "./intent";
 import type { ShoppingIntent } from "@/types";
 
 describe("buyer request highlights", () => {
@@ -57,5 +61,42 @@ describe("buyer request highlights", () => {
 
   it("formats a same-day delivery constraint as today", () => {
     assert.equal(formatConstraint("EQ", 0, "DAYS"), "today");
+  });
+
+  it("writes a human sentence from structured intent", () => {
+    const text = intentNarrative({
+      category: "headphones",
+      hard_constraints: [
+        {
+          id: "1",
+          field: "anc",
+          operator: "EQ",
+          value: true,
+          unit: null,
+          source_phrase: "noise-cancelling",
+          normalized_value: true,
+          importance: "MANDATORY",
+        },
+      ],
+      soft_preferences: [
+        {
+          id: "3",
+          field: "comfort",
+          direction: "MAXIMIZE",
+          importance: 0.8,
+          source_phrase: "comfort",
+        },
+      ],
+      tradeoffs: [
+        {
+          preferred_dimension: "comfort",
+          over_dimension: "price",
+          source_phrase: "comfort over price",
+        },
+      ],
+    } as ShoppingIntent);
+    assert.match(text, /The buyer needs headphones with ANC/);
+    assert.match(text, /Comfort is prioritised/);
+    assert.match(text, /Comfort matters more than minimising price/);
   });
 });

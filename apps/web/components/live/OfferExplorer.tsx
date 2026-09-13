@@ -26,11 +26,13 @@ export function OfferExplorer({
   heroProduct,
   policySafe,
   pareto,
+  explorerOnly = false,
 }: {
   construction: GenerateOffersResponse;
   heroProduct?: string;
   policySafe?: number;
   pareto?: number;
+  explorerOnly?: boolean;
 }) {
   const [status, setStatus] = useState("FEASIBLE");
   const [productId, setProductId] = useState("");
@@ -102,58 +104,62 @@ export function OfferExplorer({
 
   return (
     <section className="space-y-4">
-      <div>
-        <p className="eyebrow">Construct</p>
-        <h2 className="mt-1 text-xl font-semibold tracking-tight">
-          Product → offer space
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Matched products stay fixed. AstraOS enumerates commercial
-          configurations — it is not choosing a winner here.
-        </p>
-      </div>
+      {explorerOnly ? null : (
+        <>
+          <div>
+            <p className="eyebrow">Construct</p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">
+              Product → offer space
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Matched products stay fixed. AstraOS enumerates commercial
+              configurations — it is not choosing a winner here.
+            </p>
+          </div>
 
-      <div className="bg-canvas px-4 py-4 text-sm">
-        <p className="eyebrow">Commercial expansion</p>
-        <p className="mt-2 font-mono text-xl font-semibold tabular-nums">
-          {story.products} products
-        </p>
-        <p className="mt-2 text-xs text-muted">{dimensionLine(construction)}</p>
-        <ol className="mt-3 space-y-1">
-          {steps.map((step, index) => (
-            <li key={step.label} className="flex justify-between gap-3">
-              <span className="text-muted">
-                {index > 0 ? "↓ " : ""}
-                {step.label}
-              </span>
-              <span className="font-mono tabular-nums">{step.value}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-2 text-xs text-muted">{featured}</p>
-      </div>
+          <div className="bg-canvas px-4 py-4 text-sm">
+            <p className="eyebrow">Commercial expansion</p>
+            <p className="mt-2 font-mono text-xl font-semibold tabular-nums">
+              {story.products} products
+            </p>
+            <p className="mt-2 text-xs text-muted">{dimensionLine(construction)}</p>
+            <ol className="mt-3 space-y-1">
+              {steps.map((step, index) => (
+                <li key={step.label} className="flex justify-between gap-3">
+                  <span className="text-muted">
+                    {index > 0 ? "↓ " : ""}
+                    {step.label}
+                  </span>
+                  <span className="font-mono tabular-nums">{step.value}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-2 text-xs text-muted">{featured}</p>
+          </div>
 
-      <StatStrip
-        items={[
-          { label: "Estimated", value: construction.summary.estimated_candidates },
-          { label: "Generated", value: construction.summary.generated_candidates },
-          { label: "Feasible", value: construction.summary.feasible_candidates },
-          { label: "Rejected", value: construction.summary.rejected_candidates },
-        ]}
-      />
-      {construction.summary.pruning_reason ? (
-        <p className="text-xs text-muted">
-          Pruned: {construction.summary.pruning_reason}
-        </p>
-      ) : null}
-      {Object.keys(construction.summary.rejection_distribution).length ? (
-        <p className="text-xs text-muted">
-          Rejections:{" "}
-          {Object.entries(construction.summary.rejection_distribution)
-            .map(([code, count]) => `${code.replace(/_/g, " ").toLowerCase()} ${count}`)
-            .join(" · ")}
-        </p>
-      ) : null}
+          <StatStrip
+            items={[
+              { label: "Estimated", value: construction.summary.estimated_candidates },
+              { label: "Generated", value: construction.summary.generated_candidates },
+              { label: "Feasible", value: construction.summary.feasible_candidates },
+              { label: "Rejected", value: construction.summary.rejected_candidates },
+            ]}
+          />
+          {construction.summary.pruning_reason ? (
+            <p className="text-xs text-muted">
+              Pruned: {construction.summary.pruning_reason}
+            </p>
+          ) : null}
+          {Object.keys(construction.summary.rejection_distribution).length ? (
+            <p className="text-xs text-muted">
+              Rejections:{" "}
+              {Object.entries(construction.summary.rejection_distribution)
+                .map(([code, count]) => `${code.replace(/_/g, " ").toLowerCase()} ${count}`)
+                .join(" · ")}
+            </p>
+          ) : null}
+        </>
+      )}
 
       <div className="flex flex-wrap items-end gap-3 text-xs">
         <label className="space-y-1">

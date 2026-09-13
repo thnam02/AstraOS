@@ -9,6 +9,7 @@
   --color-muted: #5c5a54;
   --color-line: #dddad2;
   --color-line-muted: #ebe8e1;
+  --color-mark: #1f6b5a;
   --color-success: #1b7f4a;
   --color-danger: #b42318;
   --color-warning: #b54708;
@@ -136,6 +137,18 @@ html {
     border: 1px solid var(--color-line);
     padding: 1rem 1.1rem;
     box-shadow: var(--shadow-panel);
+  }
+
+  .stage-result {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-left: 3px solid var(--color-mark);
+    box-shadow: var(--shadow-panel);
+    padding: 1.5rem 1.75rem;
+  }
+
+  .stage-result-emphasis {
+    padding: 1.75rem 2rem;
   }
 
   .eyebrow {

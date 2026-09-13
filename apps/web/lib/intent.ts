@@ -78,3 +78,48 @@ export function buyerRequestHighlights(intent: ShoppingIntent): string[] {
   }
   return chips.slice(0, 5);
 }
+
+export function importanceLabel(value: number): string {
+  if (value >= 0.75) return "High";
+  if (value <= 0.25) return "Low";
+  return "Medium";
+}
+
+export function intentNarrative(intent: ShoppingIntent): string {
+  const category = intent.category
+    ? contextLabel(intent.category).toLowerCase()
+    : "the requested products";
+  const mandatory = intent.hard_constraints
+    .slice(0, 4)
+    .map((item) => constraintLabel(item))
+    .filter(Boolean);
+  const priorities = intent.soft_preferences
+    .filter((item) => item.importance >= 0.5)
+    .slice(0, 2)
+    .map((item) => fieldLabel(item.field).toLowerCase());
+  const trade = intent.tradeoffs[0];
+  const parts: string[] = [];
+  parts.push(
+    mandatory.length
+      ? `The buyer needs ${category} with ${mandatory.join(", ")}.`
+      : `The buyer needs ${category}.`,
+  );
+  if (priorities.length) {
+    const joined = priorities.join(" and ");
+    parts.push(
+      `${joined.charAt(0).toUpperCase()}${joined.slice(1)} ${
+        priorities.length > 1 ? "are" : "is"
+      } prioritised.`,
+    );
+  }
+  if (trade) {
+    const over =
+      trade.over_dimension === "price"
+        ? "minimising price"
+        : fieldLabel(trade.over_dimension).toLowerCase();
+    parts.push(
+      `${fieldLabel(trade.preferred_dimension)} matters more than ${over}.`,
+    );
+  }
+  return parts.join(" ");
+}

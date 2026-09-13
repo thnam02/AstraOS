@@ -1,13 +1,12 @@
 import { useState } from "react";
 
-import { constraintLabel, contextLabel, fieldLabel } from "@/lib/intent";
+import {
+  constraintLabel,
+  contextLabel,
+  fieldLabel,
+  importanceLabel,
+} from "@/lib/intent";
 import type { ShoppingIntent } from "@/types";
-
-function importanceLabel(value: number): string {
-  if (value >= 0.75) return "High";
-  if (value <= 0.25) return "Low";
-  return "Medium";
-}
 
 function QuotedChip({
   label,

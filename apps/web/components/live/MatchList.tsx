@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Drawer } from "@/components/shared/Drawer";
 import { EvidenceBadge } from "@/components/shared/EvidenceBadge";
@@ -19,12 +19,36 @@ import {
 import { formatAudCents } from "@/lib/money";
 import type { RankedProductMatch } from "@/types";
 
-export function MatchList({ matches }: { matches: RankedProductMatch[] }) {
+export function MatchList({
+  matches,
+  inspectNonce = 0,
+  compareNonce = 0,
+}: {
+  matches: RankedProductMatch[];
+  inspectNonce?: number;
+  compareNonce?: number;
+}) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [inspect, setInspect] = useState<RankedProductMatch | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    if (!inspectNonce) return;
+    const top = matches[0];
+    if (!top) return;
+    setExpanded(top.variant_id);
+    setInspect(top);
+  }, [inspectNonce, matches]);
+
+  useEffect(() => {
+    if (!compareNonce) return;
+    const ids = matches.slice(0, 2).map((item) => item.variant_id);
+    if (ids.length < 2) return;
+    setCompareIds(ids);
+    setCompareOpen(true);
+  }, [compareNonce, matches]);
 
   const compareSet = matches.filter((item) => compareIds.includes(item.variant_id));
   const visible = showAll ? matches : matches.slice(0, 3);

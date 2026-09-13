@@ -35,7 +35,7 @@ export function QualificationInspect({
 
   return (
     <>
-      <button type="button" className="btn-ghost" onClick={() => void inspect()}>
+      <button type="button" className="btn-quiet" onClick={() => void inspect()}>
         Inspect qualification
       </button>
       <Drawer open={open} title="Qualification" onClose={() => setOpen(false)}>

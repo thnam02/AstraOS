@@ -13,7 +13,7 @@ export function SelectedOfferSummary({
   onInspect?: () => void;
 }) {
   return (
-    <aside className="space-y-5">
+    <div className="space-y-5">
       <div>
         <p className="eyebrow">Selected offer</p>
         <h2 className="mt-2 type-section">{offer.product_name}</h2>
@@ -68,6 +68,6 @@ export function SelectedOfferSummary({
           Inspect decision
         </button>
       ) : null}
-    </aside>
+    </div>
   );
 }

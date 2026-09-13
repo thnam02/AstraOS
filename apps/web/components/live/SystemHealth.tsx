@@ -9,13 +9,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getReady } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import type { ConnectionStatus } from "@/types";
 
-export function SystemHealth({
-  timing,
-}: {
-  timing?: { total_ms?: number; intent_parse_ms?: number; qualification_ms?: number };
-}) {
+export function SystemHealth() {
   const [status, setStatus] = useState<ConnectionStatus>("loading");
   const [degraded, setDegraded] = useState<string[]>([]);
 
@@ -38,44 +35,46 @@ export function SystemHealth({
     };
   }, []);
 
+  const tone =
+    status === "unavailable"
+      ? "bg-danger"
+      : status === "connected" && degraded.length
+        ? "bg-warning"
+        : status === "connected"
+          ? "bg-success"
+          : "bg-muted";
   const label =
-    status === "connected"
-      ? degraded.length
-        ? "Degraded"
-        : "System"
-      : status === "unavailable"
-        ? "Offline"
-        : "System";
+    status === "unavailable"
+      ? "System offline"
+      : degraded.length
+        ? "System degraded"
+        : status === "connected"
+          ? "System connected"
+          : "Checking system";
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="btn-quiet focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
-        {label}
+      <DropdownMenuTrigger
+        aria-label={label}
+        className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-[6px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+      >
+        <span className={cn("h-1.5 w-1.5 rounded-full", tone)} aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
         className="w-72 space-y-3 rounded-[6px] border-line p-3 shadow-none"
       >
         <div>
-          <p className="eyebrow mb-2">API</p>
+          <p className="eyebrow mb-2">System status</p>
           <StatusBadge status={status} />
         </div>
         {degraded.length ? (
           <p className="text-xs leading-5 text-muted">
-            Degraded: {degraded.join(", ").replaceAll("_", " ")}
+            {degraded.join(", ").replaceAll("_", " ")}
           </p>
-        ) : null}
-        {timing?.total_ms != null ? (
-          <p className="text-xs text-muted">
-            {timing.total_ms.toFixed(0)} ms
-            {timing.intent_parse_ms != null
-              ? ` · parse ${timing.intent_parse_ms.toFixed(0)}`
-              : ""}
-            {timing.qualification_ms != null
-              ? ` · qualify ${timing.qualification_ms.toFixed(0)}`
-              : ""}
-          </p>
-        ) : null}
+        ) : (
+          <p className="text-xs text-muted">No operational warnings.</p>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

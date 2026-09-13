@@ -1,5 +1,6 @@
 "use client";
 
+import { StageDisclosure, StageResult, StageSection } from "@/components/live/StageShell";
 import { humanizeCheck } from "@/lib/decisionNarrative";
 import { formatAudCents, formatRate } from "@/lib/money";
 import type { AcceptProposalResponse, NegotiationResponse } from "@/types";
@@ -71,134 +72,193 @@ export function TransactionPanel({
   const offer = negotiation.proposal?.offer;
   const failed = Boolean(transaction && transaction.state !== "CONFIRMED");
   const confirmed = transaction?.state === "CONFIRMED";
+  const status = confirmed
+    ? "Confirmed"
+    : failed
+      ? "Cannot be executed"
+      : "Ready for confirmation";
 
   return (
-    <section className="space-y-5">
-      <div>
-        <p className="eyebrow">Transact</p>
-        <h2 className="mt-1 text-xl font-semibold tracking-tight">
-          Execution pipeline
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Proposal proof is issuance-time evidence. Revalidation is current
-          operational truth. AstraOS does not take payment.
-        </p>
-      </div>
-
-      <ol className="space-y-2" aria-label="Transaction pipeline">
-        {STEPS.map((label, index) => {
-          const status = stepState(transaction, label);
-          return (
-            <li key={label}>
-              {index > 0 ? (
-                <p className="pl-1 text-muted" aria-hidden>
-                  ↓
-                </p>
+    <>
+      <StageResult
+        label="Transaction status"
+        title={status}
+        value={
+          offer
+            ? formatAudCents(
+                transaction?.order?.total_amount_cents ??
+                  offer.pricing.total_price_cents,
+              )
+            : undefined
+        }
+        explanation={
+          offer ? (
+            <p>
+              {offer.product_name}
+              {transaction?.order?.order_number ? (
+                <>
+                  <span className="mx-2 text-muted">·</span>
+                  {transaction.order.order_number}
+                </>
               ) : null}
-              <div className="flex items-center justify-between py-1 text-sm">
-                <span className="tracking-[0.06em]">
-                  <span className="mr-2" aria-hidden>
-                    {mark(status)}
-                  </span>
-                  {label}
-                </span>
-                <span
-                  className={
-                    status === "PASS"
-                      ? "text-[11px] text-success"
-                      : status === "FAIL"
-                        ? "text-[11px] text-danger"
-                        : "text-[11px] text-muted"
-                  }
-                >
-                  {status}
-                </span>
-              </div>
-              {label === "REVALIDATION" && transaction?.revalidation ? (
-                <ul className="mt-1 grid gap-1 pl-6 text-xs sm:grid-cols-2">
-                  {transaction.revalidation.checks.map((item) => (
-                    <li key={item.check} className="flex justify-between gap-3">
-                      <span>{humanizeCheck(item.check)}</span>
-                      <span
-                        className={
-                          item.status === "PASS" ? "text-success" : "text-danger"
-                        }
-                      >
-                        {item.status}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </li>
-          );
-        })}
-      </ol>
-
-      {confirmed && transaction?.order ? (
-        <div className="bg-canvas px-4 py-3">
-          <p className="eyebrow">Confirmed</p>
-          <p className="mt-1 font-mono text-xl">{transaction.order.order_number}</p>
-          <p className="mt-1 text-sm">{transaction.order.product_name}</p>
-          <p className="font-mono text-sm tabular-nums">
-            {formatAudCents(transaction.order.total_amount_cents)}
-          </p>
-        </div>
-      ) : null}
-
-      {failed && transaction && !confirmed ? (
-        <div>
-          <p className="eyebrow text-danger">Proposal cannot be executed</p>
-          <p className="mt-2 text-sm">
-            {transaction.failure_codes.map(humanizeCheck).join(" · ") ||
-              humanizeCheck(transaction.state)}
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            The accepted proposal was not silently rewritten.
-          </p>
-          {transaction.recovery_proposal ? (
-            <p className="mt-2 text-sm">
-              New proposal #{transaction.recovery_proposal.version} is ready.
             </p>
-          ) : null}
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onRecover}
-            className="btn-ghost mt-3"
-          >
-            Generate new proposal
-          </button>
-        </div>
+          ) : undefined
+        }
+        metrics={
+          offer
+            ? [
+                {
+                  label: "Contribution",
+                  value: formatAudCents(offer.contribution_margin_cents),
+                },
+                {
+                  label: "Delivery",
+                  value: offer.delivery.name,
+                },
+                {
+                  label: "Warranty",
+                  value: `${offer.warranty.months}-month`,
+                },
+              ]
+            : undefined
+        }
+        actions={
+          <>
+            {!transaction && offer ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onExecute}
+                className="btn-primary"
+              >
+                {busy ? "Executing…" : "Accept proposal"}
+              </button>
+            ) : null}
+            {failed && transaction && !confirmed ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onRecover}
+                className="btn-ghost"
+              >
+                Generate new proposal
+              </button>
+            ) : null}
+          </>
+        }
+      >
+        {failed && transaction && !confirmed ? (
+          <div>
+            <p className="text-sm text-danger">
+              {transaction.failure_codes.map(humanizeCheck).join(" · ") ||
+                humanizeCheck(transaction.state)}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              The accepted proposal was not silently rewritten.
+            </p>
+            {transaction.recovery_proposal ? (
+              <p className="mt-2 text-sm">
+                New proposal #{transaction.recovery_proposal.version} is ready.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </StageResult>
+
+      {offer ? (
+        <StageSection title="Final commercial terms">
+          <dl className="max-w-md space-y-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Product</dt>
+              <dd>{offer.product_name}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Final price</dt>
+              <dd className="font-mono tabular-nums">
+                {formatAudCents(
+                  transaction?.order?.total_amount_cents ??
+                    offer.pricing.total_price_cents,
+                )}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Delivery</dt>
+              <dd>{offer.delivery.name}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Warranty</dt>
+              <dd>{offer.warranty.months}-month</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Bundle</dt>
+              <dd>{offer.bundle?.name ?? "None"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Returns</dt>
+              <dd>
+                {offer.returns?.window_days
+                  ? `${offer.returns.window_days}-day`
+                  : "Standard"}
+              </dd>
+            </div>
+          </dl>
+        </StageSection>
       ) : null}
 
-      {!transaction && offer ? (
-        <div>
-          <p className="text-sm">{offer.product_name}</p>
-          <p className="text-sm text-muted">
-            {formatAudCents(offer.pricing.total_price_cents)} · {offer.delivery.name} ·{" "}
-            {offer.warranty.months}m
-          </p>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onExecute}
-            className="btn-primary mt-3"
-          >
-            {busy ? "Executing…" : "Accept"}
-          </button>
-        </div>
-      ) : null}
+      <StageDisclosure title="Order pipeline">
+        <ol className="space-y-2" aria-label="Transaction pipeline">
+          {STEPS.map((label, index) => {
+            const statusMark = stepState(transaction, label);
+            return (
+              <li key={label}>
+                {index > 0 ? (
+                  <p className="pl-1 text-muted" aria-hidden>
+                    ↓
+                  </p>
+                ) : null}
+                <div className="flex items-center justify-between py-1 text-sm">
+                  <span className="tracking-[0.06em]">
+                    <span className="mr-2" aria-hidden>
+                      {mark(statusMark)}
+                    </span>
+                    {label}
+                  </span>
+                  <span
+                    className={
+                      statusMark === "PASS"
+                        ? "text-[11px] text-success"
+                        : statusMark === "FAIL"
+                          ? "text-[11px] text-danger"
+                          : "text-[11px] text-muted"
+                    }
+                  >
+                    {statusMark}
+                  </span>
+                </div>
+                {label === "REVALIDATION" && transaction?.revalidation ? (
+                  <ul className="mt-1 grid gap-1 pl-6 text-xs sm:grid-cols-2">
+                    {transaction.revalidation.checks.map((item) => (
+                      <li key={item.check} className="flex justify-between gap-3">
+                        <span>{humanizeCheck(item.check)}</span>
+                        <span
+                          className={
+                            item.status === "PASS" ? "text-success" : "text-danger"
+                          }
+                        >
+                          {item.status}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            );
+          })}
+        </ol>
+      </StageDisclosure>
 
-      {transaction?.timing ? (
-        <p className="text-[11px] text-muted">
-          {transaction.timing.total_transaction_ms.toFixed(0)} ms total
-        </p>
-      ) : null}
-
-      <div>
-        <p className="eyebrow">Demo controls</p>
-        <div className="mt-2 flex flex-wrap gap-2">
+      <StageDisclosure title="Recovery controls">
+        <div className="flex flex-wrap gap-2">
           <button type="button" disabled={busy} onClick={() => onDemoInventory(0)} className="btn-quiet">
             Stock → 0
           </button>
@@ -218,7 +278,7 @@ export function TransactionPanel({
             Margin {formatRate(0.15)}
           </button>
         </div>
-      </div>
-    </section>
+      </StageDisclosure>
+    </>
   );
 }

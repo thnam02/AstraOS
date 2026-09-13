@@ -32,8 +32,7 @@ export function DecisionBridge({
 
   return (
     <section>
-      <p className="eyebrow">Why this response?</p>
-      <div className="mt-3 grid items-start gap-4 text-sm md:grid-cols-[1fr_auto_1fr]">
+      <div className="grid items-start gap-4 text-sm md:grid-cols-[1fr_auto_1fr]">
         <div>
           <p className="type-small text-muted">Best standalone product</p>
           <p className="mt-1 text-base font-semibold">{topMatch.product_name}</p>

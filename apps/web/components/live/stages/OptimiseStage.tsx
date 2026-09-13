@@ -17,6 +17,7 @@ import {
   expansionSteps,
   mandatoryRequirementsCopy,
   noCompliantOfferCopy,
+  selectableCompleteOffer,
 } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
 import type {
@@ -52,9 +53,13 @@ export function OptimiseStage({
 }) {
   const [compareOpen, setCompareOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
-  const items = (offer?.proof_bundle?.items ?? []).filter((item) => !item.incomplete);
 
-  if (!offer || optimisation.failure?.code === "NO_COMPLIANT_OFFER") {
+  const selected = selectableCompleteOffer(
+    offer,
+    optimisation,
+    construction?.intent,
+  );
+  if (!selected) {
     const empty = noCompliantOfferCopy(optimisation);
     return (
       <StageResult
@@ -113,9 +118,10 @@ export function OptimiseStage({
     );
   }
 
-  const levers = commercialLevers(offer);
+  const items = (selected.proof_bundle?.items ?? []).filter((item) => !item.incomplete);
+  const levers = commercialLevers(selected);
   const mandatoryOk = completeOfferMandatorySatisfied(
-    offer,
+    selected,
     construction?.intent,
   );
 
@@ -123,8 +129,8 @@ export function OptimiseStage({
     <>
       <StageResult
         label="Selected complete offer"
-        title={offer.product_name}
-        value={formatAudCents(offer.pricing.total_price_cents)}
+        title={selected.product_name}
+        value={formatAudCents(selected.pricing.total_price_cents)}
         explanation={
           <ul className="space-y-1">
             {levers.map((item) => (
@@ -169,7 +175,7 @@ export function OptimiseStage({
                   />
                 </dt>
                 <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
-                  {offer.buyer_utility.toFixed(2)}
+                  {selected.buyer_utility.toFixed(2)}
                 </dd>
               </div>
               <div>
@@ -180,7 +186,7 @@ export function OptimiseStage({
                   />
                 </dt>
                 <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
-                  {formatAudCents(offer.contribution_margin_cents)}
+                  {formatAudCents(selected.contribution_margin_cents)}
                 </dd>
               </div>
             </dl>
@@ -196,7 +202,7 @@ export function OptimiseStage({
                   />
                 </dt>
                 <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
-                  {Math.round(offer.product_fit * 100)}
+                  {Math.round(selected.product_fit * 100)}
                   <span className="ml-1 text-sm font-medium text-muted">/ 100</span>
                 </dd>
               </div>
@@ -213,14 +219,14 @@ export function OptimiseStage({
           <li className="flex gap-2">
             <span
               aria-hidden
-              className={offer.is_pareto_efficient ? "text-mark" : "text-muted"}
+              className={selected.is_pareto_efficient ? "text-mark" : "text-muted"}
             >
-              {offer.is_pareto_efficient ? "✓" : "○"}
+              {selected.is_pareto_efficient ? "✓" : "○"}
             </span>
             <span>
               <MetricHint
                 label={
-                  offer.is_pareto_efficient
+                  selected.is_pareto_efficient
                     ? "Pareto-efficient"
                     : "Not on the efficient frontier"
                 }
@@ -234,7 +240,7 @@ export function OptimiseStage({
       <DecisionBridge
         topMatch={topMatch}
         optimisation={optimisation}
-        offer={offer}
+        offer={selected}
         construction={construction}
       />
 
@@ -252,7 +258,7 @@ export function OptimiseStage({
 
       <WhyDifferentDrawer
         open={compareOpen}
-        offer={offer}
+        offer={selected}
         topMatch={topMatch}
         items={items}
         onClose={() => setCompareOpen(false)}

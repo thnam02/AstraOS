@@ -7,6 +7,7 @@ import {
   completeOfferMandatorySatisfied,
   conciseOfferReasons,
   noCompliantOfferCopy,
+  selectableCompleteOffer,
   constructStory,
   expansionSteps,
   humanizeCheck,
@@ -250,6 +251,30 @@ describe("score terminology", () => {
       "Same-day delivery addresses urgency",
       "Pareto efficient",
     ]);
+  });
+
+  it("does not treat an over-budget recommended offer as selectable", () => {
+    const offer = {
+      policy_safe: true,
+      policy_rejection_codes: [],
+      selectable: true,
+      is_recommended: true,
+      is_pareto_efficient: true,
+      pricing: { product_price_cents: 9200, total_price_cents: 12767, currency: "AUD" },
+    } as never;
+    assert.equal(
+      selectableCompleteOffer(offer, { failure: null } as never, {
+        hard_constraints: [
+          {
+            field: "price",
+            operator: "LT",
+            value: 10000,
+            normalized_value: 10000,
+          },
+        ],
+      }),
+      null,
+    );
   });
 
   it("trusts backend complete-offer buyer validation when present", () => {

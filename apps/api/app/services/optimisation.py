@@ -325,6 +325,15 @@ class OptimisationService:
 
         safe = [item for item in result.scored if is_optimisation_candidate(item)]
         merchant_safe = [item for item in result.scored if item.policy.policy_safe]
+        if result.recommended is not None:
+            from app.decision.optimisation.candidates import (
+                ensure_selected_offer_compliant,
+            )
+
+            ensure_selected_offer_compliant(result.recommended)
+            if not is_optimisation_candidate(result.recommended):
+                result.recommended = None
+                result.selection = None
         recommended_public = (
             to_public_scored(result.recommended) if result.recommended else None
         )

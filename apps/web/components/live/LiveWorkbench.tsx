@@ -35,7 +35,7 @@ import {
   setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
-import { PIPELINE_LOADING } from "@/lib/decisionNarrative";
+import { PIPELINE_LOADING, selectableCompleteOffer } from "@/lib/decisionNarrative";
 import { HERO_INTENT } from "@/lib/intent";
 import type {
   BuyerProfile,
@@ -76,10 +76,11 @@ export function LiveWorkbench() {
         : null)
     );
   }, [optimisation, selectedOfferId]);
-  const proposalOffer =
-    selectedFromChart ??
-    optimisation?.recommended_offer ??
-    null;
+  const proposalOffer = selectableCompleteOffer(
+    selectedFromChart ?? optimisation?.recommended_offer ?? null,
+    optimisation,
+    offers?.intent,
+  );
   const topMatch = result?.semantic_matching.matches[0] ?? null;
 
   const flags = {

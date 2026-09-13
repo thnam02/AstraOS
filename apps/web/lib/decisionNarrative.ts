@@ -330,8 +330,8 @@ export function completeOfferMandatorySatisfied(
     }>;
   } | null,
 ): boolean {
-  if (typeof offer.all_mandatory_buyer_constraints_satisfied === "boolean") {
-    return offer.all_mandatory_buyer_constraints_satisfied;
+  if (offer.all_mandatory_buyer_constraints_satisfied === false) {
+    return false;
   }
   if (!offer.policy_safe) return false;
   if (offer.policy_rejection_codes.some((code) => BUYER_PRICE_CODES.has(code))) {
@@ -348,6 +348,18 @@ export function completeOfferMandatorySatisfied(
     if (!compareBound(item.operator, observed, expected)) return false;
   }
   return true;
+}
+
+export function selectableCompleteOffer(
+  offer: PublicScoredOffer | null | undefined,
+  optimisation?: OptimisationResponse | null,
+  intent?: Parameters<typeof completeOfferMandatorySatisfied>[1],
+): PublicScoredOffer | null {
+  if (!offer) return null;
+  if (optimisation?.failure?.code === "NO_COMPLIANT_OFFER") return null;
+  if (offer.selectable === false || offer.proposal_eligible === false) return null;
+  if (!completeOfferMandatorySatisfied(offer, intent)) return null;
+  return offer;
 }
 
 export function mandatoryRequirementsCopy(ok: boolean): string {

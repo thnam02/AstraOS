@@ -66,10 +66,12 @@ export function ProcessRail({
   active,
   flags,
   onSelect,
+  interactive = true,
 }: {
   active: LiveStage;
   flags: Omit<Parameters<typeof processRailState>[1], never>;
-  onSelect: (stage: LiveStage) => void;
+  onSelect?: (stage: LiveStage) => void;
+  interactive?: boolean;
 }) {
   return (
     <ol
@@ -98,26 +100,42 @@ export function ProcessRail({
                 ──
               </span>
             ) : null}
-            <button
-              type="button"
-              onClick={() => onSelect(id)}
-              aria-current={state === "active" ? "step" : undefined}
-              aria-label={`${STAGE_COPY[id]}, ${state}`}
-              className={`cursor-pointer text-[11px] uppercase tracking-[0.08em] motion-safe:transition-colors ${
-                state === "active"
-                  ? "font-semibold text-ink"
-                  : state === "complete"
-                    ? "text-ink"
-                    : state === "failed" || state === "blocked"
-                      ? "text-danger"
-                      : "text-muted"
-              }`}
-            >
-              <span className="mr-1" aria-hidden>
-                {mark}
+            {interactive && onSelect ? (
+              <button
+                type="button"
+                onClick={() => onSelect(id)}
+                aria-current={state === "active" ? "step" : undefined}
+                aria-label={`${STAGE_COPY[id]}, ${state}`}
+                className={`cursor-pointer text-[11px] uppercase tracking-[0.08em] motion-safe:transition-colors ${
+                  state === "active"
+                    ? "font-semibold text-ink"
+                    : state === "complete"
+                      ? "text-ink"
+                      : state === "failed" || state === "blocked"
+                        ? "text-danger"
+                        : "text-muted"
+                }`}
+              >
+                <span className="mr-1" aria-hidden>
+                  {mark}
+                </span>
+                {STAGE_COPY[id]}
+              </button>
+            ) : (
+              <span
+                aria-current={state === "active" ? "step" : undefined}
+                className={`text-[11px] uppercase tracking-[0.08em] ${
+                  state === "active"
+                    ? "font-semibold text-ink"
+                    : "text-muted"
+                }`}
+              >
+                <span className="mr-1" aria-hidden>
+                  {mark}
+                </span>
+                {STAGE_COPY[id]}
               </span>
-              {STAGE_COPY[id]}
-            </button>
+            )}
           </li>
         );
       })}

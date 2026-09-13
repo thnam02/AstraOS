@@ -14,6 +14,7 @@ import { QualificationInspect } from "@/components/live/QualificationInspect";
 import { RecommendedOffer } from "@/components/live/RecommendedOffer";
 import { TransactionPanel } from "@/components/live/TransactionPanel";
 import { AstraLoadingState } from "@/components/astra";
+import { LiveEntry } from "@/components/live/LiveEntry";
 import { Drawer } from "@/components/shared/Drawer";
 import { EmptyState, ErrorState } from "@/components/shared/EmptyState";
 import { StatStrip } from "@/components/shared/StatStrip";
@@ -29,11 +30,7 @@ import {
   setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
-import {
-  PIPELINE_LOADING,
-  productsDiffer,
-  SCENARIOS,
-} from "@/lib/decisionNarrative";
+import { PIPELINE_LOADING, productsDiffer } from "@/lib/decisionNarrative";
 import { HERO_INTENT } from "@/lib/intent";
 import type {
   BuyerProfile,
@@ -198,72 +195,20 @@ export function LiveWorkbench() {
 
   if (!result && !busy) {
     return (
-      <div className="mx-auto max-w-2xl space-y-5 py-10">
-        <p className="eyebrow">AstraOS Live</p>
-        <h1 className="type-page">
-          Merchant-side offer intelligence for autonomous buyers
-        </h1>
-        <p className="text-sm text-muted">
-          The unit of competition is the complete offer, not only the product
-          or the price.
-        </p>
-        <div>
-          <p className="eyebrow">Hero scenarios</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {SCENARIOS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="btn-ghost"
-                onClick={() => {
-                  setText(item.intent);
-                  setProfile(item.profile);
-                  void run(item.intent, item.profile);
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-            <button
-              type="button"
-              className="btn-quiet"
-              onClick={() => setText(HERO_INTENT)}
-            >
-              Custom request
-            </button>
-          </div>
-        </div>
-        <label className="block">
-          <span className="eyebrow">Buyer agent request</span>
-          <textarea
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            rows={4}
-            className="control mt-2 w-full px-3 py-2 text-sm leading-6"
-          />
-        </label>
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={parserMode}
-            onChange={(event) =>
-              setParserMode(event.target.value as "rule_based" | "llm")
-            }
-            className="control px-2 py-1 text-xs"
-          >
-            <option value="llm">LLM parser</option>
-            <option value="rule_based">Rule-based parser</option>
-          </select>
-          <button
-            type="button"
-            onClick={() => void run()}
-            disabled={!text.trim()}
-            className="btn-primary"
-          >
-            Run AstraOS
-          </button>
-        </div>
-        {error ? <ErrorState message={error} /> : null}
-      </div>
+      <LiveEntry
+        text={text}
+        parserMode={parserMode}
+        error={error}
+        onText={setText}
+        onParser={setParserMode}
+        onRun={() => void run()}
+        onScenario={(intent, nextProfile) => {
+          setText(intent);
+          setProfile(nextProfile);
+          void run(intent, nextProfile);
+        }}
+        onCustom={() => setText(HERO_INTENT)}
+      />
     );
   }
 

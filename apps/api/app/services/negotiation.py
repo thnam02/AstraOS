@@ -171,12 +171,25 @@ class NegotiationService:
             codes=(
                 [ReasonCode.ORIGINAL_CONSTRAINTS_RETAINED.value]
                 if rec
-                else [ReasonCode.NO_POLICY_SAFE_OFFER.value]
+                else [
+                    (
+                        decided.optimisation.failure.code
+                        if decided.optimisation.failure
+                        else ReasonCode.NO_COMPLIANT_OFFER.value
+                    )
+                ]
             ),
             explanation=(
                 decided.optimisation.explanation
                 if rec
-                else ["No policy-safe offer exists for the opening request."]
+                else [
+                    decided.optimisation.failure.message
+                    if decided.optimisation.failure
+                    else (
+                        "No complete offer satisfies the buyer's "
+                        "mandatory constraints."
+                    )
+                ]
             ),
             next_acts=["ACCEPT", "REJECT", "COUNTER"] if rec else ["COUNTER", "REJECT"],
             expires=expires,

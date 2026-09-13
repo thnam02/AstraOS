@@ -10,6 +10,7 @@ from app.decision.optimisation.models import (
     CounterfactualRow,
     MerchantObjectiveSnapshot,
     NamedComparison,
+    NearMissCandidate,
     ObjectiveComparison,
     OptimisationFailure,
     ScoredOffer,
@@ -45,6 +46,8 @@ class DecisionRequest(BaseModel):
 
 class OptimisationSummary(BaseModel):
     offers_considered: int
+    feasible: int = 0
+    buyer_compliant: int = 0
     policy_safe: int
     policy_rejected: int
     pareto_efficient: int
@@ -102,6 +105,13 @@ class PublicScoredOffer(BaseModel):
     utility_trace: dict[str, Any]
     policy_safe: bool
     policy_rejection_codes: list[str]
+    buyer_constraint_status: str = "SATISFIED"
+    buyer_constraint_codes: list[str] = Field(default_factory=list)
+    all_mandatory_buyer_constraints_satisfied: bool = True
+    feasible: bool = True
+    selectable: bool = False
+    pareto_eligible: bool = False
+    proposal_eligible: bool = False
     is_pareto_efficient: bool
     dominated_by_offer_id: UUID | None
     is_recommended: bool
@@ -128,6 +138,7 @@ class OptimisationResponse(BaseModel):
     comparisons: list[NamedComparison]
     explanation: list[str]
     failure: OptimisationFailure | None
+    near_miss: NearMissCandidate | None = None
     objectives: list[ObjectiveSpec]
     created_at: datetime | None = None
     merchant_objective: MerchantObjectiveSnapshot | None = None
@@ -178,6 +189,15 @@ def to_public_scored(item: ScoredOffer) -> PublicScoredOffer:
         utility_trace=item.utility.trace.model_dump(),
         policy_safe=item.policy.policy_safe,
         policy_rejection_codes=item.policy.rejection_codes,
+        buyer_constraint_status=item.buyer_constraint_status.value,
+        buyer_constraint_codes=item.buyer_constraint_codes,
+        all_mandatory_buyer_constraints_satisfied=(
+            item.all_mandatory_buyer_constraints_satisfied
+        ),
+        feasible=item.feasible,
+        selectable=item.selectable,
+        pareto_eligible=item.pareto_eligible,
+        proposal_eligible=item.proposal_eligible,
         is_pareto_efficient=item.is_pareto_efficient,
         dominated_by_offer_id=item.dominated_by_offer_id,
         is_recommended=item.is_recommended,

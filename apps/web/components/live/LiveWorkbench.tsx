@@ -78,7 +78,6 @@ export function LiveWorkbench() {
   }, [optimisation, selectedOfferId]);
   const proposalOffer =
     selectedFromChart ??
-    negotiation?.proposal?.offer ??
     optimisation?.recommended_offer ??
     null;
   const topMatch = result?.semantic_matching.matches[0] ?? null;

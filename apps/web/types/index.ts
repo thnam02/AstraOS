@@ -718,6 +718,13 @@ export type PublicScoredOffer = {
   };
   policy_safe: boolean;
   policy_rejection_codes: string[];
+  buyer_constraint_status?: "SATISFIED" | "VIOLATED" | "UNKNOWN";
+  buyer_constraint_codes?: string[];
+  all_mandatory_buyer_constraints_satisfied?: boolean;
+  feasible?: boolean;
+  selectable?: boolean;
+  pareto_eligible?: boolean;
+  proposal_eligible?: boolean;
   is_pareto_efficient: boolean;
   dominated_by_offer_id: string | null;
   is_recommended: boolean;
@@ -768,6 +775,8 @@ export type OptimisationResponse = {
   match_run_id: string | null;
   summary: {
     offers_considered: number;
+    feasible?: number;
+    buyer_compliant?: number;
     policy_safe: number;
     policy_rejected: number;
     pareto_efficient: number;
@@ -810,7 +819,26 @@ export type OptimisationResponse = {
     message: string;
     requested_max_price_cents: number | null;
     lowest_constructed_price_cents: number | null;
+    lowest_policy_safe_price_cents?: number | null;
+    blocked_by?: string | null;
+    buyer_constraint_codes?: string[];
     rejection_distribution: Record<string, number>;
+  } | null;
+  near_miss?: {
+    offer_id: string;
+    product_name: string;
+    sku: string;
+    total_customer_price_cents: number;
+    currency?: string;
+    gap_cents: number | null;
+    requested_max_price_cents: number | null;
+    label: string;
+    relaxation: string;
+    blocked_codes: string[];
+    reason: string;
+    is_pareto_efficient: boolean;
+    is_recommended: boolean;
+    selectable: boolean;
   } | null;
 };
 

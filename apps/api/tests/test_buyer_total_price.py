@@ -15,7 +15,6 @@ from app.decision.offers.constructor import construct_variant
 from app.decision.offers.models import ConstructionLimits, FeasibilityStatus, RejectionCode
 from app.decision.optimisation.engine import score_space
 from app.decision.optimisation.explanation import explain_recommendation
-from app.decision.policies.rejection_codes import PolicyRejectionCode
 from app.decision.transaction.models import TransactionFailureCode
 from tests.offer_fixtures import wired_variant
 from tests.qualification_fixtures import constraint, intent_with, snapshot
@@ -152,7 +151,7 @@ def test_case_b_same_day_over_total_is_invalid() -> None:
         bundle=None,
     )
     assert offer.total_customer_price_cents == 10200
-    assert offer.feasibility_status == FeasibilityStatus.REJECTED
+    assert offer.feasibility_status == FeasibilityStatus.FEASIBLE
     assert any(
         item.code == RejectionCode.BUYER_MAX_TOTAL_EXCEEDED
         for item in offer.rejection_reasons
@@ -169,7 +168,7 @@ def test_case_c_warranty_over_total_is_invalid() -> None:
         bundle=None,
     )
     assert offer.total_customer_price_cents == 10500
-    assert offer.feasibility_status == FeasibilityStatus.REJECTED
+    assert offer.feasibility_status == FeasibilityStatus.FEASIBLE
     assert any(
         item.code == RejectionCode.BUYER_MAX_TOTAL_EXCEEDED
         for item in offer.rejection_reasons
@@ -237,11 +236,15 @@ def test_case_e_higher_utility_over_budget_never_enters_pareto() -> None:
     over = next(
         item for item in result.scored if item.total_customer_price_cents == 12700
     )
-    assert PolicyRejectionCode.BUYER_MAX_TOTAL_EXCEEDED.value in over.policy.rejection_codes
-    assert not over.policy.policy_safe
+    assert not over.all_mandatory_buyer_constraints_satisfied
+    assert over.buyer_constraint_status.value == "VIOLATED"
+    assert "BUYER_MAX_TOTAL_EXCEEDED" in over.buyer_constraint_codes
+    assert not over.selectable
+    assert not over.pareto_eligible
     assert not over.is_pareto_efficient
     assert not over.is_recommended
     assert result.recommended is not None
+    assert result.recommended.all_mandatory_buyer_constraints_satisfied
     assert result.recommended.total_customer_price_cents <= 10000
 
 

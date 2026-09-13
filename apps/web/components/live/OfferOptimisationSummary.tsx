@@ -81,7 +81,7 @@ export function OfferOptimisationSummary({
           <div>
             <p className="type-small text-muted">Selection</p>
             <p className="mt-1 text-sm text-muted">
-              Policy, Pareto and selection run on scored offers.
+              Buyer-safe, feasible, and policy-safe offers enter Pareto.
             </p>
             <div className="mt-3">
               <Funnel steps={optimisationSteps} />

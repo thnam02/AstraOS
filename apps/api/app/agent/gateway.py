@@ -159,6 +159,9 @@ def _status_from_session(session: NegotiationResponse) -> str:
     if session.proposal is None:
         if session.match and session.match.qualification.eligible == 0:
             return "NO_ELIGIBLE_PRODUCT"
+        failure = session.optimisation.failure if session.optimisation else None
+        if failure is not None and failure.code == "NO_COMPLIANT_OFFER":
+            return "NO_COMPLIANT_OFFER"
         return "NO_POLICY_SAFE_OFFER"
     outcome = session.proposal.outcome
     if outcome == "DECLINE":
@@ -196,6 +199,17 @@ def _from_session(
             error_code=AgentErrorCode.NO_POLICY_SAFE_OFFER.value,
             machine_message="No constructed offer clears current merchant policy.",
             allowed_next_actions=["REQUEST"],
+        )
+    elif status == "NO_COMPLIANT_OFFER":
+        failure = session.optimisation.failure if session.optimisation else None
+        error = AgentErrorBody(
+            error_code=AgentErrorCode.NO_COMPLIANT_OFFER.value,
+            machine_message=(
+                failure.message
+                if failure
+                else "No complete offer satisfies the buyer's mandatory constraints."
+            ),
+            allowed_next_actions=["REQUEST", "COUNTER"],
         )
     match = session.match
     construction = session.construction

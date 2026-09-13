@@ -5,11 +5,19 @@ from collections import Counter
 from uuid import UUID
 
 from app.decision.economics.calculator import compute_economics
+from app.decision.eligibility.snapshot import variant_to_snapshot
 from app.decision.intent.models import ConstraintField, ShoppingIntent
-from app.decision.offers.buyer_constraints import meets_buyer_price
+from app.decision.intent.price import max_customer_total_cents
+from app.decision.offers.buyer_constraints import evaluate_complete_offer_constraints
 from app.decision.offers.feasibility import sellable_units as variant_sellable
-from app.decision.offers.models import OfferCandidate
+from app.decision.offers.models import FeasibilityStatus, OfferCandidate
 from app.decision.optimisation.baseline import is_conceptual_baseline
+from app.decision.optimisation.candidates import (
+    ensure_selected_offer_compliant,
+    is_optimisation_candidate,
+    mark_candidate_flags,
+    pick_near_miss,
+)
 from app.decision.optimisation.counterfactual import (
     best_single_lever,
     build_counterfactuals,
@@ -98,12 +106,37 @@ def score_space(
         )
     policy_ms = (time.perf_counter() - policy_started) * 1000
 
-    safe_ids = {item.id for item in offers if evaluations[item.id].policy_safe}
-    safe_prices = [
-        item.total_customer_price_cents for item in offers if item.id in safe_ids
+    snapshots = {}
+    for variant_id, variant in variants.items():
+        if getattr(variant, "product", None) is None:
+            continue
+        snapshots[variant_id] = variant_to_snapshot(variant)
+
+    buyer_evaluations = {}
+    for offer in offers:
+        buyer_evaluations[offer.id] = evaluate_complete_offer_constraints(
+            intent=intent,
+            total_customer_price_cents=offer.total_customer_price_cents,
+            product_price_cents=offer.final_product_price_cents,
+            delivery_days=offer.delivery_days,
+            snapshot=snapshots.get(offer.variant_id),
+            fail_closed=True,
+        )
+
+    candidate_ids = {
+        item.id
+        for item in offers
+        if evaluations[item.id].policy_safe
+        and item.feasibility_status == FeasibilityStatus.FEASIBLE
+        and buyer_evaluations[item.id].all_mandatory_satisfied
+    }
+    candidate_prices = [
+        item.total_customer_price_cents
+        for item in offers
+        if item.id in candidate_ids
     ]
-    if safe_prices:
-        price_low, price_high = min(safe_prices), max(safe_prices)
+    if candidate_prices:
+        price_low, price_high = min(candidate_prices), max(candidate_prices)
     else:
         all_prices = [item.total_customer_price_cents for item in offers] or [0]
         price_low, price_high = min(all_prices), max(all_prices)
@@ -121,56 +154,57 @@ def score_space(
             weights=weights,
             profile_id=profile_id,
         )
+        buyer = buyer_evaluations[offer.id]
         scored.append(
-            ScoredOffer(
-                offer_id=offer.id,
-                variant_id=offer.variant_id,
-                sku=offer.sku,
-                product_name=offer.product_name,
-                brand=offer.brand,
-                product_price_cents=offer.final_product_price_cents,
-                total_customer_price_cents=offer.total_customer_price_cents,
-                currency=offer.currency,
-                delivery_code=offer.delivery_code,
-                delivery_name=offer.delivery_name,
-                delivery_days=offer.delivery_days,
-                warranty_code=offer.warranty_code,
-                warranty_name=offer.warranty_name,
-                warranty_months=offer.warranty_months,
-                bundle_code=offer.bundle_code,
-                bundle_name=offer.bundle_name,
-                return_policy_code=offer.return_policy_code,
-                return_window_days=offer.return_window_days,
-                economics=economics_by_id[offer.id],
-                policy=evaluations[offer.id],
-                utility=utility,
-                is_baseline=is_conceptual_baseline(offer),
-                baseline_offer_id=baseline.id if baseline else None,
-                product_fit=product_fits.get(offer.variant_id, 0.0),
+            mark_candidate_flags(
+                ScoredOffer(
+                    offer_id=offer.id,
+                    variant_id=offer.variant_id,
+                    sku=offer.sku,
+                    product_name=offer.product_name,
+                    brand=offer.brand,
+                    product_price_cents=offer.final_product_price_cents,
+                    total_customer_price_cents=offer.total_customer_price_cents,
+                    currency=offer.currency,
+                    delivery_code=offer.delivery_code,
+                    delivery_name=offer.delivery_name,
+                    delivery_days=offer.delivery_days,
+                    warranty_code=offer.warranty_code,
+                    warranty_name=offer.warranty_name,
+                    warranty_months=offer.warranty_months,
+                    bundle_code=offer.bundle_code,
+                    bundle_name=offer.bundle_name,
+                    return_policy_code=offer.return_policy_code,
+                    return_window_days=offer.return_window_days,
+                    economics=economics_by_id[offer.id],
+                    policy=evaluations[offer.id],
+                    utility=utility,
+                    is_baseline=is_conceptual_baseline(offer),
+                    baseline_offer_id=baseline.id if baseline else None,
+                    product_fit=product_fits.get(offer.variant_id, 0.0),
+                    feasible=offer.feasibility_status == FeasibilityStatus.FEASIBLE,
+                    buyer_constraint_status=buyer.status,
+                    buyer_constraint_reasons=buyer.reasons,
+                    buyer_constraint_codes=buyer.codes,
+                    all_mandatory_buyer_constraints_satisfied=buyer.all_mandatory_satisfied,
+                )
             )
         )
     utility_ms = (time.perf_counter() - utility_started) * 1000
 
-    safe = [
-        item
-        for item in scored
-        if item.policy.policy_safe
-        and meets_buyer_price(
-            intent=intent,
-            total_customer_price_cents=item.total_customer_price_cents,
-            product_price_cents=item.product_price_cents,
-        )
-    ]
+    candidates = [item for item in scored if is_optimisation_candidate(item)]
     pareto_started = time.perf_counter()
     frontier_result = build_frontier(
-        [item.offer_id for item in safe],
-        [item.utility.score for item in safe],
-        [item.economics.contribution_margin_cents for item in safe],
+        [item.offer_id for item in candidates],
+        [item.utility.score for item in candidates],
+        [item.economics.contribution_margin_cents for item in candidates],
         epsilon=epsilon,
     )
     efficient_ids = set(frontier_result.efficient_offer_ids)
     for item in scored:
-        item.is_pareto_efficient = item.offer_id in efficient_ids
+        item.is_pareto_efficient = (
+            item.offer_id in efficient_ids and item.pareto_eligible
+        )
         dominated = frontier_result.dominated_by.get(str(item.offer_id))
         item.dominated_by_offer_id = dominated
     pareto_ms = (time.perf_counter() - pareto_started) * 1000
@@ -183,6 +217,7 @@ def score_space(
     recommended, selection = select_offer(
         frontier, alpha=alpha, objective=chosen
     )
+    ensure_selected_offer_compliant(recommended)
     if recommended is not None:
         for item in scored:
             item.is_recommended = item.offer_id == recommended.offer_id
@@ -194,8 +229,8 @@ def score_space(
         recommended.variant_id
         if recommended is not None
         else (
-            safe[0].variant_id
-            if safe
+            candidates[0].variant_id
+            if candidates
             else (scored[0].variant_id if scored else None)
         )
     )
@@ -254,6 +289,7 @@ def score_space(
             )
         )
 
+    near_miss = None
     failure = None
     if recommended is None:
         rejected = Counter(
@@ -261,23 +297,64 @@ def score_space(
             for item in scored
             if item.policy.rejection_codes
         )
-        budget = None
-        for constraint in intent.hard_constraints:
-            if constraint.field == ConstraintField.PRICE:
-                value = constraint.normalized_value or constraint.value
-                if isinstance(value, int):
-                    budget = value
+        budget = max_customer_total_cents(intent)
+        if budget is None:
+            for constraint in intent.hard_constraints:
+                if constraint.field == ConstraintField.PRICE:
+                    value = constraint.normalized_value or constraint.value
+                    if isinstance(value, int):
+                        budget = value
         constructed_prices = [item.total_customer_price_cents for item in scored]
-        failure = OptimisationFailure(
-            code="NO_POLICY_SAFE_OFFER",
-            message=(
+        buyer_ok = [
+            item
+            for item in scored
+            if item.all_mandatory_buyer_constraints_satisfied
+        ]
+        buyer_blocked = [
+            code
+            for item in scored
+            for code in item.buyer_constraint_codes
+        ]
+        blocked_codes = Counter(buyer_blocked)
+        near_miss = pick_near_miss(scored, intent=intent)
+        if buyer_ok:
+            code = "NO_POLICY_SAFE_OFFER"
+            message = (
                 "No constructed offer clears current merchant policy. "
                 "AstraOS will not invent a deal."
-            ),
+            )
+            blocked_by = "MERCHANT_POLICY"
+        else:
+            code = "NO_COMPLIANT_OFFER"
+            cap = (
+                f"A${budget / 100:.2f}"
+                if budget is not None
+                else "the mandatory budget"
+            )
+            message = (
+                f"No complete offer satisfies the buyer's mandatory constraints, "
+                f"including {cap}."
+            )
+            if near_miss is not None and near_miss.gap_cents is not None:
+                message = (
+                    f"No complete offer satisfies your {cap} maximum. "
+                    f"The closest safe configuration is "
+                    f"A${near_miss.total_customer_price_cents / 100:.2f}. "
+                    "Would you like to relax the budget ceiling?"
+                )
+            blocked_by = "BUYER_CONSTRAINT"
+        failure = OptimisationFailure(
+            code=code,
+            message=message,
             requested_max_price_cents=budget,
             lowest_constructed_price_cents=(
                 min(constructed_prices) if constructed_prices else None
             ),
+            lowest_policy_safe_price_cents=(
+                near_miss.total_customer_price_cents if near_miss else None
+            ),
+            blocked_by=blocked_by,
+            buyer_constraint_codes=list(blocked_codes),
             rejection_distribution=dict(rejected),
         )
 
@@ -316,6 +393,12 @@ def score_space(
             (chosen or default_objective()).snapshot()
         ),
         objective_comparisons=compare_objectives(frontier),
+        near_miss=near_miss,
+        candidate_count=len(candidates),
+        feasible_count=sum(1 for item in scored if item.feasible),
+        buyer_compliant_count=sum(
+            1 for item in scored if item.all_mandatory_buyer_constraints_satisfied
+        ),
     )
 
 
@@ -328,19 +411,24 @@ def apply_experimental_buyer_objective(
     epsilon: float = DEFAULT_EPSILON,
 ) -> EngineResult:
     """Rebuild Pareto using learned scores. Cold-start utility traces stay."""
-    safe = [item for item in result.scored if item.policy.policy_safe]
+    candidates = [
+        item for item in result.scored if is_optimisation_candidate(item)
+    ]
     objectives = [
-        buyer_objective.get(item.offer_id, item.utility.score) for item in safe
+        buyer_objective.get(item.offer_id, item.utility.score)
+        for item in candidates
     ]
     frontier_result = build_frontier(
-        [item.offer_id for item in safe],
+        [item.offer_id for item in candidates],
         objectives,
-        [item.economics.contribution_margin_cents for item in safe],
+        [item.economics.contribution_margin_cents for item in candidates],
         epsilon=epsilon,
     )
     efficient_ids = set(frontier_result.efficient_offer_ids)
     for item in result.scored:
-        item.is_pareto_efficient = item.offer_id in efficient_ids
+        item.is_pareto_efficient = (
+            item.offer_id in efficient_ids and item.pareto_eligible
+        )
         dominated = frontier_result.dominated_by.get(str(item.offer_id))
         item.dominated_by_offer_id = dominated
         item.is_recommended = False
@@ -354,6 +442,7 @@ def apply_experimental_buyer_objective(
         objective=chosen,
         buyer_objective=buyer_objective,
     )
+    ensure_selected_offer_compliant(recommended)
     if recommended is not None:
         recommended.is_recommended = True
         for item in result.scored:
@@ -365,4 +454,5 @@ def apply_experimental_buyer_objective(
         (chosen or default_objective()).snapshot()
     )
     result.objective_comparisons = compare_objectives(frontier)
+    result.candidate_count = len(candidates)
     return result

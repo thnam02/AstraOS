@@ -14,7 +14,9 @@ import {
   METRIC_HELP,
   commercialLevers,
   completeOfferMandatorySatisfied,
+  expansionSteps,
   mandatoryRequirementsCopy,
+  noCompliantOfferCopy,
 } from "@/lib/decisionNarrative";
 import { formatAudCents } from "@/lib/money";
 import type {
@@ -52,11 +54,62 @@ export function OptimiseStage({
   const [detailOpen, setDetailOpen] = useState(false);
   const items = (offer?.proof_bundle?.items ?? []).filter((item) => !item.incomplete);
 
-  if (!offer) {
+  if (!offer || optimisation.failure?.code === "NO_COMPLIANT_OFFER") {
+    const empty = noCompliantOfferCopy(optimisation);
     return (
-      <p className="text-sm text-muted">
-        No policy-safe offer was selected for this request.
-      </p>
+      <StageResult
+        label="No compliant offer"
+        title={empty.title}
+        explanation={
+          <p>
+            AstraOS will not select, recommend, or propose a complete offer
+            that violates a mandatory buyer constraint.
+          </p>
+        }
+        actions={
+          onContinue ? (
+            <StagePrimaryAction
+              label="Continue to negotiation"
+              onClick={onContinue}
+            />
+          ) : null
+        }
+      >
+        <dl className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <dt className="type-small text-muted">Buyer maximum</dt>
+            <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+              {empty.budget ?? "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="type-small text-muted">Closest safe configuration</dt>
+            <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+              {empty.closest ?? "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="type-small text-muted">Gap</dt>
+            <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+              {empty.gap ?? "—"}
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-5 text-sm text-muted">
+          Requires buyer relaxation before proposal. The closest configuration
+          is a near-miss, not a selected or Pareto-efficient offer.
+        </p>
+        {construction ? (
+          <ol className="mt-5 grid gap-3 sm:grid-cols-2">
+            {expansionSteps(construction, optimisation).map((step) => (
+              <li key={step.label} className="text-sm">
+                <span className="text-muted">{step.label}</span>
+                <span className="ml-2 font-mono tabular-nums">{step.value}</span>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </StageResult>
     );
   }
 

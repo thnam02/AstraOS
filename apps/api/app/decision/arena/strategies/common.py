@@ -29,7 +29,9 @@ _BUYER_PRICE_CODES = {
 
 
 def hard_ok(scored: ScoredOffer, offer: OfferCandidate) -> bool:
-    codes = set(scored.policy.rejection_codes)
+    if not scored.all_mandatory_buyer_constraints_satisfied:
+        return False
+    codes = set(scored.policy.rejection_codes) | set(scored.buyer_constraint_codes)
     if codes & _BUYER_PRICE_CODES:
         return False
     if scored.policy.policy_safe:
@@ -71,7 +73,9 @@ def to_response(
 ) -> StrategyResponse:
     constraints = hard_ok(scored, offer)
     safe = scored.policy.policy_safe
-    selectable = bool(constraints and safe)
+    selectable = bool(
+        constraints and safe and scored.all_mandatory_buyer_constraints_satisfied
+    )
     if not constraints:
         status = "HARD_CONSTRAINT_VIOLATION"
     elif not safe:

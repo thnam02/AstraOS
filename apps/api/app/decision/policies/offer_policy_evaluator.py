@@ -31,6 +31,12 @@ class OfferPolicyEvaluation(BaseModel):
     rejection_codes: list[str] = Field(default_factory=list)
 
 
+_BUYER_GATE_CODES = {
+    PolicyRejectionCode.BUYER_MAX_TOTAL_EXCEEDED.value,
+    PolicyRejectionCode.BUYER_MAX_PRODUCT_PRICE_EXCEEDED.value,
+    PolicyRejectionCode.INTENT_DELIVERY_INCOMPATIBLE.value,
+}
+
 _CONSTRUCTION_MAP: dict[RejectionCode, PolicyRejectionCode] = {
     RejectionCode.OUT_OF_STOCK: PolicyRejectionCode.OUT_OF_STOCK,
     RejectionCode.DELIVERY_NOT_AVAILABLE: PolicyRejectionCode.DELIVERY_DISABLED,
@@ -293,8 +299,11 @@ def evaluate_offer_policy(
             continue
         seen.add(code)
         unique.append(code)
+    merchant_rejected = [
+        code for code in unique if code not in _BUYER_GATE_CODES
+    ]
     return OfferPolicyEvaluation(
-        policy_safe=len(unique) == 0,
+        policy_safe=len(merchant_rejected) == 0,
         checks=checks,
-        rejection_codes=unique,
+        rejection_codes=merchant_rejected,
     )

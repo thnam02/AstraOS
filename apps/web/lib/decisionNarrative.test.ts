@@ -6,6 +6,7 @@ import {
   commercialDeltas,
   completeOfferMandatorySatisfied,
   conciseOfferReasons,
+  noCompliantOfferCopy,
   constructStory,
   expansionSteps,
   humanizeCheck,
@@ -249,6 +250,49 @@ describe("score terminology", () => {
       "Same-day delivery addresses urgency",
       "Pareto efficient",
     ]);
+  });
+
+  it("trusts backend complete-offer buyer validation when present", () => {
+    const offer = {
+      policy_safe: true,
+      policy_rejection_codes: [],
+      all_mandatory_buyer_constraints_satisfied: false,
+      pricing: { product_price_cents: 9200, total_price_cents: 12767, currency: "AUD" },
+    };
+    assert.equal(completeOfferMandatorySatisfied(offer, null), false);
+  });
+
+  it("describes a no-compliant-offer near-miss without calling it selected", () => {
+    const copy = noCompliantOfferCopy({
+      recommended_offer: null,
+      failure: {
+        code: "NO_COMPLIANT_OFFER",
+        message: "No complete offer satisfies your A$100.00 maximum.",
+        requested_max_price_cents: 10000,
+        lowest_constructed_price_cents: 10420,
+        lowest_policy_safe_price_cents: 10420,
+        rejection_distribution: {},
+      },
+      near_miss: {
+        offer_id: "x",
+        product_name: "Orion Mini 106",
+        sku: "ORI-106",
+        total_customer_price_cents: 10420,
+        gap_cents: 420,
+        requested_max_price_cents: 10000,
+        label: "NEAR_MISS",
+        relaxation: "REQUIRES_BUYER_RELAXATION",
+        blocked_codes: ["BUYER_MAX_TOTAL_EXCEEDED"],
+        reason: "Requires buyer relaxation",
+        is_pareto_efficient: false,
+        is_recommended: false,
+        selectable: false,
+      },
+    } as never);
+    assert.match(copy.title, /mandatory total budget/);
+    assert.equal(copy.budget, "A$100.00");
+    assert.equal(copy.closest, "A$104.20");
+    assert.equal(copy.gap, "+A$4.20");
   });
 
   it("does not treat policy_safe alone as a complete-offer budget pass", () => {

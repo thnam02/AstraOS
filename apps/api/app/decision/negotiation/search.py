@@ -11,6 +11,7 @@ from app.decision.negotiation.models import (
     ProposalType,
     ReasonCode,
 )
+from app.decision.optimisation.candidates import is_optimisation_candidate
 from app.decision.optimisation.models import ScoredOffer
 from app.decision.optimisation.objective import MerchantObjectiveConfig
 from app.decision.optimisation.selection import select_offer
@@ -133,13 +134,13 @@ def search_counter(
     current_variant_id: UUID | None,
     objective: MerchantObjectiveConfig | None = None,
 ) -> SearchResult:
-    safe = [item for item in scored if item.policy.policy_safe]
+    safe = [item for item in scored if is_optimisation_candidate(item)]
     if not safe:
         return SearchResult(
             outcome=MerchantOutcome.DECLINE,
             proposal_type=ProposalType.COUNTER,
             offer=None,
-            reason_codes=[ReasonCode.NO_POLICY_SAFE_OFFER],
+            reason_codes=[ReasonCode.NO_COMPLIANT_OFFER],
             compromise_row=None,
         )
 
@@ -195,7 +196,7 @@ def search_counter(
             proposal_type=ProposalType.COUNTER,
             offer=None,
             reason_codes=[
-                ReasonCode.NO_POLICY_SAFE_OFFER,
+                ReasonCode.NO_COMPLIANT_OFFER,
                 ReasonCode.SAME_PRODUCT_UNAVAILABLE_AT_REQUEST,
             ],
             compromise_row=None,

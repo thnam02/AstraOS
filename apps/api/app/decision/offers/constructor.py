@@ -9,6 +9,7 @@ from typing import Any
 
 from app.decision.intent.models import ShoppingIntent
 from app.decision.offers.bundles import trigger_labels_for
+from app.decision.offers.buyer_constraints import buyer_price_reasons
 from app.decision.offers.dimensions import (
     BundleDim,
     DeliveryDim,
@@ -20,7 +21,6 @@ from app.decision.offers.dimensions import (
     load_returns,
     load_warranties,
 )
-from app.decision.offers.buyer_constraints import buyer_price_reasons
 from app.decision.offers.feasibility import combination_reasons, variant_blockers
 from app.decision.offers.models import (
     CONSTRUCTION_VERSION,
@@ -232,17 +232,15 @@ def _assemble(
         + warranty.customer_price_cents
         + bundle.customer_price_cents
     )
-    reasons = [
-        *reasons,
-        *buyer_price_reasons(
-            intent=intent,
-            total_customer_price_cents=total,
-            product_price_cents=price.final_price_cents,
-        ),
-    ]
+    operational = list(reasons)
+    buyer_reasons = buyer_price_reasons(
+        intent=intent,
+        total_customer_price_cents=total,
+        product_price_cents=price.final_price_cents,
+    )
     seen_codes: set[str] = set()
     unique_reasons: list[RejectionReason] = []
-    for reason in reasons:
+    for reason in [*operational, *buyer_reasons]:
         if reason.code.value in seen_codes:
             continue
         seen_codes.add(reason.code.value)
@@ -255,7 +253,7 @@ def _assemble(
             RejectionCode.OUT_OF_STOCK,
             RejectionCode.MISSING_OPERATIONAL_DATA,
         }
-        for item in reasons
+        for item in operational
     )
     relevance = None
     if bundle.code != "NONE":
@@ -311,7 +309,7 @@ def _assemble(
             ConstructionStatus.BLOCKED if blocked else ConstructionStatus.GENERATED
         ),
         feasibility_status=(
-            FeasibilityStatus.REJECTED if reasons else FeasibilityStatus.FEASIBLE
+            FeasibilityStatus.REJECTED if operational else FeasibilityStatus.FEASIBLE
         ),
         rejection_reasons=reasons,
         proof=_proofs(variant, price, delivery, warranty, bundle, returns),

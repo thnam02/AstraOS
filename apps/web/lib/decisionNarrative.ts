@@ -315,7 +315,10 @@ function compareBound(operator: string, observed: number, expected: number): boo
 export function completeOfferMandatorySatisfied(
   offer: Pick<
     PublicScoredOffer,
-    "policy_safe" | "policy_rejection_codes" | "pricing"
+    | "policy_safe"
+    | "policy_rejection_codes"
+    | "pricing"
+    | "all_mandatory_buyer_constraints_satisfied"
   >,
   intent?: {
     hard_constraints?: Array<{
@@ -327,6 +330,9 @@ export function completeOfferMandatorySatisfied(
     }>;
   } | null,
 ): boolean {
+  if (typeof offer.all_mandatory_buyer_constraints_satisfied === "boolean") {
+    return offer.all_mandatory_buyer_constraints_satisfied;
+  }
   if (!offer.policy_safe) return false;
   if (offer.policy_rejection_codes.some((code) => BUYER_PRICE_CODES.has(code))) {
     return false;
@@ -348,6 +354,39 @@ export function mandatoryRequirementsCopy(ok: boolean): string {
   return ok
     ? "All mandatory requirements satisfied"
     : "Mandatory requirements not fully satisfied";
+}
+
+export function noCompliantOfferCopy(
+  optimisation: OptimisationResponse | null | undefined,
+): {
+  title: string;
+  body: string;
+  budget: string | null;
+  closest: string | null;
+  gap: string | null;
+} {
+  const failure = optimisation?.failure ?? null;
+  const near = optimisation?.near_miss ?? null;
+  const budgetCents =
+    near?.requested_max_price_cents ?? failure?.requested_max_price_cents ?? null;
+  const closestCents =
+    near?.total_customer_price_cents ??
+    failure?.lowest_policy_safe_price_cents ??
+    null;
+  const gapCents = near?.gap_cents ?? (
+    budgetCents != null && closestCents != null
+      ? Math.max(0, closestCents - budgetCents)
+      : null
+  );
+  return {
+    title: "No complete commercial configuration satisfies the buyer's mandatory total budget.",
+    body:
+      failure?.message ??
+      "No complete offer satisfies the buyer's mandatory constraints.",
+    budget: budgetCents != null ? formatAudCents(budgetCents) : null,
+    closest: closestCents != null ? formatAudCents(closestCents) : null,
+    gap: gapCents != null ? `+${formatAudCents(gapCents)}` : null,
+  };
 }
 
 export function conciseOfferReasons(lines: string[]): string[] {
@@ -408,6 +447,12 @@ export function expansionSteps(
       value: story.feasible.toLocaleString(),
     },
   ];
+  if (optimisation?.summary.buyer_compliant != null) {
+    steps.push({
+      label: "Buyer-compliant",
+      value: optimisation.summary.buyer_compliant.toLocaleString(),
+    });
+  }
   if (optimisation?.summary.policy_safe != null) {
     steps.push({
       label: "Policy-safe",
@@ -469,6 +514,8 @@ export function humanizeCheck(code: string): string {
     MARGIN_POLICY_VIOLATION: "Merchant policy",
     MERCHANT_POLICY_CHANGED: "Merchant policy changed",
     NO_POLICY_SAFE_OFFER: "No policy-safe offer",
+    NO_COMPLIANT_OFFER: "No compliant offer",
+    REQUIRES_BUYER_RELAXATION: "Requires buyer relaxation",
     BUYER_MAX_TOTAL_EXCEEDED: "Buyer max total exceeded",
     BUYER_MAX_PRODUCT_PRICE_EXCEEDED: "Buyer max product price exceeded",
     NO_ELIGIBLE_PRODUCT: "No eligible product",

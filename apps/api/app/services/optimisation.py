@@ -321,7 +321,10 @@ class OptimisationService:
 
         assert isinstance(result, EngineResult)
         assert isinstance(policy, MerchantPolicy)
-        safe = [item for item in result.scored if item.policy.policy_safe]
+        from app.decision.optimisation.candidates import is_optimisation_candidate
+
+        safe = [item for item in result.scored if is_optimisation_candidate(item)]
+        merchant_safe = [item for item in result.scored if item.policy.policy_safe]
         recommended_public = (
             to_public_scored(result.recommended) if result.recommended else None
         )
@@ -344,8 +347,14 @@ class OptimisationService:
         )
         summary = OptimisationSummary(
             offers_considered=len(result.scored),
-            policy_safe=len(safe),
-            policy_rejected=len(result.scored) - len(safe),
+            feasible=sum(1 for item in result.scored if item.feasible),
+            buyer_compliant=sum(
+                1
+                for item in result.scored
+                if item.all_mandatory_buyer_constraints_satisfied
+            ),
+            policy_safe=len(merchant_safe),
+            policy_rejected=len(result.scored) - len(merchant_safe),
             pareto_efficient=len(result.frontier),
         )
         buyer_model = BuyerModelBlock(
@@ -417,7 +426,14 @@ class OptimisationService:
             comparisons=[item.model_dump(mode="json") for item in result.comparisons],
             explanation=result.explanation,
             failure=result.failure.model_dump(mode="json") if result.failure else None,
-            run_metadata={"algorithm": ALGORITHM_VERSION},
+            run_metadata={
+                "algorithm": ALGORITHM_VERSION,
+                "near_miss": (
+                    result.near_miss.model_dump(mode="json")
+                    if result.near_miss
+                    else None
+                ),
+            },
             completed_at=now,
         )
         await self.runs.add(row)
@@ -445,6 +461,7 @@ class OptimisationService:
             comparisons=result.comparisons,
             explanation=result.explanation,
             failure=result.failure,
+            near_miss=result.near_miss,
             objectives=list(HERO_OBJECTIVES),
             created_at=row.created_at,
             merchant_objective=result.merchant_objective,
@@ -489,8 +506,12 @@ def _row_to_response(row: OptimisationRun) -> OptimisationResponse:
     from app.decision.optimisation.models import (
         CounterfactualRow,
         NamedComparison,
+        NearMissCandidate,
         OptimisationFailure,
     )
+
+    metadata = row.run_metadata if isinstance(row.run_metadata, dict) else {}
+    near_miss_payload = metadata.get("near_miss")
 
     return OptimisationResponse(
         optimisation_run_id=row.id,
@@ -511,6 +532,11 @@ def _row_to_response(row: OptimisationRun) -> OptimisationResponse:
         explanation=list(row.explanation),
         failure=(
             OptimisationFailure.model_validate(row.failure) if row.failure else None
+        ),
+        near_miss=(
+            NearMissCandidate.model_validate(near_miss_payload)
+            if near_miss_payload
+            else None
         ),
         objectives=list(HERO_OBJECTIVES),
         created_at=row.created_at,

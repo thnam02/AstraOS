@@ -202,7 +202,7 @@ function OfferProofDrawer({
   );
 }
 
-function WhyDifferentDrawer({
+export function WhyDifferentDrawer({
   open,
   offer,
   topMatch,

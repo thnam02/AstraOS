@@ -4,13 +4,11 @@ import { useMemo, useState } from "react";
 
 import { Drawer } from "@/components/shared/Drawer";
 import { EvidenceBadge } from "@/components/shared/EvidenceBadge";
-import { ScoreBar } from "@/components/shared/ScoreBar";
 import { contextLabel } from "@/lib/intent";
-import { matchScoreDisplay, strengthHint } from "@/lib/decisionNarrative";
+import { matchScoreDisplay } from "@/lib/decisionNarrative";
 import {
   displayedCoverage,
   factValue,
-  groupedRationale,
   prettyFactDisplay,
   primaryReasons,
   proofItems,
@@ -22,14 +20,14 @@ import { formatAudCents } from "@/lib/money";
 import type { RankedProductMatch } from "@/types";
 
 export function MatchList({ matches }: { matches: RankedProductMatch[] }) {
-  const [expanded, setExpanded] = useState<string | null>(
-    matches[0]?.variant_id ?? null,
-  );
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [inspect, setInspect] = useState<RankedProductMatch | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const compareSet = matches.filter((item) => compareIds.includes(item.variant_id));
+  const visible = showAll ? matches : matches.slice(0, 3);
 
   function toggleCompare(id: string) {
     setCompareIds((current) => {
@@ -44,10 +42,10 @@ export function MatchList({ matches }: { matches: RankedProductMatch[] }) {
   }
 
   return (
-    <div className="space-y-3">
-      {matches.slice(0, 5).map((match, index) => {
-        const open = match.variant_id === expanded || index === 0;
-        if (index === 0 || open) {
+    <div className="space-y-1">
+      {visible.map((match) => {
+        const open = match.variant_id === expanded;
+        if (open) {
           return (
             <ExpandedMatch
               key={match.variant_id}
@@ -56,9 +54,7 @@ export function MatchList({ matches }: { matches: RankedProductMatch[] }) {
               compared={compareIds.includes(match.variant_id)}
               onInspect={() => setInspect(match)}
               onCompare={() => toggleCompare(match.variant_id)}
-              onCollapse={
-                index === 0 ? undefined : () => setExpanded(matches[0]?.variant_id ?? null)
-              }
+              onCollapse={() => setExpanded(null)}
             />
           );
         }
@@ -74,8 +70,17 @@ export function MatchList({ matches }: { matches: RankedProductMatch[] }) {
         );
       })}
 
-      {matches.length > 5 ? (
-        <p className="text-xs text-muted">+ {matches.length - 5} additional matches</p>
+      {matches.length > 3 ? (
+        <button
+          type="button"
+          className="btn-quiet mt-2"
+          onClick={() => setShowAll((current) => !current)}
+          aria-expanded={showAll}
+        >
+          {showAll
+            ? "Show top 3 products"
+            : `View all ${matches.length} products`}
+        </button>
       ) : null}
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-muted">
@@ -119,99 +124,36 @@ function ExpandedMatch({
   onCompare: () => void;
   onCollapse?: () => void;
 }) {
-  const reasons = primaryReasons(match, 4);
-  const groups = groupedRationale(match);
+  const reasons = primaryReasons(match, 2);
   const extra = remainingSignalCount(match);
-  const trade = tradeOffLine(match, peers);
-  const bestFor = groups.slice(0, 2).map((item) => item.label);
   const overall = matchScoreDisplay(
     match.overall_semantic_fit,
     peers.map((item) => item.overall_semantic_fit),
   );
+  const rationale = reasons
+    .map((fact) => prettyFactDisplay(fact.attribute, fact.display))
+    .join(". ");
 
   return (
-    <article className="bg-canvas px-4 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="eyebrow">Top product match</p>
-          <p className="mt-1 text-[22px] font-semibold tracking-tight">
-            #{match.rank} {match.product_name}
-          </p>
-          <p className="font-mono text-[11px] text-muted">{match.sku}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-[11px] text-success">PASS</p>
-          <p className="font-mono text-sm tabular-nums">
-            {formatAudCents(match.base_price_cents)}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-3">
-        <p className="eyebrow" title="How strongly the product itself aligns with buyer context and preferences.">
-          Overall product match
+    <article className="border-y border-line py-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[15px] font-medium">
+          #{match.rank} {match.product_name}
         </p>
-        <ScoreBar
-          value={match.overall_semantic_fit}
-          large
-          display={overall.value}
-          suffix={overall.suffix}
-        />
+        <p className="font-mono text-sm tabular-nums">
+          {overall.value}
+          <span className="ml-1 text-muted">{overall.suffix}</span>
+        </p>
       </div>
-
-      <dl className="mt-3 grid gap-2 sm:grid-cols-3">
-        <div>
-          <ScoreBar label="Product fit" value={match.product_fit} />
-        </div>
-        <div>
-          <ScoreBar label="Context fit" value={match.context_fit} />
-        </div>
-        <div>
-          <ScoreBar label="Preference fit" value={match.preference_fit} />
-        </div>
-      </dl>
-
-      {bestFor.length ? (
-        <p className="mt-3 text-sm">
-          <span className="text-xs text-muted">Best for </span>
-          {bestFor.join(" · ")}
+      {rationale ? (
+        <p className="mt-2 text-sm leading-6 text-muted">{rationale}.</p>
+      ) : null}
+      {extra > 0 ? (
+        <p className="mt-1 text-xs text-muted">
+          + {extra} supporting signals available in evidence
         </p>
       ) : null}
-
-      <div className="mt-3">
-        <p className="eyebrow">Match rationale</p>
-        <ul className="mt-2 space-y-1.5 text-sm">
-          {reasons.map((fact) => (
-            <li key={`${fact.attribute}-${fact.display}`}>
-              <span>{prettyFactDisplay(fact.attribute, fact.display)}</span>{" "}
-              <EvidenceBadge
-                source={sourceBadge(fact.source_type, fact.source_name)}
-              />
-              {strengthHint(fact.attribute) ? (
-                <span className="ml-2 text-xs text-muted">
-                  {strengthHint(fact.attribute)}
-                </span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-        {extra > 0 ? (
-          <p className="mt-1 text-xs text-muted">+ {extra} more supporting signals</p>
-        ) : null}
-      </div>
-
-      <p
-        className="mt-3 text-xs text-muted"
-        title="Share of displayed match reasons with evidence or a documented derivation. Separate from Product / Context / Preference Fit."
-      >
-        Evidence coverage{" "}
-        {displayedCoverage(match) == null
-          ? "—"
-          : `${Math.round((displayedCoverage(match) ?? 0) * 100)}%`}
-        {trade ? ` · ${trade}` : ""}
-      </p>
-
-      <div className="mt-2 flex flex-wrap gap-3">
+      <div className="mt-3 flex flex-wrap gap-3">
         <button type="button" className="btn-quiet" onClick={onInspect}>
           Inspect evidence
         </button>
@@ -246,30 +188,21 @@ function CompactMatch({
     peers.map((item) => item.overall_semantic_fit),
   );
   return (
-    <article className="flex flex-wrap items-center justify-between gap-3 py-2">
-      <div>
-        <p className="text-sm font-medium">
-          #{match.rank} {match.product_name}{" "}
-          <span className="font-mono text-muted">
-            {overall.value} {overall.suffix}
-          </span>
-        </p>
-        <p className="text-xs text-muted">
-          Context {Math.round(match.context_fit * 100)} · Preference{" "}
-          {Math.round(match.preference_fit * 100)} · Evidence{" "}
-          {displayedCoverage(match) == null
-            ? "—"
-            : Math.round((displayedCoverage(match) ?? 0) * 100)}
-        </p>
-      </div>
-      <div className="flex gap-3">
-        <button type="button" className="btn-quiet" onClick={onExpand}>
-          Expand
-        </button>
-        <button type="button" className="btn-quiet" onClick={onCompare}>
-          {compared ? "Selected" : "Compare"}
-        </button>
-      </div>
+    <article className="flex flex-wrap items-baseline justify-between gap-3 py-2.5">
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-expanded={false}
+        className="min-w-0 flex-1 text-left text-[15px] font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+      >
+        #{match.rank} {match.product_name}
+      </button>
+      <p className="font-mono text-sm tabular-nums">
+        {overall.value}
+      </p>
+      <button type="button" className="btn-quiet" onClick={onCompare}>
+        {compared ? "Selected" : "Compare"}
+      </button>
     </article>
   );
 }

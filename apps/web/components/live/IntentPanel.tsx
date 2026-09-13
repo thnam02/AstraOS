@@ -1,28 +1,12 @@
 import { useState } from "react";
 
-import { contextLabel, fieldLabel } from "@/lib/intent";
-import { formatAudCents } from "@/lib/money";
+import { constraintLabel, contextLabel, fieldLabel } from "@/lib/intent";
 import type { ShoppingIntent } from "@/types";
 
 function importanceLabel(value: number): string {
   if (value >= 0.75) return "High";
   if (value <= 0.25) return "Low";
   return "Medium";
-}
-
-function formatConstraint(
-  operator: string,
-  value: unknown,
-  unit: string | null,
-): string {
-  if (unit === "AUD_CENTS" && typeof value === "number") {
-    const symbol = operator === "LT" ? "<" : operator === "LTE" ? "≤" : operator;
-    return `${symbol} ${formatAudCents(value)}`;
-  }
-  if (unit === "DAYS" && value === 0) return "today";
-  if (operator === "EQ" && value === true) return "";
-  if (operator === "EQ" && value === false) return "must be false";
-  return `${operator} ${String(value)}`;
 }
 
 function QuotedChip({
@@ -79,11 +63,7 @@ export function IntentPanel({
           {intent.hard_constraints.map((item) => (
             <QuotedChip
               key={item.id}
-              label={`${fieldLabel(item.field)} ${formatConstraint(
-                item.operator,
-                item.normalized_value ?? item.value,
-                item.unit,
-              )}`.trim()}
+              label={constraintLabel(item)}
               source={item.source_phrase}
               onSelect={setQuote}
             />

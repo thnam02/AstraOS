@@ -2,16 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { ApiStatus } from "@/components/live/ApiStatus";
-import { DecisionBridge } from "@/components/live/DecisionBridge";
+import { BuyerRequestSummary } from "@/components/live/BuyerRequestSummary";
+import { DecisionHome } from "@/components/live/DecisionHome";
 import { IntentPanel } from "@/components/live/IntentPanel";
-import { MatchList } from "@/components/live/MatchList";
 import { NegotiationPanel } from "@/components/live/NegotiationPanel";
 import { OfferExplorer } from "@/components/live/OfferExplorer";
 import { OptimisationPanel } from "@/components/live/OptimisationPanel";
 import { ProcessRail, type LiveStage } from "@/components/live/ProcessRail";
 import { QualificationInspect } from "@/components/live/QualificationInspect";
-import { RecommendedOffer } from "@/components/live/RecommendedOffer";
+import { SelectedOfferSummary } from "@/components/live/SelectedOfferSummary";
+import { SystemHealth } from "@/components/live/SystemHealth";
 import { TransactionPanel } from "@/components/live/TransactionPanel";
 import { AstraLoadingState } from "@/components/astra";
 import { LiveEntry } from "@/components/live/LiveEntry";
@@ -30,7 +30,7 @@ import {
   setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
-import { PIPELINE_LOADING, productsDiffer } from "@/lib/decisionNarrative";
+import { PIPELINE_LOADING } from "@/lib/decisionNarrative";
 import { HERO_INTENT } from "@/lib/intent";
 import type {
   BuyerProfile,
@@ -39,7 +39,6 @@ import type {
   AcceptProposalResponse,
   NegotiationResponse,
   OptimisationResponse,
-  PublicScoredOffer,
 } from "@/types";
 
 export function LiveWorkbench() {
@@ -77,10 +76,7 @@ export function LiveWorkbench() {
     negotiation?.proposal?.offer ??
     optimisation?.recommended_offer ??
     null;
-  const proposalWhy =
-    negotiation?.proposal?.explanation ?? optimisation?.explanation ?? [];
   const topMatch = result?.semantic_matching.matches[0] ?? null;
-  const differ = productsDiffer(topMatch, proposalOffer);
 
   const flags = {
     hasMatch: Boolean(result),
@@ -212,223 +208,207 @@ export function LiveWorkbench() {
     );
   }
 
-  const centerWide = stage === "optimise" || stage === "negotiate" || stage === "transact";
+  function editRequest() {
+    setResult(null);
+    setOffers(null);
+    setOptimisation(null);
+    setNegotiation(null);
+    setTransaction(null);
+    setSelectedOfferId(null);
+    setError(null);
+    setStage("understand");
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <section className="space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <p className="eyebrow">Buyer agent request</p>
-            <p className="mt-1 max-w-3xl text-sm leading-6">“{text}”</p>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <select
-                value={parserMode}
-                onChange={(event) =>
-                  setParserMode(event.target.value as "rule_based" | "llm")
-                }
-                className="control px-2 py-1 text-xs"
-              >
-                <option value="rule_based">Rule-based parser</option>
-                <option value="llm">LLM parser</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => void run()}
-                disabled={busy || !text.trim()}
-                className="btn-primary"
-              >
-                {busy ? "Running…" : "Run AstraOS"}
-              </button>
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="eyebrow">Decision pipeline</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className="btn-quiet" onClick={editRequest}>
+              Edit request
+            </button>
+            <button
+              type="button"
+              className="btn-quiet"
+              disabled={busy || !text.trim()}
+              onClick={() => void run()}
+            >
+              {busy ? "Rerunning…" : "Rerun analysis"}
+            </button>
+            <SystemHealth timing={result?.timing} />
           </div>
-          <ApiStatus />
         </div>
-        {error ? <ErrorState message={error} /> : null}
         <div className="overflow-x-auto">
-          <p className="eyebrow mb-2">Decision pipeline</p>
           <ProcessRail active={stage} flags={flags} onSelect={setStage} />
         </div>
+        {error ? <ErrorState message={error} /> : null}
       </section>
 
-      <div
-        className={`grid gap-6 ${
-          centerWide
-            ? "xl:grid-cols-[minmax(180px,0.18fr)_minmax(0,0.57fr)_minmax(260px,0.25fr)]"
-            : "xl:grid-cols-[minmax(200px,0.2fr)_minmax(0,0.55fr)_minmax(280px,0.25fr)]"
-        }`}
-      >
-        <aside>
-          <p className="eyebrow">What the buyer asked</p>
-          {result && stage !== "understand" ? (
-            <div className="mt-3">
-              <IntentPanel intent={result.intent} compact />
-            </div>
-          ) : result ? (
-            <p className="mt-3 text-sm leading-6 text-muted">
-              Structured constraints, context, and priorities are shown in the
-              current stage.
-            </p>
-          ) : (
-            <p className="mt-3 text-sm text-muted">Extracting structured intent…</p>
-          )}
-        </aside>
+      {result ? (
+        <BuyerRequestSummary intent={result.intent} rawText={text} />
+      ) : null}
 
-        <section className="min-w-0 space-y-4">
-          <StageView
-            stage={stage}
-            result={result}
-            offers={offers}
-            optimisation={optimisation}
-            negotiation={negotiation}
-            transaction={transaction}
-            profile={profile}
-            busy={busy}
-            parserMode={parserMode}
-            intentText={text}
-            onProfile={(next) => void rerunOptimisation(next)}
-            onMessage={(message) => {
-              if (!negotiation) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  const next = await postNegotiationTurn(negotiation.session_id, {
-                    message,
-                  });
-                  setNegotiation(next);
-                  if (next.state === "READY_FOR_CHECKOUT" && next.proposal) {
-                    await executeAcceptance(next);
-                    setStage("transact");
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(220px,260px)]">
+        <section className="min-w-0">
+          {stage === "match" && result ? (
+            <DecisionHome
+              result={result}
+              offers={offers}
+              optimisation={optimisation}
+              offer={proposalOffer}
+              onInspect={() => setInspect(true)}
+              onNegotiate={
+                negotiation ? () => setStage("negotiate") : undefined
+              }
+              onViewConstruct={() => setStage("construct")}
+              onViewOptimise={() => setStage("optimise")}
+            />
+          ) : (
+            <StageView
+              stage={stage}
+              result={result}
+              offers={offers}
+              optimisation={optimisation}
+              negotiation={negotiation}
+              transaction={transaction}
+              profile={profile}
+              busy={busy}
+              parserMode={parserMode}
+              intentText={text}
+              onProfile={(next) => void rerunOptimisation(next)}
+              onMessage={(message) => {
+                if (!negotiation) return;
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    const next = await postNegotiationTurn(negotiation.session_id, {
+                      message,
+                    });
+                    setNegotiation(next);
+                    if (next.state === "READY_FOR_CHECKOUT" && next.proposal) {
+                      await executeAcceptance(next);
+                      setStage("transact");
+                    }
+                  } catch {
+                    setError("Negotiation turn failed.");
+                  } finally {
+                    setBusy(false);
                   }
-                } catch {
-                  setError("Negotiation turn failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onSimulate={(mode) => {
-              if (!negotiation) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  setNegotiation(
-                    await simulateNegotiationBuyer(negotiation.session_id, mode),
-                  );
-                } catch {
-                  setError("Buyer simulation failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onExecute={() => {
-              if (!negotiation) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  await executeAcceptance(negotiation);
-                  setStage("transact");
-                } catch {
-                  setError("Acceptance failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onRecover={() => {
-              if (!negotiation) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  setNegotiation(await getNegotiation(negotiation.session_id));
-                  setTransaction(null);
-                } catch {
-                  setError("Could not reload the recovered proposal.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onDemoInventory={(units) => {
-              const sku = negotiation?.proposal?.offer?.sku;
-              if (!sku) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  await setDemoInventory({ sku, units_available: units });
-                } catch {
-                  setError("Demo inventory update failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onDemoDelivery={(available) => {
-              const sku = negotiation?.proposal?.offer?.sku;
-              if (!sku) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  await setDemoDeliveryCapacity({
-                    sku,
-                    delivery_code: "SAME_DAY",
-                    available,
-                  });
-                } catch {
-                  setError("Demo delivery update failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            selectedOfferId={selectedOfferId}
-            onSelectOffer={setSelectedOfferId}
-            topMatchName={topMatch?.product_name}
-            matchCount={result?.semantic_matching.matches.length}
-            proposal={proposalOffer}
-            optimisationSummary={optimisation?.summary}
-            onDemoMargin={(rate) => {
-              void (async () => {
-                setBusy(true);
-                try {
-                  await setDemoPolicy({ minimum_margin_rate: rate });
-                  window.dispatchEvent(new Event("astraos:policy-changed"));
-                } catch {
-                  setError("Demo policy update failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-          />
+                })();
+              }}
+              onSimulate={(mode) => {
+                if (!negotiation) return;
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    setNegotiation(
+                      await simulateNegotiationBuyer(negotiation.session_id, mode),
+                    );
+                  } catch {
+                    setError("Buyer simulation failed.");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+              onExecute={() => {
+                if (!negotiation) return;
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    await executeAcceptance(negotiation);
+                    setStage("transact");
+                  } catch {
+                    setError("Acceptance failed.");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+              onRecover={() => {
+                if (!negotiation) return;
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    setNegotiation(await getNegotiation(negotiation.session_id));
+                    setTransaction(null);
+                  } catch {
+                    setError("Could not reload the recovered proposal.");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+              onDemoInventory={(units) => {
+                const sku = negotiation?.proposal?.offer?.sku;
+                if (!sku) return;
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    await setDemoInventory({ sku, units_available: units });
+                  } catch {
+                    setError("Demo inventory update failed.");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+              onDemoDelivery={(available) => {
+                const sku = negotiation?.proposal?.offer?.sku;
+                if (!sku) return;
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    await setDemoDeliveryCapacity({
+                      sku,
+                      delivery_code: "SAME_DAY",
+                      available,
+                    });
+                  } catch {
+                    setError("Demo delivery update failed.");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+              selectedOfferId={selectedOfferId}
+              onSelectOffer={setSelectedOfferId}
+              topMatchName={topMatch?.product_name}
+              matchCount={result?.semantic_matching.matches.length}
+              optimisationSummary={optimisation?.summary}
+              onDemoMargin={(rate) => {
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    await setDemoPolicy({ minimum_margin_rate: rate });
+                    window.dispatchEvent(new Event("astraos:policy-changed"));
+                  } catch {
+                    setError("Demo policy update failed.");
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+            />
+          )}
         </section>
 
-        <aside className="panel-decision h-fit xl:sticky xl:top-20">
+        <aside className="hidden h-fit border-l border-line pl-6 lg:sticky lg:top-20 lg:block">
           {proposalOffer ? (
-            <RecommendedOffer
+            <SelectedOfferSummary
               offer={proposalOffer}
-              explanation={proposalWhy}
-              onWhyDifferent={
-                differ ? () => setStage("match") : undefined
+              onNegotiate={
+                negotiation ? () => setStage("negotiate") : undefined
               }
-              objective={optimisation?.merchant_objective}
-              selection={optimisation?.selection}
-              topMatch={topMatch}
+              onInspect={() => setInspect(true)}
             />
           ) : (
             <EmptyState
-              title="Selected commercial offer"
+              title="Selected offer"
               body="The merchant response appears here after optimisation."
             />
           )}
-          <button
-            type="button"
-            className="btn-quiet mt-4"
-            onClick={() => setInspect(true)}
-          >
-            Inspect decision
-          </button>
         </aside>
       </div>
       <Drawer open={inspect} title="Inspect decision" onClose={() => setInspect(false)}>
@@ -534,7 +514,6 @@ function StageView({
   optimisationSummary,
   topMatchName,
   matchCount,
-  proposal,
 }: {
   stage: LiveStage;
   result: MatchResponse | null;
@@ -551,7 +530,6 @@ function StageView({
   optimisationSummary?: OptimisationResponse["summary"];
   topMatchName?: string;
   matchCount?: number;
-  proposal: PublicScoredOffer | null;
   onProfile: (profile: BuyerProfile) => void;
   onMessage: (message: string) => void;
   onSimulate: (mode: "TRAVEL" | "BUDGET") => void;
@@ -614,40 +592,11 @@ function StageView({
   }
 
   if (stage === "match") {
-    if (!result) {
-      return (
-        <EmptyState
-          title="Match"
-          body="Run AstraOS to rank eligible products by overall match."
-        />
-      );
-    }
     return (
-      <div className="space-y-4">
-        <div>
-          <p className="eyebrow">Product decision</p>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight">
-            Standalone product ranking
-          </h2>
-          <p className="mt-1 text-xs text-muted">
-            What product best fits the buyer’s needs — not yet a commercial offer.
-          </p>
-        </div>
-        <MatchList matches={result.semantic_matching.matches} />
-        {proposal && offers ? (
-          <DecisionBridge
-            topMatch={result.semantic_matching.matches[0] ?? null}
-            construction={offers}
-            optimisation={optimisation}
-            offer={proposal}
-          />
-        ) : null}
-        <p className="text-xs text-muted">
-          {result.timing.total_ms.toFixed(0)} ms · parse{" "}
-          {result.timing.intent_parse_ms.toFixed(0)} · qualify{" "}
-          {result.timing.qualification_ms.toFixed(0)}
-        </p>
-      </div>
+      <EmptyState
+        title="Match"
+        body="Run AstraOS to rank eligible products by overall match."
+      />
     );
   }
 

@@ -2,13 +2,11 @@ import { formatAudCents } from "@/lib/money";
 import {
   bestPointForProduct,
   commercialLevers,
-  dimensionLine,
-  expansionSteps,
+  matchScoreDisplay,
   offerVsProductCopy,
   productsDiffer,
 } from "@/lib/decisionNarrative";
 import type {
-  GenerateOffersResponse,
   OptimisationResponse,
   PublicScoredOffer,
   RankedProductMatch,
@@ -16,103 +14,93 @@ import type {
 
 export function DecisionBridge({
   topMatch,
-  construction,
   optimisation,
   offer,
+  onCompare,
+  onInspect,
 }: {
   topMatch: RankedProductMatch | null;
-  construction: GenerateOffersResponse | null;
   optimisation: OptimisationResponse | null;
   offer: PublicScoredOffer | null;
+  onCompare?: () => void;
+  onInspect?: () => void;
 }) {
   if (!topMatch || !offer) return null;
   const differ = productsDiffer(topMatch, offer);
   const topOffer = bestPointForProduct(optimisation, topMatch);
-  const steps = construction ? expansionSteps(construction, optimisation) : [];
+  const productScore = matchScoreDisplay(topMatch.overall_semantic_fit);
 
   return (
-    <section className="space-y-4">
-      <div>
-        <p className="eyebrow">Product → offer</p>
-        <p className="mt-1 text-xs text-muted">
-          Product ranking is not the merchant response. The offer is.
-        </p>
-      </div>
-
-      <div className="grid items-start gap-3 text-sm md:grid-cols-[1fr_auto_1fr]">
+    <section>
+      <p className="eyebrow">Why this response?</p>
+      <div className="mt-3 grid items-start gap-4 text-sm md:grid-cols-[1fr_auto_1fr]">
         <div>
-          <p className="eyebrow">Best product match</p>
+          <p className="type-small text-muted">Best standalone product</p>
           <p className="mt-1 text-base font-semibold">{topMatch.product_name}</p>
-          <p
-            className="font-mono text-sm tabular-nums"
-            title="How strongly the product itself aligns with buyer intent."
-          >
-            {Math.round(topMatch.overall_semantic_fit * 100)} / 100
+          <p className="mt-1 font-mono tabular-nums">
+            {productScore.value} {productScore.suffix}
           </p>
         </div>
         <p
-          className="self-center font-mono text-2xl text-muted"
+          className="self-center font-medium text-muted md:pt-6"
           aria-label={differ ? "not equal" : "same product"}
         >
           {differ ? "≠" : "="}
         </p>
         <div>
-          <p className="eyebrow">Selected commercial offer</p>
+          <p className="type-small text-muted">Selected commercial response</p>
           <p className="mt-1 text-base font-semibold">{offer.product_name}</p>
-          <p
-            className="font-mono text-sm tabular-nums"
-            title="Transparent cold-start score for the complete offer."
-          >
-            {offer.buyer_utility.toFixed(2)} utility ·{" "}
-            {formatAudCents(offer.contribution_margin_cents)}
+          <p className="mt-1 font-mono tabular-nums">
+            {offer.buyer_utility.toFixed(2)} utility
           </p>
         </div>
       </div>
 
-      {construction ? (
-        <ol className="space-y-1 text-sm">
-          <li className="text-xs text-muted">{dimensionLine(construction)}</li>
-          {steps.map((step, index) => (
-            <li key={step.label} className="flex items-baseline justify-between gap-3">
-              <span className="text-muted">
-                {index > 0 ? "↓ " : ""}
-                {step.label}
-              </span>
-              <span className="font-mono tabular-nums">{step.value}</span>
-            </li>
-          ))}
-        </ol>
-      ) : null}
-
-      {differ ? (
-        <div className="bg-canvas px-4 py-3">
-          <p className="eyebrow">Why different?</p>
-          <p className="mt-1 text-sm">
-            {topMatch.product_name} had the stronger standalone product match.
-            {offer.product_name} won as a complete commercial response.
-          </p>
-          <p className="mt-2 text-xs text-muted">
-            Commercial configuration: {commercialLevers(offer).join(" · ")}
-          </p>
-          {topOffer ? (
-            <p className="mt-2 font-mono text-xs tabular-nums text-muted">
-              Top-product best offer {topOffer.buyer_utility.toFixed(2)} ·{" "}
-              {formatAudCents(topOffer.contribution_margin_cents)} vs selected{" "}
-              {offer.buyer_utility.toFixed(2)} ·{" "}
-              {formatAudCents(offer.contribution_margin_cents)}
+      <div className="mt-5 space-y-3 text-[15px] leading-6">
+        {differ ? (
+          <>
+            <p>
+              {topMatch.product_name} is the stronger standalone product.
             </p>
+            <p>
+              {offer.product_name} produces the stronger complete commercial
+              response once delivery, warranty, returns, intervention cost and
+              merchant economics are considered.
+            </p>
+          </>
+        ) : (
+          <p>
+            {topMatch.product_name} remained the strongest product after offer
+            optimisation. AstraOS still configured commercial terms:{" "}
+            {commercialLevers(offer).join(", ")}.
+          </p>
+        )}
+        <p className="text-sm text-muted">{offerVsProductCopy(differ)}</p>
+        {differ && topOffer ? (
+          <p className="text-sm text-muted">
+            Best offer on {topMatch.product_name}:{" "}
+            {topOffer.buyer_utility.toFixed(2)} utility ·{" "}
+            {formatAudCents(topOffer.contribution_margin_cents)}. Selected
+            response: {offer.buyer_utility.toFixed(2)} utility ·{" "}
+            {formatAudCents(offer.contribution_margin_cents)}.
+          </p>
+        ) : null}
+      </div>
+
+      {onCompare || onInspect ? (
+        <div className="mt-4 flex flex-wrap gap-4">
+          {onCompare ? (
+            <button type="button" className="btn-quiet" onClick={onCompare}>
+              Compare decisions
+            </button>
+          ) : null}
+          {onInspect ? (
+            <button type="button" className="btn-quiet" onClick={onInspect}>
+              Inspect evidence
+            </button>
           ) : null}
         </div>
-      ) : (
-        <div className="bg-canvas px-4 py-3">
-          <p className="eyebrow">Same product</p>
-          <p className="mt-1 text-sm">
-            Top product remained the best complete offer. AstraOS still changed
-            commercial terms: {commercialLevers(offer).join(" · ")}.
-          </p>
-        </div>
-      )}
-      <p className="text-xs text-muted">{offerVsProductCopy(differ)}</p>
+      ) : null}
     </section>
   );
 }

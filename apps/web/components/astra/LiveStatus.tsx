@@ -1,9 +1,7 @@
 export function LiveStatus({
-  label = "Live workbench",
-  detail = "Merchant offer intelligence",
+  label = "Live workbench"
 }: {
   label?: string;
-  detail?: string;
 }) {
   return (
     <div>
@@ -14,7 +12,6 @@ export function LiveStatus({
         />
         <span className="eyebrow">{label}</span>
       </p>
-      <p className="mt-1 type-small text-muted">{detail}</p>
     </div>
   );
 }

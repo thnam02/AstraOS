@@ -20,6 +20,20 @@ describe("process rail", () => {
     assert.equal(processRailState("transact", ready, "optimise"), "future");
   });
 
+  it("does not invent progress when no match exists", () => {
+    const idle = {
+      hasMatch: false,
+      hasOffers: false,
+      hasOpt: false,
+      hasNego: false,
+      hasTxn: false,
+      txnFailed: false,
+      txnComplete: false,
+    };
+    assert.equal(processRailState("qualify", idle, "understand"), "future");
+    assert.equal(processRailState("match", idle, "understand"), "future");
+  });
+
   it("marks a failed transaction", () => {
     assert.equal(
       processRailState(

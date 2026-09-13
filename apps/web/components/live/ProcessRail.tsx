@@ -51,7 +51,7 @@ export function processRailState(
   return flags.txnComplete ? "complete" : "future";
 }
 
-const STAGE_COPY: Record<LiveStage, string> = {
+export const STAGE_COPY: Record<LiveStage, string> = {
   understand: "Understand",
   qualify: "Qualify",
   match: "Match",
@@ -62,24 +62,34 @@ const STAGE_COPY: Record<LiveStage, string> = {
   learn: "Learn",
 };
 
+function stageClass(state: RailState, preview: boolean): string {
+  if (preview) return "font-medium text-muted";
+  if (state === "active") return "font-semibold text-ink";
+  if (state === "complete") return "font-medium text-ink";
+  if (state === "failed" || state === "blocked") return "font-medium text-danger";
+  return "font-medium text-muted";
+}
+
 export function ProcessRail({
   active,
   flags,
   onSelect,
   interactive = true,
+  preview = false,
 }: {
   active: LiveStage;
   flags: Omit<Parameters<typeof processRailState>[1], never>;
   onSelect?: (stage: LiveStage) => void;
   interactive?: boolean;
+  preview?: boolean;
 }) {
   return (
     <ol
-      className="flex flex-wrap items-center gap-x-0.5 gap-y-1"
-      aria-label="Decision pipeline"
+      className="flex min-w-max items-center"
+      aria-label={preview ? "How AstraOS works" : "Decision pipeline"}
     >
       {LIVE_STAGES.map((id, index) => {
-        const state = processRailState(id, flags, active);
+        const state = preview ? "future" : processRailState(id, flags, active);
         const mark =
           state === "complete"
             ? "✓"
@@ -88,52 +98,48 @@ export function ProcessRail({
               : state === "failed" || state === "blocked"
                 ? "!"
                 : "○";
+        const label = STAGE_COPY[id];
+        const spoken = preview
+          ? label
+          : `${label}, ${
+              state === "complete"
+                ? "complete"
+                : state === "active"
+                  ? "active"
+                  : state === "failed" || state === "blocked"
+                    ? "error"
+                    : "pending"
+            }`;
         return (
           <li key={id} className="flex items-center">
             {index > 0 ? (
-              <span
-                className={`mx-1.5 text-[10px] motion-safe:transition-colors ${
-                  state === "future" ? "text-line-muted" : "text-line"
-                }`}
-                aria-hidden
-              >
-                ──
-              </span>
+              <span className="mx-2 h-px w-5 shrink-0 bg-line" aria-hidden />
             ) : null}
-            {interactive && onSelect ? (
+            {interactive && onSelect && !preview ? (
               <button
                 type="button"
                 onClick={() => onSelect(id)}
                 aria-current={state === "active" ? "step" : undefined}
-                aria-label={`${STAGE_COPY[id]}, ${state}`}
-                className={`cursor-pointer text-[11px] uppercase tracking-[0.08em] motion-safe:transition-colors ${
-                  state === "active"
-                    ? "font-semibold text-ink"
-                    : state === "complete"
-                      ? "text-ink"
-                      : state === "failed" || state === "blocked"
-                        ? "text-danger"
-                        : "text-muted"
-                }`}
+                aria-label={spoken}
+                className={`cursor-pointer text-[13px] motion-safe:transition-colors ${stageClass(state, preview)}`}
               >
-                <span className="mr-1" aria-hidden>
+                <span className="mr-1.5" aria-hidden>
                   {mark}
                 </span>
-                {STAGE_COPY[id]}
+                {label}
               </button>
             ) : (
               <span
-                aria-current={state === "active" ? "step" : undefined}
-                className={`text-[11px] uppercase tracking-[0.08em] ${
-                  state === "active"
-                    ? "font-semibold text-ink"
-                    : "text-muted"
-                }`}
+                aria-current={!preview && state === "active" ? "step" : undefined}
+                aria-label={spoken}
+                className={`text-[13px] ${stageClass(state, preview)}`}
               >
-                <span className="mr-1" aria-hidden>
-                  {mark}
-                </span>
-                {STAGE_COPY[id]}
+                {preview ? null : (
+                  <span className="mr-1.5" aria-hidden>
+                    {mark}
+                  </span>
+                )}
+                {label}
               </span>
             )}
           </li>

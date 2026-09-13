@@ -245,7 +245,10 @@ export function LiveWorkbench() {
           <ApiStatus />
         </div>
         {error ? <ErrorState message={error} /> : null}
-        <ProcessRail active={stage} flags={flags} onSelect={setStage} />
+        <div className="overflow-x-auto">
+          <p className="eyebrow mb-2">Decision pipeline</p>
+          <ProcessRail active={stage} flags={flags} onSelect={setStage} />
+        </div>
       </section>
 
       <div

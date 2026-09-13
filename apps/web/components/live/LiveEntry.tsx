@@ -33,15 +33,6 @@ const ICONS: Record<string, Icon> = {
   custom: Plus,
 };
 
-const EVALUATES = [
-  "Buyer intent",
-  "Budget",
-  "Delivery urgency",
-  "Product fit",
-  "Merchant constraints",
-  "Offer quality",
-] as const;
-
 const IDLE_FLAGS = {
   hasMatch: false,
   hasOffers: false,
@@ -135,89 +126,82 @@ export function LiveEntry({
         </div>
       </section>
 
-      <form
-        className="border border-line bg-surface"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (canRun) onRun();
-        }}
-      >
-        <div className="border-b border-line px-4 py-3">
-          <p className="eyebrow">Buyer request</p>
-          <p className="mt-1 type-small text-muted">
-            Tell AstraOS what the buyer needs
-          </p>
-        </div>
-        <label className="block px-4 pt-3">
-          <span className="sr-only">Buyer agent request</span>
-          <Textarea
-            value={text}
-            onChange={(event) => onText(event.target.value)}
-            rows={5}
-            className="min-h-[8rem] resize-y rounded-[6px] border-line bg-canvas text-[15px] leading-6 shadow-none"
-          />
-        </label>
-        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <span className="type-small text-muted" id="parser-label">
-              Parser
-            </span>
-            <Select
-              value={parserMode}
-              onValueChange={(value) =>
-                onParser(value as "rule_based" | "llm")
-              }
-            >
-              <SelectTrigger
-                size="sm"
-                aria-labelledby="parser-label"
-                className="rounded-[6px] border-line bg-surface shadow-none"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="llm">LLM</SelectItem>
-                <SelectItem value="rule_based">Rule-based</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="space-y-7">
+        <form
+          className="border border-line bg-surface"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (canRun) onRun();
+          }}
+        >
+          <div className="border-b border-line px-4 py-3">
+            <p className="eyebrow">Buyer request</p>
+            <p className="mt-1 type-small text-muted">
+              Tell AstraOS what the buyer needs
+            </p>
           </div>
-          <Button
-            type="submit"
-            size="lg"
-            disabled={!canRun}
-            className="h-10 rounded-[6px] px-5"
-          >
-            Analyse request
-            <ArrowRight size={16} weight="bold" aria-hidden />
-          </Button>
-        </div>
-        {error ? (
-          <div className="px-4 pb-4">
-            <ErrorState
-              message={error}
+          <label className="block px-4 pt-3">
+            <span className="sr-only">Buyer agent request</span>
+            <Textarea
+              value={text}
+              onChange={(event) => onText(event.target.value)}
+              rows={5}
+              className="min-h-[8rem] resize-y rounded-[6px] border-line bg-canvas text-[15px] leading-6 shadow-none"
+            />
+          </label>
+          <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="type-small text-muted" id="parser-label">
+                Parser
+              </span>
+              <Select
+                value={parserMode}
+                onValueChange={(value) =>
+                  onParser(value as "rule_based" | "llm")
+                }
+              >
+                <SelectTrigger
+                  size="sm"
+                  aria-labelledby="parser-label"
+                  className="rounded-[6px] border-line bg-surface shadow-none"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="llm">LLM</SelectItem>
+                  <SelectItem value="rule_based">Rule-based</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={!canRun}
+              className="h-10 rounded-[6px] px-5"
+            >
+              Analyse request
+              <ArrowRight size={16} weight="bold" aria-hidden />
+            </Button>
+          </div>
+          {error ? (
+            <div className="px-4 pb-4">
+              <ErrorState message={error} />
+            </div>
+          ) : null}
+        </form>
+
+        <section>
+          <p className="eyebrow">How AstraOS works</p>
+          <div className="mt-2 overflow-x-auto pb-1">
+            <ProcessRail
+              active="understand"
+              flags={IDLE_FLAGS}
+              interactive={false}
+              preview
             />
           </div>
-        ) : null}
-      </form>
-
-      <section>
-        <p className="eyebrow">Decision pipeline</p>
-        <div className="mt-3 overflow-x-auto">
-          <ProcessRail active="understand" flags={IDLE_FLAGS} interactive={false} />
-        </div>
-        <p className="mt-2 type-small text-muted">
-          Understand is ready. Later stages stay inactive until AstraOS runs.
-        </p>
-      </section>
-
-      <section>
-        <p className="eyebrow">What AstraOS evaluates</p>
-        <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 type-small text-muted">
-          {EVALUATES.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

@@ -28,6 +28,9 @@ class CreateNegotiationRequest(BaseModel):
     buyer_agent_type: BuyerAgentType = "MANUAL"
     parser_mode: Literal["rule_based", "llm"] | None = None
     max_products: int = Field(default=8, ge=1, le=20)
+    channel: Literal["OPERATOR", "AGENT_API"] = "OPERATOR"
+    request_id: str | None = Field(default=None, max_length=80)
+    buyer_agent_id: str | None = Field(default=None, max_length=80)
 
 
 class BuyerTurnRequest(BaseModel):

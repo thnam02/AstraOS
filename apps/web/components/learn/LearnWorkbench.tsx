@@ -155,8 +155,8 @@ export function LearnWorkbench() {
     <div className="space-y-8">
       <AstraSectionHeader
         eyebrow="Learn"
-        title="How AstraOS could improve after real outcomes exist"
-        description="LIVE uses transparent cold-start logic today. LEARN records Intent → Offer → Outcome. The learned score is experimental and synthetic."
+        title="Outcome learning"
+        description="Secondary capability: how future merchant decisions could improve from observed outcomes. LIVE uses transparent cold-start scoring today. Learned models here are experimental and synthetic."
       />
 
       {error ? (

@@ -177,10 +177,10 @@ export function ArenaWorkbench() {
   return (
     <div className="space-y-4">
       <div className="border border-line bg-canvas px-4 py-3">
-        <p className="eyebrow">Controlled experiment</p>
+        <p className="eyebrow">Controlled simulation</p>
         <p className="mt-1 text-sm">
-          Same buyer · same catalogue · same inventory · same policy · same
-          buyer model. Only merchant strategy changes.
+          Same buyer · same catalogue · same inventory · same merchant policy ·
+          same buyer model. Only strategy changes.
         </p>
       </div>
 

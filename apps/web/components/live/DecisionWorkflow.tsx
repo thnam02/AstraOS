@@ -13,6 +13,7 @@ import { STAGE_META, stageReachable } from "@/lib/liveStages";
 import { cn } from "@/lib/utils";
 
 import {
+  COMMERCE_STAGES,
   LIVE_STAGES,
   processRailState,
   StageNode,
@@ -34,8 +35,9 @@ function neighbor(
   flags: Flags,
   offset: -1 | 1,
 ): LiveStage | null {
-  const index = LIVE_STAGES.indexOf(active) + offset;
-  const id = LIVE_STAGES[index] ?? null;
+  const rail = active === "learn" ? LIVE_STAGES : COMMERCE_STAGES;
+  const index = rail.indexOf(active) + offset;
+  const id = rail[index] ?? null;
   if (!id || !stageReachable(id, flags, active)) return null;
   return id;
 }
@@ -52,12 +54,12 @@ function FullWorkflow({
   return (
     <nav className="overflow-x-auto" aria-label="Decision workflow">
       <ol className="flex min-h-[56px] min-w-max items-stretch">
-        {LIVE_STAGES.map((id, index) => {
+        {COMMERCE_STAGES.map((id, index) => {
           const meta = STAGE_META[id];
           const state = processRailState(id, flags, active);
           const disabled = !stageReachable(id, flags, active);
           const connectorDone = state === "complete" || state === "active";
-          const isLast = index === LIVE_STAGES.length - 1;
+          const isLast = index === COMMERCE_STAGES.length - 1;
 
           return (
             <li

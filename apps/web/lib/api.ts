@@ -30,6 +30,9 @@ import type {
   LearningOverview,
   LearningDatasetSummary,
   LearningTrainResponse,
+  AgentCapabilities,
+  AgentActivityResponse,
+  ReadyResponse,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -63,12 +66,22 @@ export function getHealth(): Promise<HealthResponse> {
   return request<HealthResponse>("/health");
 }
 
-export function getReady(): Promise<{
-  status: string;
-  degraded_mode: string[];
-  checks: { name: string; ok: boolean; detail: string }[];
-}> {
-  return request("/ready");
+export function getReady(): Promise<ReadyResponse> {
+  return request<ReadyResponse>("/ready");
+}
+
+export function getAgentCapabilities(): Promise<AgentCapabilities> {
+  return request<AgentCapabilities>("/api/v1/agent/capabilities");
+}
+
+export function getAgentActivity(limit = 20): Promise<AgentActivityResponse> {
+  return request<AgentActivityResponse>(
+    `/api/v1/agent/activity?limit=${encodeURIComponent(String(limit))}`,
+  );
+}
+
+export function openApiDocsUrl(): string {
+  return `${API_BASE_URL}/docs`;
 }
 
 export function getCatalogueStats(): Promise<CatalogueStatsResponse> {

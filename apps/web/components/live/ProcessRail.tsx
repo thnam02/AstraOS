@@ -19,6 +19,17 @@ export const LIVE_STAGES: LiveStage[] = [
   "learn",
 ];
 
+/** Synchronous commerce rail — Learn is outcome follow-up, not a transaction step. */
+export const COMMERCE_STAGES: LiveStage[] = [
+  "understand",
+  "qualify",
+  "match",
+  "construct",
+  "optimise",
+  "negotiate",
+  "transact",
+];
+
 export type RailState = "complete" | "active" | "future" | "failed" | "blocked";
 
 export function processRailState(
@@ -132,7 +143,7 @@ export function ProcessRail({
       className="flex min-w-max items-center"
       aria-label={preview ? "How AstraOS works" : "Decision pipeline"}
     >
-      {LIVE_STAGES.map((id, index) => {
+      {COMMERCE_STAGES.map((id, index) => {
         const state = preview ? "future" : processRailState(id, flags, active);
         const label = STAGE_COPY[id];
         const spoken = preview
@@ -146,7 +157,7 @@ export function ProcessRail({
                     ? "error"
                     : "pending"
             }`;
-        const isLast = index === LIVE_STAGES.length - 1;
+        const isLast = index === COMMERCE_STAGES.length - 1;
         const connectorDone =
           !preview && (state === "complete" || state === "active");
         const body = (

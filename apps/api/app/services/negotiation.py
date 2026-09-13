@@ -134,6 +134,9 @@ class NegotiationService:
             max_turns=settings.max_negotiation_turns,
             expires_at=expires,
             session_metadata={
+                "channel": payload.channel,
+                "request_id": payload.request_id,
+                "buyer_agent_id": payload.buyer_agent_id,
                 "policy_snapshot": {
                     "minimum_margin_rate": str(policy.minimum_margin_rate),
                     "maximum_discount_rate": str(policy.maximum_discount_rate),

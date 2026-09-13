@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   AirplaneTilt,
   ArrowRight,
@@ -8,18 +9,12 @@ import {
   Wallet,
 } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
+import { useState } from "react";
 
 import { LiveStatus } from "@/components/astra";
 import { ErrorState } from "@/components/shared/EmptyState";
 import { ProcessRail } from "@/components/live/ProcessRail";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SCENARIOS } from "@/lib/decisionNarrative";
 import { cn } from "@/lib/utils";
@@ -64,26 +59,119 @@ export function LiveEntry({
   const matched = SCENARIOS.find((item) => item.intent === text);
   const selected = matched?.id ?? "custom";
   const canRun = Boolean(text.trim());
+  const [showInspector, setShowInspector] = useState(false);
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 py-8">
       <header className="space-y-3">
         <LiveStatus />
         <h1 className="type-display max-w-2xl">
-          Merchant-side offer intelligence for autonomous buyers
+          How AstraOS handles one autonomous buyer-agent request
         </h1>
         <p className="max-w-xl text-[15px] leading-6 text-muted">
-          The unit of competition is the complete offer, not only the product
-          or the price.
+          LIVE is the merchant operator view of a machine commerce decision.
+          Production traffic arrives through the Agent API.
+        </p>
+        <p className="text-sm text-muted">
+          <Link
+            href="/integrations"
+            className="underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            Connect buyer agents → Integrations
+          </Link>
         </p>
       </header>
 
+      <section className="border border-line bg-surface">
+        <div className="border-b border-line px-4 py-3">
+          <p className="eyebrow">Incoming buyer-agent request</p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+            <span>
+              Source <span className="text-ink">Operator test</span>
+            </span>
+            <span>
+              Protocol <span className="text-ink">Agent API equivalent</span>
+            </span>
+            <span>
+              Status <span className="text-ink">Compose</span>
+            </span>
+          </div>
+          <p className="mt-2 type-small text-muted">
+            This form creates a test request so you can inspect the decision
+            pipeline. It is not production buyer-agent traffic.
+          </p>
+        </div>
+
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (canRun) onRun();
+          }}
+        >
+          <label className="block px-4 pt-3">
+            <span className="sr-only">Buyer agent request text</span>
+            <Textarea
+              value={text}
+              onChange={(event) => onText(event.target.value)}
+              rows={5}
+              placeholder="Paste or compose the buyer-agent request…"
+              className="min-h-[8rem] resize-y rounded-[var(--radius-control)] border-line bg-canvas text-[15px] leading-6 shadow-none"
+            />
+          </label>
+          <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              className="btn-quiet text-left"
+              aria-expanded={showInspector}
+              onClick={() => setShowInspector((current) => !current)}
+            >
+              {showInspector ? "Hide request options" : "Request options"}
+            </button>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={!canRun}
+              className="h-10 rounded-[var(--radius-control)] px-5"
+            >
+              Process request
+              <ArrowRight size={16} weight="bold" aria-hidden />
+            </Button>
+          </div>
+          {showInspector ? (
+            <div className="border-t border-line px-4 py-3">
+              <label className="flex flex-wrap items-center gap-2 text-xs text-muted">
+                <span id="parser-label">Intent parser (technical)</span>
+                <select
+                  aria-labelledby="parser-label"
+                  value={parserMode}
+                  onChange={(event) =>
+                    onParser(event.target.value as "rule_based" | "llm")
+                  }
+                  className="control px-2 py-1"
+                >
+                  <option value="llm">LLM</option>
+                  <option value="rule_based">Rule-based</option>
+                </select>
+              </label>
+            </div>
+          ) : null}
+          {error ? (
+            <div className="px-4 pb-4">
+              <ErrorState message={error} />
+            </div>
+          ) : null}
+        </form>
+      </section>
+
       <section>
-        <p className="eyebrow">Quick scenarios</p>
+        <p className="eyebrow">Test scenarios</p>
+        <p className="mt-1 type-small text-muted">
+          Synthetic intents for development and inspection — not live traffic.
+        </p>
         <div
           className="mt-3 flex flex-wrap gap-2"
           role="group"
-          aria-label="Quick scenarios"
+          aria-label="Test scenarios"
         >
           {SCENARIOS.map((item) => {
             const Icon = ICONS[item.id];
@@ -120,87 +208,26 @@ export function LiveEntry({
             )}
           >
             <Plus size={16} weight="regular" aria-hidden />
-            Custom request
+            Manual request
           </button>
         </div>
       </section>
 
-      <div className="space-y-7">
-        <form
-          className="border border-line bg-surface"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (canRun) onRun();
-          }}
-        >
-          <div className="border-b border-line px-4 py-3">
-            <p className="eyebrow">Buyer request</p>
-            <p className="mt-1 type-small text-muted">
-              Tell AstraOS what the buyer needs
-            </p>
-          </div>
-          <label className="block px-4 pt-3">
-            <span className="sr-only">Buyer agent request</span>
-            <Textarea
-              value={text}
-              onChange={(event) => onText(event.target.value)}
-              rows={5}
-              className="min-h-[8rem] resize-y rounded-[var(--radius-control)] border-line bg-canvas text-[15px] leading-6 shadow-none"
-            />
-          </label>
-          <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <span className="type-small text-muted" id="parser-label">
-                Parser
-              </span>
-              <Select
-                value={parserMode}
-                onValueChange={(value) =>
-                  onParser(value as "rule_based" | "llm")
-                }
-              >
-                <SelectTrigger
-                  size="sm"
-                  aria-labelledby="parser-label"
-                  className="rounded-[var(--radius-control)] border-line bg-surface shadow-none"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="llm">LLM</SelectItem>
-                  <SelectItem value="rule_based">Rule-based</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              type="submit"
-              size="lg"
-              disabled={!canRun}
-              className="h-10 rounded-[var(--radius-control)] px-5"
-            >
-              Analyse request
-              <ArrowRight size={16} weight="bold" aria-hidden />
-            </Button>
-          </div>
-          {error ? (
-            <div className="px-4 pb-4">
-              <ErrorState message={error} />
-            </div>
-          ) : null}
-        </form>
-
-        <section>
-          <p className="eyebrow">How AstraOS works</p>
-          <div className="mt-2 overflow-x-auto pb-1">
-            <ProcessRail
-              active="understand"
-              flags={IDLE_FLAGS}
-              interactive={false}
-              preview
-            />
-          </div>
-        </section>
-      </div>
+      <section>
+        <p className="eyebrow">Decision pipeline</p>
+        <p className="mt-1 type-small text-muted">
+          Understand → Qualify → Match → Construct → Optimise → Negotiate →
+          Transact
+        </p>
+        <div className="mt-2 overflow-x-auto pb-1">
+          <ProcessRail
+            active="understand"
+            flags={IDLE_FLAGS}
+            interactive={false}
+            preview
+          />
+        </div>
+      </section>
     </div>
   );
 }

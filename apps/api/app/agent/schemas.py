@@ -137,6 +137,28 @@ class AgentCapabilities(BaseModel):
     disclaimer: str
 
 
+class AgentActivityItem(BaseModel):
+    """Merchant-safe summary of a negotiation exchange for operator views."""
+
+    occurred_at: datetime
+    kind: str
+    status: str
+    channel: Literal["AGENT_API", "OPERATOR", "UNKNOWN"] = "UNKNOWN"
+    buyer_agent_id: str | None = None
+    request_id: str | None = None
+    negotiation_session_id: UUID
+    proposal_id: UUID | None = None
+    transaction_id: UUID | None = None
+    order_number: str | None = None
+    intent_summary: str
+    total_amount_cents: int | None = None
+    currency: str = "AUD"
+
+
+class AgentActivityResponse(BaseModel):
+    items: list[AgentActivityItem] = Field(default_factory=list)
+
+
 class ReadinessCheck(BaseModel):
     name: str
     ok: bool

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +18,8 @@ from app.agent.proof import (
 )
 from app.agent.schemas import (
     AgentAcceptRequest,
+    AgentActivityItem,
+    AgentActivityResponse,
     AgentCapabilities,
     AgentCounterRequest,
     AgentErrorBody,
@@ -71,6 +73,33 @@ CAPABILITIES = AgentCapabilities(
         "canonical services. It does not price, qualify, or optimise offers."
     ),
 )
+
+
+def _activity_kind(state: str) -> str:
+    mapping = {
+        "BUYER_REQUEST_RECEIVED": "REQUEST_RECEIVED",
+        "MERCHANT_PROPOSAL_CREATED": "PROPOSAL_GENERATED",
+        "BUYER_COUNTER_RECEIVED": "COUNTER_RECEIVED",
+        "MERCHANT_COUNTER_CREATED": "COUNTEROFFER_RETURNED",
+        "BUYER_ACCEPTED": "OFFER_ACCEPTED",
+        "READY_FOR_CHECKOUT": "OFFER_ACCEPTED",
+        "BUYER_REJECTED": "OFFER_REJECTED",
+        "NO_POLICY_SAFE_COUNTER": "NO_SAFE_OFFER",
+        "CLARIFICATION_REQUIRED": "CLARIFICATION_REQUIRED",
+        "NEGOTIATION_LIMIT_REACHED": "LIMIT_REACHED",
+        "EXPIRED": "EXPIRED",
+    }
+    if state in mapping:
+        return mapping[state]
+    if "ACCEPT" in state:
+        return "OFFER_ACCEPTED"
+    if "COUNTER" in state and "BUYER" in state:
+        return "COUNTER_RECEIVED"
+    if "COUNTER" in state:
+        return "COUNTEROFFER_RETURNED"
+    if "PROPOSAL" in state:
+        return "PROPOSAL_GENERATED"
+    return state or "UNKNOWN"
 
 
 def _budget_cents(intent: ShoppingIntent) -> int | None:
@@ -359,6 +388,61 @@ class AgentGatewayService:
     def capabilities(self) -> AgentCapabilities:
         return CAPABILITIES
 
+    async def list_activity(self, *, limit: int = 20) -> AgentActivityResponse:
+        """Read-only merchant operator view of recent negotiation exchanges."""
+        capped = max(1, min(limit, 50))
+        rows = await self.negotiations.rows.list_recent(limit=capped)
+        items: list[AgentActivityItem] = []
+        for row in rows:
+            meta = row.session_metadata or {}
+            channel_raw = meta.get("channel")
+            channel: Literal["AGENT_API", "OPERATOR", "UNKNOWN"]
+            if channel_raw == "AGENT_API":
+                channel = "AGENT_API"
+            elif channel_raw == "OPERATOR":
+                channel = "OPERATOR"
+            else:
+                channel = "UNKNOWN"
+            proposal = row.proposals[-1] if row.proposals else None
+            snapshot = (proposal.offer_snapshot or {}) if proposal else {}
+            pricing = snapshot.get("pricing") if isinstance(snapshot, dict) else None
+            total_cents = None
+            currency = "AUD"
+            if isinstance(pricing, dict):
+                total_cents = pricing.get("total_price_cents")
+                currency = str(pricing.get("currency") or "AUD")
+            txn = await self.transactions.rows.get_latest_for_negotiation(row.id)
+            order_number = None
+            transaction_id = None
+            if txn is not None:
+                transaction_id = txn.id
+                if txn.orders:
+                    order_number = txn.orders[0].order_number
+            intent = (row.raw_intent or "").strip().replace("\n", " ")
+            summary = intent if len(intent) <= 120 else f"{intent[:117]}…"
+            items.append(
+                AgentActivityItem(
+                    occurred_at=row.updated_at or row.created_at,
+                    kind=_activity_kind(row.current_state),
+                    status=row.current_state,
+                    channel=channel,
+                    buyer_agent_id=(
+                        str(meta["buyer_agent_id"])
+                        if meta.get("buyer_agent_id")
+                        else None
+                    ),
+                    request_id=str(meta["request_id"]) if meta.get("request_id") else None,
+                    negotiation_session_id=row.id,
+                    proposal_id=proposal.id if proposal else row.current_proposal_id,
+                    transaction_id=transaction_id,
+                    order_number=order_number,
+                    intent_summary=summary or "—",
+                    total_amount_cents=total_cents if isinstance(total_cents, int) else None,
+                    currency=currency,
+                )
+            )
+        return AgentActivityResponse(items=items)
+
     async def request_offer(self, payload: AgentOfferRequest) -> AgentOfferResponse:
         started = time.perf_counter()
         request_id = payload.request_id or uuid4()
@@ -380,6 +464,9 @@ class AgentGatewayService:
                 intent=text,
                 buyer_profile=payload.buyer_profile,
                 buyer_agent_type="MANUAL",
+                channel="AGENT_API",
+                request_id=str(request_id),
+                buyer_agent_id=payload.buyer_agent_id,
             )
         )
         return await _public_session(

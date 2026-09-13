@@ -86,13 +86,14 @@ export const STAGE_META: Record<
     heading: "Transaction",
     description:
       "Accept a proposal to revalidate, reserve inventory and write the order. AstraOS does not take payment.",
+    continueLabel: "View outcome learning",
   },
   learn: {
     number: "08",
     title: "Learn",
     subtitle: "Outcome",
-    heading: "Outcome",
+    heading: "Outcome learning",
     description:
-      "Close the decision lifecycle with the outcome this run actually produced.",
+      "Optional follow-up after the commerce decision. LIVE uses transparent cold-start scoring; outcome models are experimental.",
   },
 };

@@ -1223,3 +1223,10 @@ export type DemoStateResponse = {
   minimum_margin_rate: number;
   note: string;
 };
+
+export type {
+  AgentActivityItem,
+  AgentActivityResponse,
+  AgentCapabilities,
+  ReadyResponse,
+} from "./agent";

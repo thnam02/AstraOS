@@ -142,12 +142,16 @@ export function MerchantPolicyDrawer({
   }
 
   return (
-    <AstraInspector open={open} title="Merchant rules" onClose={onClose}>
+    <AstraInspector
+      open={open}
+      title="Rules — what AstraOS is allowed to do"
+      onClose={onClose}
+    >
         <div className="space-y-5">
           <AstraStageHeader
-            eyebrow="Merchant"
-            title="Commercial boundaries"
-            description="Guardrails define what is allowed. The commercial objective chooses among policy-safe Pareto offers."
+            eyebrow="Authority"
+            title="Merchant authority"
+            description="Commercial objective, economics, and fulfilment options that bound every machine response."
           />
           {loading && !policy ? (
             <p className="text-sm text-muted" role="status">

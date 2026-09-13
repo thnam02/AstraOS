@@ -7,9 +7,9 @@ export default function CataloguePage() {
     <PageContainer wide>
       <div className="space-y-6">
         <SectionHeader
-          eyebrow="Merchant data"
-          title="Catalogue"
-          description="Inspect the canonical merchant model. Demo seed and imported feeds populate the same tables."
+          eyebrow="Data"
+          title="What AstraOS knows"
+          description="Merchant truth AstraOS can ground decisions on: products, prices, inventory, fulfilment, evidence, and commercial options."
         />
         <CatalogueExplorer />
       </div>

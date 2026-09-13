@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/", label: "LIVE" },
-  { href: "/arena", label: "ARENA" },
+  { href: "/integrations", label: "INTEGRATIONS" },
+  { href: "/arena", label: "EVALUATE" },
   { href: "/learn", label: "LEARN" },
 ] as const;
 

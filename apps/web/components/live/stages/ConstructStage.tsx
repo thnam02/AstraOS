@@ -89,7 +89,7 @@ export function ConstructStage({
 
       <StageSection
         title="Offer explorer"
-        description="Feasible configurations only. No offer is recommended here."
+        description="Browse commercial configurations for each matched product. No offer is recommended here — Optimise selects later."
         boxed={false}
       >
         <OfferExplorer

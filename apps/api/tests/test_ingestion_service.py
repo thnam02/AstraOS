@@ -110,6 +110,12 @@ async def test_full_snapshot_deactivates_missing_imported_product(
     raw["variant_returns"] = [
         row for row in raw["variant_returns"] if row["sku"] != "HS-DCK-05-SLV"
     ]
+    raw["variant_bundle"] = [
+        row for row in raw.get("variant_bundle", []) if row["sku"] != "HS-DCK-05-SLV"
+    ]
+    raw["evidence"] = [
+        row for row in raw.get("evidence", []) if row["sku"] != "HS-DCK-05-SLV"
+    ]
     result = await _run(db_session, json.dumps(raw).encode())
     assert result.products.deactivated >= 1
     deck = (

@@ -256,3 +256,31 @@ async def test_llm_http_error_falls_back(monkeypatch: pytest.MonkeyPatch) -> Non
     assert intent.parser_metadata.fallback_used is True
     assert intent.parser_metadata.fallback_reason == "provider_unavailable"
     assert intent.parser_metadata.parser_requested == "llm"
+
+
+@pytest.mark.asyncio
+async def test_llm_empty_extraction_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.decision.intent.models import ShoppingIntent
+    from app.decision.intent.parser import parse_intent
+
+    class _Empty:
+        def metadata_fields(self) -> dict[str, object]:
+            return {"provider": "fake", "model": "fake"}
+
+        async def parse(self, text: str) -> ShoppingIntent:
+            return ShoppingIntent(
+                raw_text=text, parser_type="llm", parser_version="llm.v2"
+            )
+
+    monkeypatch.setattr(
+        "app.decision.intent.llm_parser.LLMIntentParser", lambda: _Empty()
+    )
+    intent = await parse_intent(
+        "I need wireless ANC headphones under A$350 delivered today",
+        parser_mode="llm",
+    )
+    assert intent.parser_type == "rule_based"
+    assert intent.hard_constraints
+    assert intent.parser_metadata is not None
+    assert intent.parser_metadata.fallback_used is True
+    assert intent.parser_metadata.fallback_reason == "empty_extraction"

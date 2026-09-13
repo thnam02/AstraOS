@@ -5,7 +5,7 @@ code and targeted tests, not assumed earlier prompts.
 
 | ID | Subsystem | Failure / Attack | Expected | Current | Status | Test | Fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| A1 | Intent / LLM | Timeout / 500 / malformed | Rule fallback, explicit metadata | `parser_requested/used`, `fallback_used/reason` | PASS | `test_llm_parser.py`, `test_phase12_hardening.py` | HTTP 500 reason mapped to `provider_unavailable` |
+| A1 | Intent / LLM | Timeout / 500 / malformed / empty extraction | Rule fallback, explicit metadata | `parser_requested/used`, `fallback_used/reason` including `empty_extraction` | PASS | `test_llm_parser.py`, `test_phase12_hardening.py` | HTTP 500 → `provider_unavailable`; empty LLM constraints → `empty_extraction` |
 | A2 | Intent / LLM | Prompt injection | Policy unchanged; no A$1 offer | Injection flagged; policy immutable | PASS | `test_llm_parser.py`, `test_phase12_hardening.py` | None |
 | A3 | Intent | Contradictory constraints | Surfaced, not silently resolved | Ambiguity `contradictory_constraints` | PASS | `test_llm_parser.py` | None |
 | B1 | Semantics | Model missing / load fail | Hashing fallback or ready degrade | Hashing fallback + `/ready` degraded | PASS | `test_semantic_provider.py` | None |

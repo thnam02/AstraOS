@@ -9,7 +9,8 @@ Symptom: `/ready` includes `llm_unavailable`, or LIVE shows parser fallback.
 Action:
 
 ```bash
-# Continue. Rule-based fallback is automatic and explicit.
+# Continue. Rule-based fallback is automatic and explicit
+# (timeout, 500, auth, or empty LLM extraction).
 # Optional: force it
 export INTENT_PARSER_MODE=rule_based
 ```

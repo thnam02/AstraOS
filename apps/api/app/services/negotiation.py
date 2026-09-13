@@ -12,7 +12,6 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.decision.proof.compiler import attach_proof_bundle
 from app.decision.intent.models import ConstraintField, ShoppingIntent
 from app.decision.negotiation.delta import (
     apply_working_intent,
@@ -43,6 +42,7 @@ from app.decision.optimisation.objective import (
     MerchantObjectiveConfig,
     from_snapshot,
 )
+from app.decision.proof.compiler import attach_proof_bundle
 from app.models.negotiation import (
     MerchantProposal,
     NegotiationSession,

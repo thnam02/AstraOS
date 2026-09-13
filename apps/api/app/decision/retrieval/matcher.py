@@ -7,13 +7,13 @@ from uuid import UUID
 
 from app.decision.eligibility.snapshot import VariantSnapshot
 from app.decision.intent.models import ShoppingIntent
+from app.decision.proof.enrich import enrich_match
 from app.decision.retrieval.embeddings import (
     EmbeddingProvider,
     cosine_similarity,
 )
 from app.decision.retrieval.models import RankedProductMatch
 from app.decision.retrieval.profile import build_intent_profile
-from app.decision.proof.enrich import enrich_match
 from app.decision.retrieval.rerank import rerank_variant, sort_matches
 
 

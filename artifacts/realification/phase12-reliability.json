@@ -1,0 +1,143 @@
+{
+  "phase": 12,
+  "title": "reliability-red-team-demo-hardening",
+  "git_sha": "72c7d314eebd1417f525be58236d0275e04c6b75",
+  "dirty_worktree": true,
+  "safety_invariants": {
+    "policy_on_selected_or_executed_offer": "PASS",
+    "buyer_cannot_set_merchant_terms": "PASS",
+    "no_negative_inventory": "PASS",
+    "no_duplicate_orders": "PASS",
+    "proposal_revalidated_before_execute": "PASS",
+    "satisfied_hard_constraints_grounded": "PASS",
+    "public_proof_requires_evidence_or_derivation": "PASS",
+    "external_agent_cannot_mutate_merchant": "PASS",
+    "stale_proposal_cannot_transact": "PASS",
+    "fallback_explicit": "PASS"
+  },
+  "red_team": {
+    "prompt_injection_policy_bypasses": 0,
+    "hard_constraint_selectable_violations": 0,
+    "policy_violations": 0,
+    "negative_inventory_incidents": 0,
+    "duplicate_order_incidents": 0,
+    "unsupported_displayed_claims": 0,
+    "cross_product_proof_leaks": 0,
+    "expired_proposal_successful_accepts": 0,
+    "unsafe_concurrent_last_unit": 0,
+    "external_agent_infinite_loops": 0,
+    "malicious_merchant_content_controls_buyer_agent": false
+  },
+  "hero_run_attempts": 10,
+  "hero_run_successes": 10,
+  "hero_runner": "tests/test_phase12_hardening.py::test_hero_repeatability_ten_runs",
+  "fallback": {
+    "llm_timeout_auth_http_error": "rule_based",
+    "llm_empty_extraction": "rule_based",
+    "llm_fallback_reasons": [
+      "timeout",
+      "authentication",
+      "provider_unconfigured",
+      "provider_unavailable",
+      "validation_failed",
+      "empty_extraction"
+    ],
+    "semantic": "hashing_or_ready_degraded",
+    "mcp": "rest_guaranteed"
+  },
+  "concurrency": {
+    "last_unit": "PASS_one_confirmed_one_failed",
+    "multi_unit_optional": "NOT_RUN"
+  },
+  "idempotency": {
+    "duplicate_accept": "PASS_same_order",
+    "same_key_different_payload": "PASS_returns_first_transaction",
+    "network_retry": "PASS_same_as_duplicate_accept"
+  },
+  "revalidation": {
+    "expired_proposal": "PROPOSAL_EXPIRED",
+    "inventory_to_zero": "OUT_OF_STOCK",
+    "same_day_capacity_removed": "DELIVERY_NO_LONGER_AVAILABLE",
+    "policy_tightened_after_proposal": "MARGIN_POLICY_VIOLATION_or_MERCHANT_POLICY_CHANGED",
+    "semantics": "current_policy_and_current_merchant_truth"
+  },
+  "full_backend_test": {
+    "command": "pytest -q --tb=line",
+    "total_collected": 460,
+    "passed": 456,
+    "failed": 1,
+    "skipped": 3,
+    "duration_s": 265.5,
+    "failed_test": "tests/test_ingestion_service.py::test_full_snapshot_deactivates_missing_imported_product",
+    "failed_reason": "test feed omitted product/variant but left orphan evidence; validator correctly FAILED",
+    "post_fix_targeted": "PASS",
+    "full_suite_rerun_after_parser_fallback": false,
+    "buyer_agent": {
+      "passed": 14,
+      "skipped": 1,
+      "failed": 0
+    }
+  },
+  "lint": {
+    "api_ruff": "PASS",
+    "buyer_agent_ruff": "PASS"
+  },
+  "mypy": {
+    "api": {
+      "errors": 37,
+      "classification": "pre_existing_phase11_arena",
+      "new_phase12_errors": 0
+    },
+    "buyer_agent": {
+      "errors": 0
+    }
+  },
+  "frontend": {
+    "tests_passed": 29,
+    "tests_failed": 0,
+    "production_build": "PASS",
+    "eslint": {
+      "errors": 2,
+      "warnings": 1,
+      "classification": "pre_existing_phase10_set_state_in_effect"
+    }
+  },
+  "migration": {
+    "single_head": "0012_merchant_ingestion",
+    "existing_db_astraos_test": "at_head",
+    "blank_db_to_head": "PASS",
+    "alembic_check": "pre_existing_index_comment_drift_not_rewritten"
+  },
+  "docker_smoke": "NOT_RUN_docker_cli_missing",
+  "rest_smoke": {
+    "capabilities_request_inspect_counter_accept_get": "PASS",
+    "runner": "tests/test_buyer_agent_http.py::test_real_http_request_inspect_counter_accept"
+  },
+  "mcp_smoke": {
+    "status": "optional",
+    "adapter_unit_tests": "PASS",
+    "live_mcp_session": "NOT_RUN",
+    "rest_fallback": "guaranteed"
+  },
+  "health_ready": {
+    "health": "ok",
+    "ready_live_sample": "degraded",
+    "ready_degraded_mode": [
+      "embeddings_cache_empty",
+      "learned_model_unavailable"
+    ],
+    "ready_does_not_call_llm": true
+  },
+  "demo_reset": {
+    "reset_state_twice": "PASS",
+    "command": "make reset-demo"
+  },
+  "known_risks": [
+    "Running API process must be restarted to pick up empty_extraction fallback",
+    "Live sentence-transformer index may be empty; hashing fallback is available",
+    "Docker Compose smoke not executed in this environment",
+    "Optional multi-unit concurrency test not run",
+    "Pre-existing Arena mypy errors and two frontend eslint set-state-in-effect findings"
+  ],
+  "no_major_new_product_features": true
+}

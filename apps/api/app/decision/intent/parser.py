@@ -57,6 +57,12 @@ async def parse_intent(text: str, parser_mode: str | None = None) -> ShoppingInt
         llm_parser = LLMIntentParser()
         try:
             parsed = await llm_parser.parse(text)
+            if not _has_actionable_constraints(parsed):
+                rules = apply_faithfulness(await RuleBasedIntentParser().parse(text))
+                if _has_actionable_constraints(rules):
+                    parsed = rules
+                    fallback_used = True
+                    fallback_reason = "empty_extraction"
         except LLMParserUnavailable as exc:
             parsed = await RuleBasedIntentParser().parse(text)
             parsed = apply_faithfulness(parsed)
@@ -116,6 +122,12 @@ async def parse_intent(text: str, parser_mode: str | None = None) -> ShoppingInt
         metadata.total_tokens,
     )
     return normalized
+
+
+def _has_actionable_constraints(intent: ShoppingIntent) -> bool:
+    return bool(intent.hard_constraints) or any(
+        item.appears_mandatory for item in intent.ambiguities
+    )
 
 
 def _as_int(value: object) -> int | None:

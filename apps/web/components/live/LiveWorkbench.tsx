@@ -1,30 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { ApiStatus } from "@/components/live/ApiStatus";
-import { IntentPanel } from "@/components/live/IntentPanel";
-import { MatchList } from "@/components/live/MatchList";
+import { BuyerContextBar } from "@/components/live/BuyerContextBar";
+import { DecisionWorkflow } from "@/components/live/DecisionWorkflow";
 import { NegotiationPanel } from "@/components/live/NegotiationPanel";
-import { OfferExplorer } from "@/components/live/OfferExplorer";
-import { OptimisationPanel } from "@/components/live/OptimisationPanel";
-import { ProcessRail, type LiveStage } from "@/components/live/ProcessRail";
-import { QualificationInspect } from "@/components/live/QualificationInspect";
-import { RecommendedOffer } from "@/components/live/RecommendedOffer";
+import { LIVE_STAGES, type LiveStage } from "@/components/live/ProcessRail";
+import {
+  StageFooter,
+  StageHeader,
+  StageLayout,
+} from "@/components/live/StageShell";
+import { ConstructStage } from "@/components/live/stages/ConstructStage";
+import { LearnStage } from "@/components/live/stages/LearnStage";
+import { MatchStage } from "@/components/live/stages/MatchStage";
+import { OptimiseStage } from "@/components/live/stages/OptimiseStage";
+import { QualifyStage } from "@/components/live/stages/QualifyStage";
+import { UnderstandStage } from "@/components/live/stages/UnderstandStage";
 import { TransactionPanel } from "@/components/live/TransactionPanel";
+import { STAGE_META, stageReachable } from "@/lib/liveStages";
+import { AstraLoadingState } from "@/components/astra";
+import { LiveEntry } from "@/components/live/LiveEntry";
+import { Drawer } from "@/components/shared/Drawer";
 import { EmptyState, ErrorState } from "@/components/shared/EmptyState";
-import { StatStrip } from "@/components/shared/StatStrip";
 import {
   acceptProposal,
   createNegotiation,
   getNegotiation,
   postNegotiationTurn,
+  reselectOptimisation,
   runOptimisation,
   setDemoDeliveryCapacity,
   setDemoInventory,
   setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
+import { PIPELINE_LOADING, selectableCompleteOffer } from "@/lib/decisionNarrative";
 import { HERO_INTENT } from "@/lib/intent";
 import type {
   BuyerProfile,
@@ -37,7 +48,7 @@ import type {
 
 export function LiveWorkbench() {
   const [text, setText] = useState(HERO_INTENT);
-  const [parserMode, setParserMode] = useState<"rule_based" | "llm">("rule_based");
+  const [parserMode, setParserMode] = useState<"rule_based" | "llm">("llm");
   const [profile, setProfile] = useState<BuyerProfile>("INTENT_ADAPTED");
   const [result, setResult] = useState<MatchResponse | null>(null);
   const [offers, setOffers] = useState<GenerateOffersResponse | null>(null);
@@ -53,11 +64,24 @@ export function LiveWorkbench() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stage, setStage] = useState<LiveStage>("understand");
+  const [inspect, setInspect] = useState(false);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
 
-  const proposalOffer =
-    negotiation?.proposal?.offer ?? optimisation?.recommended_offer ?? null;
-  const proposalWhy =
-    negotiation?.proposal?.explanation ?? optimisation?.explanation ?? [];
+  const selectedFromChart = useMemo(() => {
+    if (!selectedOfferId || !optimisation) return null;
+    return (
+      optimisation.pareto_offers.find((item) => item.offer_id === selectedOfferId) ??
+      (optimisation.recommended_offer?.offer_id === selectedOfferId
+        ? optimisation.recommended_offer
+        : null)
+    );
+  }, [optimisation, selectedOfferId]);
+  const proposalOffer = selectableCompleteOffer(
+    selectedFromChart ?? optimisation?.recommended_offer ?? null,
+    optimisation,
+    offers?.intent,
+  );
+  const topMatch = result?.semantic_matching.matches[0] ?? null;
 
   const flags = {
     hasMatch: Boolean(result),
@@ -84,14 +108,14 @@ export function LiveWorkbench() {
     setNegotiation(await getNegotiation(session.session_id));
   }
 
-  async function run() {
+  async function run(nextText = text, nextProfile = profile) {
     setBusy(true);
     setError(null);
     try {
       const decided = await createNegotiation({
-        intent: text,
+        intent: nextText,
         parser_mode: parserMode,
-        buyer_profile: profile,
+        buyer_profile: nextProfile,
         max_products: 8,
       });
       if (decided.match) setResult(decided.match);
@@ -99,6 +123,7 @@ export function LiveWorkbench() {
       if (decided.optimisation) setOptimisation(decided.optimisation);
       setNegotiation(decided);
       setTransaction(null);
+      setSelectedOfferId(null);
       setStage("match");
     } catch {
       setError("Negotiation failed. Is the API running?");
@@ -126,408 +151,373 @@ export function LiveWorkbench() {
     }
   }
 
+  async function reselectForObjective() {
+    if (!optimisation) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const next = await reselectOptimisation(optimisation.optimisation_run_id);
+      setOptimisation(next);
+      if (next.recommended_offer) {
+        setSelectedOfferId(next.recommended_offer.offer_id);
+      }
+    } catch {
+      setError("Objective reselection failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   useEffect(() => {
     function onPolicy() {
       if (!offers) return;
       void rerunOptimisation(profile);
     }
+    function onObjective() {
+      if (!optimisation) return;
+      void reselectForObjective();
+    }
     window.addEventListener("astraos:policy-changed", onPolicy);
-    return () => window.removeEventListener("astraos:policy-changed", onPolicy);
-  }, [offers, profile]);
+    window.addEventListener("astraos:objective-changed", onObjective);
+    return () => {
+      window.removeEventListener("astraos:policy-changed", onPolicy);
+      window.removeEventListener("astraos:objective-changed", onObjective);
+    };
+  }, [offers, profile, optimisation]);
 
-  return (
-    <div className="space-y-4">
-      <section className="panel space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <p className="eyebrow">Buyer Agent request</p>
-            <textarea
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              rows={3}
-              className="control mt-2 w-full resize-y px-3 py-2 text-sm leading-6"
-            />
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setText(HERO_INTENT)}
-                className="cursor-pointer text-xs text-muted hover:text-ink"
-              >
-                Example request
-              </button>
-              <select
-                value={parserMode}
-                onChange={(event) =>
-                  setParserMode(event.target.value as "rule_based" | "llm")
-                }
-                className="control px-2 py-1 text-xs"
-              >
-                <option value="rule_based">Rule-based parser</option>
-                <option value="llm">LLM parser</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => void run()}
-                disabled={busy || !text.trim()}
-                className="btn-primary"
-              >
-                {busy ? "Running…" : "Run AstraOS"}
-              </button>
-            </div>
-          </div>
-          <ApiStatus />
-        </div>
-        {error ? <ErrorState message={error} /> : null}
-        <ProcessRail active={stage} flags={flags} onSelect={setStage} />
-      </section>
+  if (!result && busy) {
+    return (
+      <AstraLoadingState
+        title="Creating a merchant response"
+        steps={PIPELINE_LOADING}
+      />
+    );
+  }
 
-      <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)_300px]">
-        <aside className="panel">
-          <p className="eyebrow">Intent understanding</p>
-          {result ? (
-            <div className="mt-3">
-              <IntentPanel intent={result.intent} />
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-muted">
-              Run a request to extract mandatory constraints, context, and
-              priorities.
-            </p>
-          )}
-        </aside>
+  if (!result && !busy) {
+    return (
+      <LiveEntry
+        text={text}
+        parserMode={parserMode}
+        error={error}
+        onText={setText}
+        onParser={setParserMode}
+        onRun={() => void run()}
+      />
+    );
+  }
 
-        <section className="panel min-w-0 space-y-4">
-          <StageView
-            stage={stage}
-            result={result}
-            offers={offers}
-            optimisation={optimisation}
-            negotiation={negotiation}
-            transaction={transaction}
-            profile={profile}
-            busy={busy}
-            parserMode={parserMode}
-            intentText={text}
-            onProfile={(next) => void rerunOptimisation(next)}
-            onMessage={(message) => {
-              if (!negotiation) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  const next = await postNegotiationTurn(negotiation.session_id, {
-                    message,
-                  });
-                  setNegotiation(next);
-                  if (next.state === "READY_FOR_CHECKOUT" && next.proposal) {
-                    await executeAcceptance(next);
-                    setStage("transact");
-                  }
-                } catch {
-                  setError("Negotiation turn failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onSimulate={(mode) => {
-              if (!negotiation) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  setNegotiation(
-                    await simulateNegotiationBuyer(negotiation.session_id, mode),
-                  );
-                } catch {
-                  setError("Buyer simulation failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onExecute={() => {
-              if (!negotiation) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  await executeAcceptance(negotiation);
+  function editRequest() {
+    setResult(null);
+    setOffers(null);
+    setOptimisation(null);
+    setNegotiation(null);
+    setTransaction(null);
+    setSelectedOfferId(null);
+    setError(null);
+    setStage("understand");
+  }
+
+  const nextStage = LIVE_STAGES[LIVE_STAGES.indexOf(stage) + 1];
+  const onContinue =
+    nextStage &&
+    STAGE_META[stage].continueLabel &&
+    stageReachable(nextStage, flags, stage)
+      ? () => setStage(nextStage)
+      : undefined;
+
+  const stageMain = (() => {
+    if (stage === "understand" && result) {
+      return (
+        <UnderstandStage
+          intent={result.intent}
+          rawText={text}
+          onInspect={() => setInspect(true)}
+          onContinue={onContinue}
+        />
+      );
+    }
+    if (stage === "qualify" && result) {
+      return (
+        <QualifyStage
+          qualification={result.qualification}
+          intentText={text}
+          parserMode={parserMode}
+          onContinue={onContinue}
+        />
+      );
+    }
+    if (stage === "match" && result) {
+      return (
+        <MatchStage
+          matches={result.semantic_matching.matches}
+          onContinue={onContinue}
+        />
+      );
+    }
+    if (stage === "construct" && offers) {
+      return (
+        <ConstructStage
+          construction={offers}
+          optimisation={optimisation}
+          heroProduct={topMatch?.product_name}
+          onContinue={onContinue}
+        />
+      );
+    }
+    if (stage === "optimise" && optimisation) {
+      return (
+        <OptimiseStage
+          optimisation={optimisation}
+          offer={proposalOffer}
+          topMatch={topMatch}
+          construction={offers}
+          profile={profile}
+          busy={busy}
+          selectedOfferId={selectedOfferId}
+          onProfile={(next) => void rerunOptimisation(next)}
+          onSelectOffer={setSelectedOfferId}
+          onContinue={onContinue}
+        />
+      );
+    }
+    if (stage === "negotiate" && negotiation) {
+      return (
+        <NegotiationPanel
+          negotiation={negotiation}
+          busy={busy}
+          onMessage={(payload) => {
+            void (async () => {
+              setBusy(true);
+              try {
+                const next = await postNegotiationTurn(negotiation.session_id, payload);
+                setNegotiation(next);
+                if (next.state === "READY_FOR_CHECKOUT" && next.proposal) {
+                  await executeAcceptance(next);
                   setStage("transact");
-                } catch {
-                  setError("Acceptance failed.");
-                } finally {
-                  setBusy(false);
                 }
-              })();
-            }}
-            onRecover={() => {
-              if (!negotiation) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  setNegotiation(await getNegotiation(negotiation.session_id));
-                  setTransaction(null);
-                } catch {
-                  setError("Could not reload the recovered proposal.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onDemoInventory={(units) => {
-              const sku = negotiation?.proposal?.offer?.sku;
-              if (!sku) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  await setDemoInventory({ sku, units_available: units });
-                } catch {
-                  setError("Demo inventory update failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onDemoDelivery={(available) => {
-              const sku = negotiation?.proposal?.offer?.sku;
-              if (!sku) return;
-              void (async () => {
-                setBusy(true);
-                try {
-                  await setDemoDeliveryCapacity({
-                    sku,
-                    delivery_code: "SAME_DAY",
-                    available,
-                  });
-                } catch {
-                  setError("Demo delivery update failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-            onDemoMargin={(rate) => {
-              void (async () => {
-                setBusy(true);
-                try {
-                  await setDemoPolicy({ minimum_margin_rate: rate });
-                  window.dispatchEvent(new Event("astraos:policy-changed"));
-                } catch {
-                  setError("Demo policy update failed.");
-                } finally {
-                  setBusy(false);
-                }
-              })();
-            }}
-          />
-        </section>
-
-        <aside className="panel h-fit xl:sticky xl:top-20">
-          {proposalOffer ? (
-            <RecommendedOffer offer={proposalOffer} explanation={proposalWhy} />
-          ) : (
-            <EmptyState
-              title="Current decision"
-              body="AstraOS will place the recommended merchant response here after a run."
-            />
-          )}
-        </aside>
-      </div>
-    </div>
-  );
-}
-
-function StageView({
-  stage,
-  result,
-  offers,
-  optimisation,
-  negotiation,
-  transaction,
-  profile,
-  busy,
-  parserMode,
-  intentText,
-  onProfile,
-  onMessage,
-  onSimulate,
-  onExecute,
-  onRecover,
-  onDemoInventory,
-  onDemoDelivery,
-  onDemoMargin,
-}: {
-  stage: LiveStage;
-  result: MatchResponse | null;
-  offers: GenerateOffersResponse | null;
-  optimisation: OptimisationResponse | null;
-  negotiation: NegotiationResponse | null;
-  transaction: AcceptProposalResponse | null;
-  profile: BuyerProfile;
-  busy: boolean;
-  parserMode: "rule_based" | "llm";
-  intentText: string;
-  onProfile: (profile: BuyerProfile) => void;
-  onMessage: (message: string) => void;
-  onSimulate: (mode: "TRAVEL" | "BUDGET") => void;
-  onExecute: () => void;
-  onRecover: () => void;
-  onDemoInventory: (units: number) => void;
-  onDemoDelivery: (available: boolean) => void;
-  onDemoMargin: (rate: number) => void;
-}) {
-  if (stage === "understand") {
-    return (
-      <div>
-        <p className="eyebrow">Understand</p>
-        <h2 className="mt-2 text-xl font-semibold tracking-tight">
-          Structured intent
-        </h2>
-        <p className="mt-2 text-sm text-muted">
-          Language is interpreted. Mandatory rules, context, and priorities
-          appear in the left column. No commercial terms are decided here.
-        </p>
-      </div>
-    );
-  }
-
-  if (stage === "qualify") {
-    if (!result) {
-      return (
-        <EmptyState
-          title="Qualification"
-          body="Run AstraOS to check mandatory eligibility."
+              } catch {
+                setError("Negotiation turn failed.");
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+          onSimulate={(mode) => {
+            void (async () => {
+              setBusy(true);
+              try {
+                setNegotiation(
+                  await simulateNegotiationBuyer(negotiation.session_id, mode),
+                );
+              } catch {
+                setError("Buyer simulation failed.");
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
         />
       );
     }
-    return (
-      <div className="space-y-3">
-        <p className="eyebrow">Qualify</p>
-        <h2 className="text-xl font-semibold tracking-tight">Eligibility</h2>
-        <StatStrip
-          items={[
-            { label: "Variants", value: result.qualification.variants_checked },
-            { label: "Eligible", value: result.qualification.eligible },
-            { label: "Violated", value: result.qualification.violated },
-            { label: "Unknown", value: result.qualification.uncertain },
-          ]}
-        />
-        <QualificationInspect intentText={intentText} parserMode={parserMode} />
-        <p className="text-xs text-muted">
-          Semantic ranking runs only on eligible SKUs.
-        </p>
-      </div>
-    );
-  }
-
-  if (stage === "match") {
-    if (!result) {
+    if (stage === "transact" && negotiation) {
       return (
-        <EmptyState
-          title="Match"
-          body="Run AstraOS to rank eligible products by overall match."
+        <TransactionPanel
+          negotiation={negotiation}
+          transaction={transaction}
+          busy={busy}
+          onExecute={() => {
+            void (async () => {
+              setBusy(true);
+              try {
+                await executeAcceptance(negotiation);
+                setStage("transact");
+              } catch {
+                setError("Acceptance failed.");
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+          onRecover={() => {
+            void (async () => {
+              setBusy(true);
+              try {
+                setNegotiation(await getNegotiation(negotiation.session_id));
+                setTransaction(null);
+              } catch {
+                setError("Could not reload the recovered proposal.");
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+          onDemoInventory={(units) => {
+            const sku = negotiation.proposal?.offer?.sku;
+            if (!sku) return;
+            void (async () => {
+              setBusy(true);
+              try {
+                await setDemoInventory({ sku, units_available: units });
+              } catch {
+                setError("Demo inventory update failed.");
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+          onDemoDelivery={(available) => {
+            const sku = negotiation.proposal?.offer?.sku;
+            if (!sku) return;
+            void (async () => {
+              setBusy(true);
+              try {
+                await setDemoDeliveryCapacity({
+                  sku,
+                  delivery_code: "SAME_DAY",
+                  available,
+                });
+              } catch {
+                setError("Demo delivery update failed.");
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+          onDemoMargin={(rate) => {
+            void (async () => {
+              setBusy(true);
+              try {
+                await setDemoPolicy({ minimum_margin_rate: rate });
+                window.dispatchEvent(new Event("astraos:policy-changed"));
+              } catch {
+                setError("Demo policy update failed.");
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
         />
       );
     }
-    return (
-      <div className="space-y-4">
-        <div>
-          <p className="eyebrow">Top match</p>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight">
-            Product ranking
-          </h2>
-        </div>
-        <MatchList matches={result.semantic_matching.matches} />
-        <p className="text-xs text-muted">
-          {result.timing.total_ms.toFixed(0)} ms · parse{" "}
-          {result.timing.intent_parse_ms.toFixed(0)} · qualify{" "}
-          {result.timing.qualification_ms.toFixed(0)}
-        </p>
-      </div>
-    );
-  }
-
-  if (stage === "construct") {
-    if (!offers) {
+    if (stage === "learn") {
       return (
-        <EmptyState
-          title="Construct"
-          body="Offer space is built after matching."
-        />
+        <LearnStage negotiation={negotiation} transaction={transaction} />
       );
     }
     return (
-      <OfferExplorer
-        construction={offers}
-        heroProduct={result?.semantic_matching.matches[0]?.product_name}
+      <EmptyState
+        title="Stage unavailable"
+        body="This stage is not available for the current run."
       />
     );
-  }
-
-  if (stage === "optimise") {
-    if (!optimisation) {
-      return (
-        <EmptyState
-          title="Optimise"
-          body="The Pareto frontier appears after construction."
-        />
-      );
-    }
-    return (
-      <OptimisationPanel
-        optimisation={optimisation}
-        profile={profile}
-        onProfile={onProfile}
-        busy={busy}
-        showRecommendation={false}
-      />
-    );
-  }
-
-  if (stage === "negotiate") {
-    if (!negotiation) {
-      return (
-        <EmptyState
-          title="Negotiate"
-          body="A merchant proposal is required before counters."
-        />
-      );
-    }
-    return (
-      <NegotiationPanel
-        negotiation={negotiation}
-        busy={busy}
-        onMessage={onMessage}
-        onSimulate={onSimulate}
-      />
-    );
-  }
-
-  if (stage === "transact") {
-    if (!negotiation) {
-      return (
-        <EmptyState
-          title="Transact"
-          body="Accept a proposal to reserve inventory and write the order."
-        />
-      );
-    }
-    return (
-      <TransactionPanel
-        negotiation={negotiation}
-        transaction={transaction}
-        busy={busy}
-        onExecute={onExecute}
-        onRecover={onRecover}
-        onDemoInventory={onDemoInventory}
-        onDemoDelivery={onDemoDelivery}
-        onDemoMargin={onDemoMargin}
-      />
-    );
-  }
+  })();
 
   return (
-    <EmptyState
-      title="Learn"
-      body="Transaction outcomes feed LEARN. Open the LEARN destination for calibration and model status."
-    />
+    <div>
+      <DecisionWorkflow
+        active={stage}
+        flags={flags}
+        onSelect={setStage}
+      />
+      <div className="space-y-5 pt-5">
+        {error ? <ErrorState message={error} /> : null}
+        {result ? (
+          <BuyerContextBar
+            intent={result.intent}
+            rawText={text}
+            onEdit={editRequest}
+            onRerun={() => void run()}
+            busy={busy}
+          />
+        ) : null}
+        <StageHeader stage={stage} />
+        <StageLayout
+          wide={
+            stage === "construct" ||
+            stage === "negotiate" ||
+            stage === "optimise"
+          }
+        >
+          {stageMain}
+        </StageLayout>
+        <StageFooter stage={stage} flags={flags} onSelect={setStage} />
+      </div>
+      <Drawer open={inspect} title="Inspect decision" onClose={() => setInspect(false)}>
+        <div className="space-y-4 text-sm">
+          <section>
+            <p className="eyebrow">Parser</p>
+            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              {Object.entries({
+                parser_requested: result?.intent.parser_metadata?.parser_requested,
+                parser_used: result?.intent.parser_metadata?.parser_used ?? result?.intent.parser_type,
+                provider: result?.intent.parser_metadata?.provider,
+                model: result?.intent.parser_metadata?.model,
+                prompt_version: result?.intent.parser_metadata?.prompt_version,
+                schema_version: result?.intent.parser_metadata?.schema_version,
+                fallback_used: result?.intent.parser_metadata?.fallback_used ?? false,
+                fallback_reason: result?.intent.parser_metadata?.fallback_reason,
+                repair_count: result?.intent.parser_metadata?.repair_count ?? 0,
+                latency_ms: result?.intent.parser_metadata?.latency_ms,
+                input_tokens: result?.intent.parser_metadata?.input_tokens,
+                output_tokens: result?.intent.parser_metadata?.output_tokens,
+                total_tokens: result?.intent.parser_metadata?.total_tokens,
+              }).map(([key, value]) => (
+                <div key={key} className="contents">
+                  <dt className="text-muted">{key}</dt>
+                  <dd>{value === null || value === undefined || value === "" ? "—" : String(value)}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+          <section>
+            <p className="eyebrow">Embeddings</p>
+            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              {Object.entries({
+                provider_requested: result?.semantic_matching.provider_requested,
+                provider_used: result?.semantic_matching.provider_used,
+                model: result?.semantic_matching.model,
+                dimension: result?.semantic_matching.dimension,
+                document_version: result?.semantic_matching.document_version,
+                retrieval_version: result?.semantic_matching.retrieval_version,
+                rerank_version: result?.semantic_matching.rerank_version,
+                fallback_used: result?.semantic_matching.fallback_used ?? false,
+                fallback_reason: result?.semantic_matching.fallback_reason,
+              }).map(([key, value]) => (
+                <div key={key} className="contents">
+                  <dt className="text-muted">{key}</dt>
+                  <dd>{value === null || value === undefined || value === "" ? "—" : String(value)}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-2 text-xs text-muted">
+              Product / context / preference scores are grounded rerank points
+              out of 100, not purchase probability or raw cosine similarity.
+            </p>
+          </section>
+          <pre className="overflow-x-auto text-[11px] text-muted">
+            {JSON.stringify(
+              {
+                qualification: result?.qualification,
+                top_match: topMatch,
+                construction: offers?.summary,
+                optimisation: optimisation?.summary,
+                merchant_objective: optimisation?.merchant_objective,
+                selection: optimisation?.selection,
+                selected_offer: proposalOffer,
+                run_ids: {
+                  match: result?.run_id,
+                  offer: offers?.offer_run_id,
+                  optimisation: optimisation?.optimisation_run_id,
+                  negotiation: negotiation?.session_id,
+                },
+              },
+              null,
+              2,
+            )}
+          </pre>
+        </div>
+      </Drawer>
+    </div>
   );
 }

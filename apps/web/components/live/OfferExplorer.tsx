@@ -4,23 +4,40 @@ import { useMemo, useState } from "react";
 
 import { StatStrip } from "@/components/shared/StatStrip";
 import { getOffer, getOfferRun } from "@/lib/api";
-import { contextLabel } from "@/lib/intent";
-import { formatAudCents } from "@/lib/money";
+import {
+  bundleLabel,
+  deliveryLabel,
+  feasibilityLabel,
+  returnsLabel,
+  warrantyLabel,
+} from "@/lib/arenaDisplay";
+import { constructStory, dimensionLine, expansionSteps } from "@/lib/decisionNarrative";
+import { contextLabel, intentPriceCeilingCents } from "@/lib/intent";
+import { centsToPlainDollars, formatAudCents } from "@/lib/money";
 import type {
   GenerateOffersResponse,
   OfferDetailResponse,
   OfferRunResponse,
+  OptimisationResponse,
   PublicOffer,
 } from "@/types";
+
+const DEFAULT_STATUS = "FEASIBLE";
 
 export function OfferExplorer({
   construction,
   heroProduct,
+  policySafe,
+  pareto,
+  explorerOnly = false,
 }: {
   construction: GenerateOffersResponse;
   heroProduct?: string;
+  policySafe?: number;
+  pareto?: number;
+  explorerOnly?: boolean;
 }) {
-  const [status, setStatus] = useState("FEASIBLE");
+  const [status, setStatus] = useState(DEFAULT_STATUS);
   const [productId, setProductId] = useState("");
   const [delivery, setDelivery] = useState("");
   const [warranty, setWarranty] = useState("");
@@ -32,13 +49,14 @@ export function OfferExplorer({
   const [busy, setBusy] = useState(false);
 
   const rows = run?.offers ?? construction.offers;
-  const dims = construction.dimensions;
-  const perSku =
-    dims.price_options *
-    dims.delivery_options *
-    dims.warranty_options *
-    dims.bundle_options *
-    dims.return_options;
+  const story = constructStory(construction);
+  const priceCeiling = intentPriceCeilingCents(construction.intent);
+  const steps = expansionSteps(construction, {
+    summary: {
+      policy_safe: policySafe,
+      pareto_efficient: pareto,
+    },
+  } as OptimisationResponse);
 
   async function applyFilters() {
     setBusy(true);
@@ -63,6 +81,17 @@ export function OfferExplorer({
     }
   }
 
+  function clearFilters() {
+    setStatus(DEFAULT_STATUS);
+    setProductId("");
+    setDelivery("");
+    setWarranty("");
+    setBundle("");
+    setReturns("");
+    setMaxPrice("");
+    setRun(null);
+  }
+
   const products = useMemo(() => {
     const seen = new Map<string, string>();
     for (const item of construction.offers) {
@@ -70,72 +99,141 @@ export function OfferExplorer({
     }
     return [...seen.entries()];
   }, [construction.offers]);
+  const deliveryOptions = useMemo(
+    () => uniqueCodes(construction.offers, (offer) => offer.delivery.code),
+    [construction.offers],
+  );
+  const warrantyOptions = useMemo(
+    () => uniqueCodes(construction.offers, (offer) => offer.warranty.code),
+    [construction.offers],
+  );
+  const bundleOptions = useMemo(
+    () => uniqueCodes(construction.offers, (offer) => offer.bundle?.code ?? "NONE"),
+    [construction.offers],
+  );
+  const returnsOptions = useMemo(
+    () => uniqueCodes(construction.offers, (offer) => offer.returns?.code ?? ""),
+    [construction.offers],
+  );
   const featured = heroProduct ?? products[0]?.[1] ?? "Matched product";
 
-  const matched = construction.input.matched_products || products.length;
+  const viewProductCount = useMemo(() => {
+    const ids = new Set(rows.map((offer) => offer.product.product_id));
+    return ids.size;
+  }, [rows]);
+
+  const selectedProductName = productId
+    ? products.find(([id]) => id === productId)?.[1]
+    : undefined;
+
+  const activeFilterChips: string[] = [];
+  activeFilterChips.push(
+    status === "ALL"
+      ? "Status: all"
+      : status === "REJECTED"
+        ? "Status: rejected"
+        : "Status: feasible",
+  );
+  if (selectedProductName) {
+    activeFilterChips.push(selectedProductName);
+  }
+  if (delivery) {
+    activeFilterChips.push(deliveryLabel(delivery));
+  }
+  if (warranty) {
+    activeFilterChips.push(warrantyLabel(warranty));
+  }
+  if (bundle) {
+    activeFilterChips.push(bundleLabel(bundle));
+  }
+  if (returns) {
+    activeFilterChips.push(returnsLabel(returns));
+  }
+  if (maxPrice.trim()) {
+    activeFilterChips.push(`Max A$${maxPrice.trim()}`);
+  }
 
   return (
     <section className="space-y-4">
-      <div>
-        <p className="eyebrow">Construct</p>
-        <h2 className="mt-1 text-xl font-semibold tracking-tight">
-          Product → offer space
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Matched products stay fixed. AstraOS enumerates commercial
-          configurations — it is not choosing a winner here.
-        </p>
-      </div>
+      {explorerOnly ? (
+        <div className="space-y-2 text-sm">
+          <p>
+            Full offer space: {story.products} products ·{" "}
+            {story.generated.toLocaleString()} offers
+          </p>
+          <p>
+            Current view: {viewProductCount} products · {rows.length} offers
+            {run != null
+              ? ` · ${run.total_offers.toLocaleString()} matching filter`
+              : null}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilterChips.map((chip) => (
+              <span key={chip} className="filter-chip">
+                {chip}
+              </span>
+            ))}
+            <button type="button" onClick={clearFilters} className="btn-ghost">
+              Clear filters
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div>
+            <p className="eyebrow">Construct</p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">
+              Product → offer space
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Matched products stay fixed. AstraOS enumerates commercial
+              configurations — it is not choosing a winner here.
+            </p>
+          </div>
 
-      <div className="space-y-2 border border-line px-4 py-3 text-sm">
-        <p>
-          <span className="font-mono font-semibold tabular-nums">{matched}</span>{" "}
-          matched products
-        </p>
-        <p className="text-muted">↓</p>
-        <p>
-          <span className="font-mono font-semibold tabular-nums">
-            {construction.summary.generated_candidates.toLocaleString()}
-          </span>{" "}
-          commercial configurations
-        </p>
-        <p className="text-xs text-muted">
-          Price {dims.price_options} · Delivery {dims.delivery_options} · Warranty{" "}
-          {dims.warranty_options} · Bundle {dims.bundle_options} · Returns{" "}
-          {dims.return_options}
-          {perSku ? ` · ${perSku.toLocaleString()} / SKU` : ""}
-        </p>
-        <p className="text-muted">↓</p>
-        <p>
-          <span className="font-mono font-semibold tabular-nums">
-            {construction.summary.feasible_candidates.toLocaleString()}
-          </span>{" "}
-          feasible offers
-        </p>
-        <p className="text-xs text-muted">Example matched product: {featured}</p>
-      </div>
+          <div className="bg-canvas px-4 py-4 text-sm">
+            <p className="eyebrow">Commercial expansion</p>
+            <p className="mt-2 font-mono text-xl font-semibold tabular-nums">
+              {story.products} products
+            </p>
+            <p className="mt-2 text-xs text-muted">{dimensionLine(construction)}</p>
+            <ol className="mt-3 space-y-1">
+              {steps.map((step, index) => (
+                <li key={step.label} className="flex justify-between gap-3">
+                  <span className="text-muted">
+                    {index > 0 ? "↓ " : ""}
+                    {step.label}
+                  </span>
+                  <span className="font-mono tabular-nums">{step.value}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-2 text-xs text-muted">{featured}</p>
+          </div>
 
-      <StatStrip
-        items={[
-          { label: "Estimated", value: construction.summary.estimated_candidates },
-          { label: "Generated", value: construction.summary.generated_candidates },
-          { label: "Feasible", value: construction.summary.feasible_candidates },
-          { label: "Rejected", value: construction.summary.rejected_candidates },
-        ]}
-      />
-      {construction.summary.pruning_reason ? (
-        <p className="text-xs text-muted">
-          Pruned: {construction.summary.pruning_reason}
-        </p>
-      ) : null}
-      {Object.keys(construction.summary.rejection_distribution).length ? (
-        <p className="text-xs text-muted">
-          Rejections:{" "}
-          {Object.entries(construction.summary.rejection_distribution)
-            .map(([code, count]) => `${code.replace(/_/g, " ").toLowerCase()} ${count}`)
-            .join(" · ")}
-        </p>
-      ) : null}
+          <StatStrip
+            items={[
+              { label: "Estimated", value: construction.summary.estimated_candidates },
+              { label: "Generated", value: construction.summary.generated_candidates },
+              { label: "Feasible", value: construction.summary.feasible_candidates },
+              { label: "Rejected", value: construction.summary.rejected_candidates },
+            ]}
+          />
+          {construction.summary.pruning_reason ? (
+            <p className="text-xs text-muted">
+              Pruned: {construction.summary.pruning_reason}
+            </p>
+          ) : null}
+          {Object.keys(construction.summary.rejection_distribution).length ? (
+            <p className="text-xs text-muted">
+              Rejections:{" "}
+              {Object.entries(construction.summary.rejection_distribution)
+                .map(([code, count]) => `${code.replace(/_/g, " ").toLowerCase()} ${count}`)
+                .join(" · ")}
+            </p>
+          ) : null}
+        </>
+      )}
 
       <div className="flex flex-wrap items-end gap-3 text-xs">
         <label className="space-y-1">
@@ -143,7 +241,7 @@ export function OfferExplorer({
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
-            className="border border-line bg-surface px-2 py-1"
+            className="control px-2 py-1"
           >
             <option value="FEASIBLE">Feasible</option>
             <option value="REJECTED">Rejected</option>
@@ -155,7 +253,7 @@ export function OfferExplorer({
           <select
             value={productId}
             onChange={(event) => setProductId(event.target.value)}
-            className="border border-line bg-surface px-2 py-1"
+            className="control px-2 py-1"
           >
             <option value="">All</option>
             {products.map(([id, name]) => (
@@ -170,45 +268,71 @@ export function OfferExplorer({
           <input
             value={maxPrice}
             onChange={(event) => setMaxPrice(event.target.value)}
-            placeholder="350"
-            className="w-20 border border-line bg-surface px-2 py-1"
+            placeholder={
+              priceCeiling != null ? centsToPlainDollars(priceCeiling) : "Max"
+            }
+            className="control w-20 px-2 py-1"
           />
         </label>
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">DELIVERY</span>
-          <input
+          <select
             value={delivery}
             onChange={(event) => setDelivery(event.target.value)}
-            placeholder="SAME_DAY"
-            className="border border-line bg-surface px-2 py-1"
-          />
+            className="control px-2 py-1"
+          >
+            <option value="">All</option>
+            {deliveryOptions.map((code) => (
+              <option key={code} value={code}>
+                {deliveryLabel(code)}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">WARRANTY</span>
-          <input
+          <select
             value={warranty}
             onChange={(event) => setWarranty(event.target.value)}
-            placeholder="STANDARD_12"
-            className="border border-line bg-surface px-2 py-1"
-          />
+            className="control px-2 py-1"
+          >
+            <option value="">All</option>
+            {warrantyOptions.map((code) => (
+              <option key={code} value={code}>
+                {warrantyLabel(code)}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">BUNDLE</span>
-          <input
+          <select
             value={bundle}
             onChange={(event) => setBundle(event.target.value)}
-            placeholder="NONE or TRAVEL_ADAPTER"
-            className="border border-line bg-surface px-2 py-1"
-          />
+            className="control px-2 py-1"
+          >
+            <option value="">All</option>
+            {bundleOptions.map((code) => (
+              <option key={code} value={code}>
+                {bundleLabel(code)}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="space-y-1">
           <span className="block tracking-[0.08em] text-muted">RETURNS</span>
-          <input
+          <select
             value={returns}
             onChange={(event) => setReturns(event.target.value)}
-            placeholder="STANDARD_30"
-            className="border border-line bg-surface px-2 py-1"
-          />
+            className="control px-2 py-1"
+          >
+            <option value="">All</option>
+            {returnsOptions.map((code) => (
+              <option key={code} value={code}>
+                {returnsLabel(code)}
+              </option>
+            ))}
+          </select>
         </label>
         <button
           type="button"
@@ -222,7 +346,7 @@ export function OfferExplorer({
 
       <div className="overflow-x-auto">
         <table className="table-dense w-full min-w-[720px] text-left text-xs">
-          <thead>
+          <thead className="sticky top-0 z-[1] bg-surface">
             <tr className="border-b border-line text-[11px] tracking-[0.08em] text-muted">
               <th className="py-2 font-medium">Product</th>
               <th className="py-2 font-medium">Product price</th>
@@ -230,13 +354,14 @@ export function OfferExplorer({
               <th className="py-2 font-medium">Warranty</th>
               <th className="py-2 font-medium">Bundle</th>
               <th className="py-2 font-medium">Returns</th>
-              <th className="py-2 font-medium">Total</th>
-              <th className="py-2 font-medium">Intervention</th>
+              <th className="py-2 font-medium">Customer total</th>
+              <th className="py-2 font-medium">Merchant intervention</th>
               <th className="py-2 font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((offer) => (
+            {rows.length ? (
+              rows.map((offer) => (
               <tr
                 key={offer.offer_id}
                 className="cursor-pointer border-b border-line hover:bg-canvas"
@@ -246,11 +371,18 @@ export function OfferExplorer({
                 <td className="py-2 tabular-nums">
                   {formatAudCents(offer.pricing.product_price_cents)}
                 </td>
-                <td className="py-2">{offer.delivery.code}</td>
-                <td className="py-2">{offer.warranty.months} mo</td>
-                <td className="py-2">{offer.bundle?.code ?? "NONE"}</td>
                 <td className="py-2">
-                  {offer.returns?.window_days ?? "—"}d
+                  {deliveryLabel(offer.delivery.code, offer.delivery.days)}
+                </td>
+                <td className="py-2">
+                  {warrantyLabel(offer.warranty.code, offer.warranty.months)}
+                </td>
+                <td className="py-2">{bundleLabel(offer.bundle?.code ?? null)}</td>
+                <td className="py-2">
+                  {returnsLabel(
+                    offer.returns?.code ?? null,
+                    offer.returns?.window_days ?? null,
+                  )}
                 </td>
                 <td className="py-2 tabular-nums">
                   {formatAudCents(offer.pricing.total_price_cents)}
@@ -258,9 +390,16 @@ export function OfferExplorer({
                 <td className="py-2 tabular-nums">
                   {formatAudCents(offer.direct_intervention_cost_cents)}
                 </td>
-                <td className="py-2">{offer.feasibility_status}</td>
+                <td className="py-2">{feasibilityLabel(offer.feasibility_status)}</td>
               </tr>
-            ))}
+              ))
+            ) : (
+              <tr>
+                <td colSpan={9} className="py-6 text-sm text-muted">
+                  No offers match the current filters.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -272,6 +411,13 @@ export function OfferExplorer({
       {detail ? <OfferDetail detail={detail} onClose={() => setDetail(null)} /> : null}
     </section>
   );
+}
+
+function uniqueCodes(
+  offers: PublicOffer[],
+  pick: (offer: PublicOffer) => string,
+): string[] {
+  return [...new Set(offers.map(pick).filter(Boolean))].sort();
 }
 
 async function openDetail(

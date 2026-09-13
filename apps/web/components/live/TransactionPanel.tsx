@@ -1,44 +1,50 @@
 "use client";
 
+import { StageDisclosure, StageResult, StageSection } from "@/components/live/StageShell";
+import { humanizeCheck } from "@/lib/decisionNarrative";
+import { humanizeEnum } from "@/lib/format";
 import { formatAudCents, formatRate } from "@/lib/money";
 import type { AcceptProposalResponse, NegotiationResponse } from "@/types";
 
-const STEPS = [
-  "BUYER ACCEPTED",
-  "REVALIDATING PROPOSAL",
-  "RESERVING STOCK",
-  "CREATING ORDER",
-  "ORDER CONFIRMED",
-] as const;
+function mark(status: "WAIT" | "ACTIVE" | "PASS" | "FAIL"): string {
+  if (status === "PASS") return "✓";
+  if (status === "ACTIVE") return "●";
+  if (status === "FAIL") return "!";
+  return "○";
+}
 
-function stepState(
+function stepLabel(status: "WAIT" | "ACTIVE" | "PASS" | "FAIL"): string {
+  if (status === "WAIT") return "Waiting";
+  if (status === "ACTIVE") return "In progress";
+  if (status === "PASS") return "Passed";
+  return "Failed";
+}
+
+function revalidationState(
   transaction: AcceptProposalResponse | null,
-  label: (typeof STEPS)[number],
 ): "WAIT" | "ACTIVE" | "PASS" | "FAIL" {
-  if (!transaction) {
-    return label === "BUYER ACCEPTED" ? "ACTIVE" : "WAIT";
-  }
-  const state = transaction.state;
-  const failed = transaction.failure_codes.length > 0;
-  if (label === "BUYER ACCEPTED") return "PASS";
-  if (label === "REVALIDATING PROPOSAL") {
-    if (!transaction.revalidation) return "ACTIVE";
-    return transaction.revalidation.status === "PASSED" ? "PASS" : "FAIL";
-  }
-  if (label === "RESERVING STOCK") {
-    if (state === "RESERVATION_FAILED") return "FAIL";
-    if (transaction.reservation) return "PASS";
-    return state === "READY_TO_RESERVE" || state === "RESERVING"
-      ? "ACTIVE"
-      : "WAIT";
-  }
-  if (label === "CREATING ORDER") {
-    if (state === "ORDER_FAILED") return "FAIL";
-    if (transaction.order) return "PASS";
-    return state === "CREATING_ORDER" ? "ACTIVE" : "WAIT";
-  }
-  if (state === "CONFIRMED") return "PASS";
-  return failed ? "FAIL" : "WAIT";
+  if (!transaction?.revalidation) return transaction ? "ACTIVE" : "WAIT";
+  return transaction.revalidation.status === "PASSED" ? "PASS" : "FAIL";
+}
+
+function reservationState(
+  transaction: AcceptProposalResponse | null,
+): "WAIT" | "ACTIVE" | "PASS" | "FAIL" {
+  if (!transaction) return "WAIT";
+  if (transaction.state === "RESERVATION_FAILED") return "FAIL";
+  if (transaction.reservation) return "PASS";
+  return transaction.state === "READY_TO_RESERVE" || transaction.state === "RESERVING"
+    ? "ACTIVE"
+    : "WAIT";
+}
+
+function orderState(
+  transaction: AcceptProposalResponse | null,
+): "WAIT" | "ACTIVE" | "PASS" | "FAIL" {
+  if (!transaction) return "WAIT";
+  if (transaction.state === "ORDER_FAILED") return "FAIL";
+  if (transaction.order) return "PASS";
+  return transaction.state === "CREATING_ORDER" ? "ACTIVE" : "WAIT";
 }
 
 export function TransactionPanel({
@@ -63,207 +69,200 @@ export function TransactionPanel({
   const offer = negotiation.proposal?.offer;
   const failed = Boolean(transaction && transaction.state !== "CONFIRMED");
   const confirmed = transaction?.state === "CONFIRMED";
+  const status = confirmed
+    ? "Confirmed"
+    : failed
+      ? "Cannot be executed"
+      : "Ready for confirmation";
+  const reserved = reservationState(transaction);
+  const ordered = orderState(transaction);
+  const revalidated = revalidationState(transaction);
 
   return (
-    <section className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">Transact</p>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight text-ink">
-            Machine transaction boundary
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            Acceptance is not final until live merchant state is revalidated.
-            AstraOS does not take payment.
-          </p>
-        </div>
-        <p className="font-mono text-[11px] text-muted">
-          {transaction?.state ?? negotiation.state}
-        </p>
-      </div>
-
-      <ol className="space-y-2">
-        {STEPS.map((label) => {
-          const status = stepState(transaction, label);
-          return (
-            <li
-              key={label}
-              className="flex items-center justify-between border border-line px-4 py-2 text-sm"
-            >
-              <span className="tracking-[0.08em]">{label}</span>
-              <span
-                className={
-                  status === "PASS"
-                    ? "text-[11px] text-success"
-                    : status === "FAIL"
-                      ? "text-[11px] text-danger"
-                      : "text-[11px] text-muted"
-                }
+    <>
+      <StageResult
+        label="Accepted agreement"
+        title={status}
+        value={
+          offer
+            ? formatAudCents(
+                transaction?.order?.total_amount_cents ??
+                  offer.pricing.total_price_cents,
+              )
+            : undefined
+        }
+        explanation={
+          offer ? (
+            <p>
+              {offer.product_name}
+              {transaction?.order?.order_number ? (
+                <>
+                  <span className="mx-2 text-muted">·</span>
+                  {transaction.order.order_number}
+                </>
+              ) : null}
+            </p>
+          ) : undefined
+        }
+        actions={
+          <>
+            {!transaction && offer ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onExecute}
+                className="btn-primary"
               >
-                {status}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+                {busy ? "Executing…" : "Accept proposal"}
+              </button>
+            ) : null}
+            {failed && transaction && !confirmed ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onRecover}
+                className="btn-ghost"
+              >
+                Generate new proposal
+              </button>
+            ) : null}
+          </>
+        }
+      >
+        {offer ? (
+          <dl className="max-w-md space-y-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Product</dt>
+              <dd>{offer.product_name}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Final price</dt>
+              <dd className="font-mono tabular-nums">
+                {formatAudCents(
+                  transaction?.order?.total_amount_cents ??
+                    offer.pricing.total_price_cents,
+                )}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Delivery</dt>
+              <dd>{offer.delivery.name}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Warranty</dt>
+              <dd>{offer.warranty.months}-month</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Bundle</dt>
+              <dd>{offer.bundle?.name ?? "None"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Returns</dt>
+              <dd>
+                {offer.returns?.window_days
+                  ? `${offer.returns.window_days}-day`
+                  : "Standard"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">Contribution</dt>
+              <dd className="font-mono tabular-nums">
+                {formatAudCents(offer.contribution_margin_cents)}
+              </dd>
+            </div>
+          </dl>
+        ) : null}
+        {failed && transaction && !confirmed ? (
+          <div className="mt-5">
+            <p className="text-sm text-danger">
+              {transaction.failure_codes.map(humanizeCheck).join(" · ") ||
+                humanizeCheck(transaction.state)}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              The accepted proposal was not silently rewritten.
+            </p>
+            {transaction.recovery_proposal ? (
+              <p className="mt-2 text-sm">
+                New proposal #{transaction.recovery_proposal.version} is ready.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </StageResult>
 
-      {transaction?.revalidation ? (
-        <div className="border border-line px-4 py-3">
-          <p className="text-[11px] tracking-[0.14em] text-muted">
-            REVALIDATION {transaction.revalidation.status}
-          </p>
-          <ul className="mt-3 space-y-1 text-sm">
+      <StageSection title="Revalidation">
+        {transaction?.revalidation ? (
+          <ul className="space-y-2 text-sm">
             {transaction.revalidation.checks.map((item) => (
-              <li key={item.check} className="flex justify-between gap-3">
-                <span>{item.check}</span>
+              <li key={item.check} className="flex items-baseline justify-between gap-4">
+                <span>{humanizeCheck(item.check)}</span>
                 <span
                   className={
                     item.status === "PASS" ? "text-success" : "text-danger"
                   }
                 >
-                  {item.status}
-                  {item.available_units != null
-                    ? ` · ${item.available_units} units`
-                    : ""}
+                  {humanizeEnum(item.status)}
                 </span>
               </li>
             ))}
           </ul>
-        </div>
-      ) : null}
+        ) : (
+          <p className="text-sm text-muted">
+            {mark(revalidated)} Price, inventory, delivery, and merchant policy
+            are checked together at execution.
+          </p>
+        )}
+      </StageSection>
 
-      {confirmed && transaction?.order ? (
-        <div className="border border-ink px-4 py-4">
-          <p className="text-[11px] tracking-[0.14em] text-muted">
-            ORDER CONFIRMED
-          </p>
-          <p className="mt-2 font-mono text-lg">{transaction.order.order_number}</p>
-          <p className="mt-2 text-sm">{transaction.order.product_name}</p>
-          <p className="mt-1 text-sm">
-            {formatAudCents(transaction.order.total_amount_cents)}
-          </p>
-          <p className="mt-1 text-sm text-muted">
-            {transaction.order.delivery_code} ·{" "}
-            {transaction.order.warranty_months ?? "—"}-month warranty
-          </p>
-          <p className="mt-3 text-[11px] text-muted">
-            Inventory: reserved → {transaction.reservation?.status ?? "CONSUMED"}
-          </p>
-          <p className="text-[11px] text-muted">
-            Payment: {transaction.order.payment_status}
-          </p>
-        </div>
-      ) : null}
+      <StageSection title="Execution result">
+        <dl className="max-w-md space-y-2 text-sm">
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Inventory reserved</dt>
+            <dd>
+              {mark(reserved)}{" "}
+              {transaction?.reservation?.reservation_id ?? stepLabel(reserved)}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Order created</dt>
+            <dd>
+              {mark(ordered)}{" "}
+              {transaction?.order?.status
+                ? humanizeEnum(transaction.order.status)
+                : stepLabel(ordered)}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted">Order reference</dt>
+            <dd className="font-mono tabular-nums">
+              {transaction?.order?.order_number ?? "—"}
+            </dd>
+          </div>
+        </dl>
+      </StageSection>
 
-      {failed && transaction && !confirmed ? (
-        <div className="border border-danger/40 px-4 py-4">
-          <p className="text-[11px] tracking-[0.14em] text-danger">
-            PROPOSAL CANNOT BE EXECUTED
-          </p>
-          <p className="mt-2 text-sm">
-            {transaction.failure_codes.join(" · ") || transaction.state}
-          </p>
-          <p className="mt-2 text-xs text-muted">
-            The accepted proposal was not silently rewritten.
-          </p>
-          {transaction.recovery_proposal ? (
-            <p className="mt-2 text-sm">
-              New proposal #{transaction.recovery_proposal.version} is ready.
-            </p>
-          ) : null}
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onRecover}
-            className="btn-ghost mt-3"
-          >
-            GENERATE NEW PROPOSAL
+      <StageDisclosure title="Recovery controls">
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={busy} onClick={() => onDemoInventory(0)} className="btn-quiet">
+            Stock → 0
           </button>
-        </div>
-      ) : null}
-
-      {!transaction && offer ? (
-        <div className="border border-line px-4 py-4 text-sm">
-          <p>{offer.product_name}</p>
-          <p className="text-muted">
-            {formatAudCents(offer.pricing.total_price_cents)} ·{" "}
-            {offer.delivery.name} · {offer.warranty.months}m
-          </p>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onExecute}
-            className="btn-primary mt-3"
-          >
-            {busy ? "EXECUTING…" : "EXECUTE ACCEPTANCE"}
+          <button type="button" disabled={busy} onClick={() => onDemoInventory(14)} className="btn-quiet">
+            Stock → 14
+          </button>
+          <button type="button" disabled={busy} onClick={() => onDemoDelivery(false)} className="btn-quiet">
+            Same-day full
+          </button>
+          <button type="button" disabled={busy} onClick={() => onDemoDelivery(true)} className="btn-quiet">
+            Same-day available
+          </button>
+          <button type="button" disabled={busy} onClick={() => onDemoMargin(0.25)} className="btn-quiet">
+            Margin {formatRate(0.25)}
+          </button>
+          <button type="button" disabled={busy} onClick={() => onDemoMargin(0.15)} className="btn-quiet">
+            Margin {formatRate(0.15)}
           </button>
         </div>
-      ) : null}
-
-      {transaction?.timing ? (
-        <p className="text-[11px] text-muted">
-          {transaction.timing.total_transaction_ms.toFixed(0)} ms total ·
-          revalidate {transaction.timing.revalidation_ms.toFixed(0)} · reserve{" "}
-          {transaction.timing.reservation_ms.toFixed(0)} · order{" "}
-          {transaction.timing.order_creation_ms.toFixed(0)}
-        </p>
-      ) : null}
-
-      <div className="border border-dashed border-line px-4 py-4">
-        <p className="text-[11px] tracking-[0.14em] text-muted">
-          HACKATHON DEMO CONTROLS — MUTATES LIVE STATE
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onDemoInventory(0)}
-            className="btn-ghost text-[11px]"
-          >
-            STOCK → 0
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onDemoInventory(14)}
-            className="btn-ghost text-[11px]"
-          >
-            STOCK → 14
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onDemoDelivery(false)}
-            className="btn-ghost text-[11px]"
-          >
-            SAME-DAY → FULL
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onDemoDelivery(true)}
-            className="btn-ghost text-[11px]"
-          >
-            SAME-DAY → AVAILABLE
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onDemoMargin(0.25)}
-            className="btn-ghost text-[11px]"
-          >
-            MARGIN {formatRate(0.25)}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onDemoMargin(0.15)}
-            className="btn-ghost text-[11px]"
-          >
-            MARGIN {formatRate(0.15)}
-          </button>
-        </div>
-      </div>
-    </section>
+      </StageDisclosure>
+    </>
   );
 }

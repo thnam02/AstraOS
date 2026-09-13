@@ -1,7 +1,12 @@
 import { API_BASE_URL } from "@/lib/config";
 import type {
   CatalogueStatsResponse,
+  IngestionResultResponse,
+  IngestionRunSummary,
+  MerchantDataStatusResponse,
   HealthResponse,
+  MerchantObjectiveResponse,
+  MerchantObjectiveUpdate,
   MerchantPolicyResponse,
   MerchantPolicyUpdate,
   ProductDetail,
@@ -25,6 +30,9 @@ import type {
   LearningOverview,
   LearningDatasetSummary,
   LearningTrainResponse,
+  AgentCapabilities,
+  AgentActivityResponse,
+  ReadyResponse,
 } from "@/types";
 
 export class ApiError extends Error {
@@ -58,16 +66,60 @@ export function getHealth(): Promise<HealthResponse> {
   return request<HealthResponse>("/health");
 }
 
-export function getReady(): Promise<{
-  status: string;
-  degraded_mode: string[];
-  checks: { name: string; ok: boolean; detail: string }[];
-}> {
-  return request("/ready");
+export function getReady(): Promise<ReadyResponse> {
+  return request<ReadyResponse>("/ready");
+}
+
+export function getAgentCapabilities(): Promise<AgentCapabilities> {
+  return request<AgentCapabilities>("/api/v1/agent/capabilities");
+}
+
+export function getAgentActivity(limit = 20): Promise<AgentActivityResponse> {
+  return request<AgentActivityResponse>(
+    `/api/v1/agent/activity?limit=${encodeURIComponent(String(limit))}`,
+  );
+}
+
+export function openApiDocsUrl(): string {
+  return `${API_BASE_URL}/docs`;
 }
 
 export function getCatalogueStats(): Promise<CatalogueStatsResponse> {
   return request<CatalogueStatsResponse>("/api/v1/catalogue/stats");
+}
+
+export function getMerchantDataStatus(): Promise<MerchantDataStatusResponse> {
+  return request<MerchantDataStatusResponse>("/api/v1/merchant/ingestion/status");
+}
+
+export function validateMerchantFeed(payload: {
+  source_type: "json" | "csv";
+  source_name: string;
+  snapshot?: Record<string, unknown>;
+  content_base64?: string;
+}): Promise<IngestionResultResponse> {
+  return request<IngestionResultResponse>("/api/v1/merchant/ingestion/validate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function importMerchantFeed(payload: {
+  source_type: "json" | "csv";
+  source_name: string;
+  snapshot?: Record<string, unknown>;
+  content_base64?: string;
+}): Promise<IngestionResultResponse> {
+  return request<IngestionResultResponse>("/api/v1/merchant/ingestion/import", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listIngestionRuns(): Promise<{ items: IngestionRunSummary[] }> {
+  return request<{ items: IngestionRunSummary[] }>(
+    "/api/v1/merchant/ingestion/runs",
+  );
 }
 
 export function listProducts(params?: {
@@ -107,6 +159,28 @@ export function updateMerchantPolicy(
     method: "PATCH",
     body: JSON.stringify(payload),
   });
+}
+
+export function getMerchantObjective(): Promise<MerchantObjectiveResponse> {
+  return request<MerchantObjectiveResponse>("/api/v1/merchant/objective");
+}
+
+export function updateMerchantObjective(
+  payload: MerchantObjectiveUpdate,
+): Promise<MerchantObjectiveResponse> {
+  return request<MerchantObjectiveResponse>("/api/v1/merchant/objective", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function reselectOptimisation(
+  runId: string,
+): Promise<OptimisationResponse> {
+  return request<OptimisationResponse>(
+    `/api/v1/optimisation/runs/${runId}/reselect`,
+    { method: "POST" },
+  );
 }
 
 export function qualifyIntent(
@@ -319,6 +393,7 @@ export function setDemoPolicy(payload: {
 export function runArenaDuel(payload: {
   intent: string;
   buyer_profile?: BuyerProfile;
+  strategies?: string[];
 }): Promise<ArenaRunResponse> {
   return request<ArenaRunResponse>("/api/v1/arena/run", {
     method: "POST",

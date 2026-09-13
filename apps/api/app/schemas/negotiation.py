@@ -28,6 +28,9 @@ class CreateNegotiationRequest(BaseModel):
     buyer_agent_type: BuyerAgentType = "MANUAL"
     parser_mode: Literal["rule_based", "llm"] | None = None
     max_products: int = Field(default=8, ge=1, le=20)
+    channel: Literal["OPERATOR", "AGENT_API"] = "OPERATOR"
+    request_id: str | None = Field(default=None, max_length=80)
+    buyer_agent_id: str | None = Field(default=None, max_length=80)
 
 
 class BuyerTurnRequest(BaseModel):
@@ -51,6 +54,7 @@ class NegotiationTurnView(BaseModel):
     structured_action: str
     structured_payload: dict[str, Any]
     related_offer_id: UUID | None
+    related_proposal_id: UUID | None = None
     created_at: datetime
 
 
@@ -81,6 +85,7 @@ class NegotiationResponse(BaseModel):
     timing: NegotiationTiming | None = None
     events: list[dict[str, Any]] = Field(default_factory=list)
     original_intent: dict[str, Any] | None = None
+    working_intent: dict[str, Any] | None = None
     merchant_policy_version: str | None = None
     match: MatchResponse | None = None
     construction: GenerateOffersResponse | None = None

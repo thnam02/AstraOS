@@ -1,0 +1,16 @@
+sku,product_external_id,variant_name,currency,price,cogs,anc,wireless,foldable,microphone,battery_hours,weight_g,comfort_score,travel_score,water_resistance
+HS-CAB-12-BLK,HS-P-CABIN,Black,AUD,A$279,148,true,true,true,true,42,230 grams,0.91,0.94,
+HS-COM-08-BLK,HS-P-COMMUTE,Black,AUD,229,121,true,true,false,true,36,248,0.86,0.88,
+HS-FLD-09-WHT,HS-P-FOLD,White,AUD,249,132,true,true,true,true,34,221,0.84,0.9,
+HS-LIT-04-BLK,HS-P-LITE,Black,AUD,99,52,false,true,false,true,22,260,0.62,0.55,
+HS-SPT-06-NVY,HS-P-SPORT,Navy,AUD,149,78,false,true,false,true,20,198,0.7,0.48,IPX4
+HS-STD-20-BLK,HS-P-STUDIO,Black wireless,AUD,399,210,false,true,false,true,30,310,0.88,0.4,
+HS-STD-20-WHT,HS-P-STUDIO,White wired,AUD,349,188,false,false,false,false,,305,0.87,0.32,
+HS-ULT-15-SLV,HS-P-ULTRA,Silver,AUD,449,238,true,true,true,true,48,214,0.95,0.96,
+HS-MIN-03-BLK,HS-P-MINI,Black,AUD,79,41,false,true,true,true,,188,0.58,0.6,
+HS-SFT-11-GPH,HS-P-SHIFT,Graphite,AUD,189,99,true,true,false,true,32,242,0.8,0.74,
+HS-REF-18-BLK,HS-P-REF,Black,AUD,329,175,false,true,false,true,28,288,0.86,0.45,
+HS-RUN-07-WHT,HS-P-RUN,White,AUD,129,68,false,true,false,true,18,176,0.64,0.5,
+HS-PUL-10-BLK,HS-P-PULSE,Black,AUD,199,105,true,true,false,true,30,236,0.78,0.72,
+HS-NGT-14-BLK,HS-P-NIGHT,Black,AUD,259,138,true,true,true,true,38,,0.89,0.91,
+HS-DCK-05-SLV,HS-P-DECK,Silver,AUD,169,88,false,true,false,true,24,255,0.73,0.41,

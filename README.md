@@ -37,31 +37,68 @@ bundle, and returns — under merchant policy.
 ## Architecture
 
 ```
-EXTERNAL BUYER AGENT
-        │
-        ├── REST  /api/v1/agent/*
-        └── MCP   python -m app.agent.mcp_server
-        ▼
-AGENT COMMERCE ADAPTER   (translation only)
-        ▼
-CANONICAL ASTRAOS SERVICES
-Intent → Qualification → Semantic Matching → Offer Construction
-  → Economics / Policy → Pareto Optimisation → Negotiation → Transaction
-        ▼
-MACHINE-READABLE RESPONSE
+Merchant Sources (JSON / CSV)
+      ↓
+Ingestion + Provenance
+      ↓
+Canonical Facts
+      ↓
+Eligibility / Matching / Offers
+      ↓
+Proof Compiler
+      ↓
+Machine-readable proposal
+      ↓
+External Buyer Agent
 ```
+
+```
+Merchant Feed (JSON / CSV)
+      ↓
+Ingestion Adapter → Validation → Canonical AstraOS Model
+      ↓
+Natural Language
+      ↓
+LLM Interpretation        (structured JSON, validated)
+      ↓
+Validated ShoppingIntent
+      ↓
+Deterministic AstraOS Engine
+Qualification → Semantic Matching → Offer Construction
+  → Economics / Policy → Pareto Optimisation → Merchant Objective
+  → Negotiation → Transaction
+```
+
+AstraOS ships with a deterministic demo merchant for reproducibility.
+The decision engine is not coupled to that seed. JSON and CSV feeds
+upsert into the same canonical catalogue.
+
+AstraOS separates **merchant guardrails** from **merchant objective**.
+A guardrail such as a 15% minimum margin defines the safe offer space.
+Growth / Balanced / Margin then chooses among Pareto-efficient safe
+offers. Changing strategy does not change the frontier.
+
+The LLM interprets buyer language only. It does not set prices, qualify
+products, choose offers, or override merchant policy. If the LLM is
+unavailable, AstraOS falls back to the deterministic rule parser.
 
 The protocol adapter contains no pricing, eligibility, matching, Pareto,
 or policy logic.
+
+The **Buyer Agent is a separate process** in `apps/buyer-agent`. It is
+not the AstraOS UI. It discovers capabilities and negotiates only over
+`/api/v1/agent/*` (optional MCP adapter calls that same REST surface).
 
 See [docs/architecture.md](docs/architecture.md).
 
 ## Tech stack
 
 - API: Python 3.12, FastAPI, SQLAlchemy, Alembic, PostgreSQL 16
-- Matching: local hashing embeddings (no hosted model required)
+- Matching: local sentence-transformer embeddings over eligible products
+  (`BAAI/bge-small-en-v1.5`), with hashing fallback if the model is missing
 - Frontend: Next.js, TypeScript
 - Demo: Docker Compose or local processes
+- External Buyer Agent: independent Python process (`apps/buyer-agent`)
 
 ## Run locally
 
@@ -77,6 +114,7 @@ cp .env.example .env
 # set POSTGRES_HOST=localhost
 make migrate
 make seed
+make embeddings-model   # once: cache BAAI/bge-small-en-v1.5 locally
 make embeddings
 cd apps/api && source .venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -163,7 +201,9 @@ behaviour, or production sales impact.
 - No warehouse logistics
 - Learned model is experimental / synthetic
 - MCP is optional; REST is the guaranteed interface
-- LLM parser is optional; rule-based fallback is default
+- Demo default is the structured LLM parser (`INTENT_PARSER_MODE=llm`)
+  with automatic rule-based fallback. CI and offline tests stay
+  `rule_based`.
 
 ## Future production path
 
@@ -178,12 +218,30 @@ repository.
 | `make up` | Compose build + start |
 | `make migrate` | Alembic upgrade head |
 | `make seed` | Deterministic catalogue seed 2026 |
-| `make embeddings` | Refresh cached product embeddings |
+| `make ingest` | Dry-run Harbor Sound example feed (`APPLY=1` to persist) |
+| `make embeddings-model` | Install `[semantic]` extra and cache the local embedding model |
+| `make embeddings` | Refresh cached product embeddings for the configured provider |
+| `make eval-retrieval` | Hashing vs semantic retrieval benchmark |
+| `make buyer-demo-deterministic` | External Buyer Agent hero mission (no LLM) |
+| `make buyer-demo` | External Buyer Agent hero mission (LLM, hashing fallback) |
+| `make buyer-agent-test` | Buyer Agent unit tests |
+| `make buyer-eval` | Frozen 25-mission deterministic Buyer Agent eval |
 | `make reset-demo` | Destructive remigrate + seed |
 | `make test` | pytest |
 | `make lint` | ruff + mypy |
 | `make demo-hero` | Hero request → counter → accept |
 
 Internet is not required for the core deterministic flow, Arena, LEARN
-inspection, or transaction simulation. Optional LLM parsing needs
-`INTENT_PARSER_MODE=llm` and an API key.
+inspection, or transaction simulation once models are cached. Demo LLM
+parsing needs `INTENT_PARSER_MODE=llm` and `LLM_API_KEY` (or
+`OPENAI_API_KEY`). Without a key, the same API still runs via the
+rule-based fallback. Semantic matching needs
+`make embeddings-model` once; without a cached model AstraOS falls back
+to hashing and reports that fallback in `/ready` and match metadata.
+
+Intent evaluation (frozen labelled set):
+
+```bash
+cd apps/api && python -m app.eval.intent_benchmark --rule-only
+cd apps/api && python -m app.eval.intent_benchmark --llm --out ../../artifacts/eval/intent-rule-vs-llm-v1.json
+```

@@ -25,7 +25,9 @@ def test_create_session(client: TestClient) -> None:
         "MERCHANT_PROPOSAL_CREATED",
         "NO_POLICY_SAFE_COUNTER",
     }
-    assert body["session_id"]
+    assert body["working_intent"] is not None
+    assert body["original_intent"] is not None
+    assert "related_proposal_id" in body["turns"][0]
     assert body["proposal"] is not None or body["state"] == "NO_POLICY_SAFE_COUNTER"
     detail = client.get(f"/api/v1/negotiations/{body['session_id']}")
     assert detail.status_code == 200

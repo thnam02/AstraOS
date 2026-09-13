@@ -1,0 +1,143 @@
+{
+  "phase": 2,
+  "title": "Real Intent Intelligence",
+  "git_sha": "0937d418666e6801954973fad25c11ad5816a5bf",
+  "phase1_baseline_sha": "96389215844268d63e5e9c0b8396369a20adf1d1",
+  "captured_at": "2026-09-13",
+  "parser_version": "llm.v2",
+  "prompt_version": "intent-parser-v2",
+  "schema_version": "llm-extraction.v1",
+  "rule_parser_version": "rule_based.v2",
+  "provider": "openai_compatible",
+  "model": "gpt-4o-mini",
+  "temperature": 0,
+  "default_mode": "llm",
+  "ci_mode": "rule_based",
+  "evaluation_dataset_version": "intent_eval_v1",
+  "evaluation_dataset_path": "apps/api/app/eval/fixtures/intent_eval_v1.json",
+  "evaluation_label_source": "manual",
+  "evaluation_case_count": 130,
+  "groups": {
+    "hard_constraints": 15,
+    "soft_preferences": 15,
+    "context_outcomes": 15,
+    "tradeoffs": 15,
+    "negation": 10,
+    "ambiguity": 10,
+    "values": 10,
+    "unsupported": 10,
+    "adversarial": 10,
+    "mixed": 20
+  },
+  "llm_extraction_measured": false,
+  "llm_configured": false,
+  "note": "No LLM_API_KEY or OPENAI_API_KEY in the capture environment. LLM factory fallback_rate=1.0. Do not treat fallback F1 as LLM accuracy.",
+  "metrics": {
+    "rule_based": {
+      "hard_constraints": {"precision": 0.9192, "recall": 0.9308, "f1": 0.9121},
+      "soft_preferences": {"precision": 0.7846, "recall": 0.7487, "f1": 0.7603},
+      "context": {"precision": 0.9462, "recall": 0.9462, "f1": 0.9462},
+      "desired_outcomes": {"precision": 0.7346, "recall": 0.85, "f1": 0.7295},
+      "values": {"precision": 0.8615, "recall": 0.8615, "f1": 0.8615},
+      "tradeoffs": {"precision": 0.8538, "recall": 0.8538, "f1": 0.8538},
+      "ambiguity": {"precision": 0.8077, "recall": 0.8077, "f1": 0.8077},
+      "unsupported_needs": {"precision": 0.8308, "recall": 0.9231, "f1": 0.8308},
+      "hard_constraint_false_positive_rate": 0.0231,
+      "critical_constraint_omission_rate": 0.0538,
+      "schema_valid_rate": 1.0,
+      "fallback_rate": 0.0,
+      "mean_latency_ms": 0.15,
+      "p50_latency_ms": 0.06,
+      "p95_latency_ms": 0.19
+    },
+    "llm": {
+      "measured": false,
+      "llm_success_rate": 0.0,
+      "fallback_rate": 1.0,
+      "fallback_reason": "provider_unconfigured"
+    },
+    "rule_based_groups": {
+      "negation": {"hard_f1": 0.7, "hard_fp": 0.2, "ambiguity_f1": 0.8},
+      "ambiguity": {"ambiguity_f1": 0.1, "hard_fp": 0.0},
+      "tradeoffs": {"tradeoff_f1": 0.2, "hard_fp": 0.0667},
+      "unsupported": {"unsupported_f1": 0.1},
+      "adversarial": {"ambiguity_recall": 1.0, "hard_fp": 0.0}
+    }
+  },
+  "latency": {
+    "phase1_intent_ms_median": 0.29,
+    "phase2_rule_based_intent_ms_mean": 0.15,
+    "phase2_llm_intent_ms": null,
+    "phase1_full_decision_ms_median": 1858.51,
+    "phase2_full_decision_ms": null,
+    "note": "Full LIVE decision was not re-timed; fallback parse cost is unchanged versus Phase 1. Live LLM parse latency is unknown without a key."
+  },
+  "token_usage": null,
+  "fallback_tests": {
+    "unconfigured": "pass",
+    "timeout": "pass",
+    "provider_unavailable": "pass",
+    "repair_then_success": "pass",
+    "repair_then_fallback": "pass"
+  },
+  "safety_tests": {
+    "prompt_injection": "pass_mocked",
+    "soft_language_not_mandatory": "pass_mocked",
+    "negation": "pass_mocked",
+    "contradictory_price": "pass_mocked",
+    "contradictory_brand": "pass_mocked",
+    "unsupported_need": "pass_mocked",
+    "ambiguity_unbounded": "pass_mocked"
+  },
+  "hero_extraction_summary": {
+    "parser_used": "rule_based",
+    "fallback_used_if_llm_requested": true,
+    "hard_constraints": [
+      {"field": "anc", "operator": "EQ", "value": true},
+      {"field": "wireless", "operator": "EQ", "value": true},
+      {"field": "price", "operator": "LT", "value": 35000, "unit": "AUD_CENTS"},
+      {"field": "delivery_days", "operator": "LTE", "value": 0, "unit": "DAYS"}
+    ],
+    "context": ["long_haul_travel", "extended_continuous_use"],
+    "soft_preferences": [
+      {"field": "comfort", "importance": 0.9},
+      {"field": "reliability", "importance": 0.85},
+      {"field": "price", "importance": 0.3}
+    ],
+    "desired_outcomes": [
+      "low_fatigue",
+      "reliable_extended_use",
+      "strong_noise_isolation",
+      "travel_convenience"
+    ],
+    "tradeoffs": ["comfort>price", "reliability>price"],
+    "j01_f1": {
+      "hard": 1.0,
+      "preferences": 1.0,
+      "contexts": 1.0,
+      "outcomes": 1.0,
+      "tradeoffs": 1.0
+    }
+  },
+  "tests": {
+    "backend": {
+      "total": 346,
+      "passed": 344,
+      "failed": 0,
+      "skipped": 2,
+      "skipped_reason": "integration_llm without credentials",
+      "ruff": "passed",
+      "mypy": "passed"
+    },
+    "frontend": {
+      "tests_total": 23,
+      "tests_passed": 23,
+      "tests_failed": 0,
+      "build": "success"
+    }
+  },
+  "hybrid_parser_implemented": false,
+  "matching_or_embeddings_changed": false,
+  "phase1_baseline_unchanged": true,
+  "recommended_next": "PHASE 3 — REAL SEMANTIC EMBEDDINGS (after a credentialed LLM benchmark on intent_eval_v1)"
+}

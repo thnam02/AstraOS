@@ -26,6 +26,18 @@ class ConstraintOperator(StrEnum):
     NOT_IN = "NOT_IN"
 
 
+class PriceBasis(StrEnum):
+    """What a price hard-constraint binds.
+
+    CUSTOMER_TOTAL is the default natural-language meaning of budget language
+    such as "under A$100". PRODUCT_BASE is only used when the buyer explicitly
+    limits the catalogue/base price and allows extras on top.
+    """
+
+    CUSTOMER_TOTAL = "CUSTOMER_TOTAL"
+    PRODUCT_BASE = "PRODUCT_BASE"
+
+
 class ConstraintField(StrEnum):
     """Allow-listed hard-constraint fields for the headphone MVP."""
 
@@ -78,6 +90,7 @@ class HardConstraint(BaseModel):
     source_phrase: str
     normalized_value: Any | None = None
     importance: Literal["MANDATORY"] = "MANDATORY"
+    applies_to: PriceBasis | None = None
 
 
 class SoftPreference(BaseModel):
@@ -143,6 +156,24 @@ class UnsupportedSemanticNeed(BaseModel):
     reason: str = "unsupported_semantic_need"
 
 
+class ParserMetadata(BaseModel):
+    """Technical parser provenance. Never contains secrets or chain-of-thought."""
+
+    parser_requested: str
+    parser_used: str
+    fallback_used: bool = False
+    fallback_reason: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    prompt_version: str | None = None
+    schema_version: str | None = None
+    repair_count: int = 0
+    latency_ms: float | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+
+
 class ShoppingIntent(BaseModel):
     """Structured buyer request produced by an IntentParser."""
 
@@ -162,9 +193,12 @@ class ShoppingIntent(BaseModel):
     parser_type: str
     parser_version: str
     status: IntentStatus = IntentStatus.READY
+    parser_metadata: ParserMetadata | None = None
 
 
 SUPPORTED_CONSTRAINT_FIELDS = {item.value for item in ConstraintField}
 SUPPORTED_OPERATORS = {item.value for item in ConstraintOperator}
 PARSER_VERSION_RULE = "rule_based.v2"
 PARSER_VERSION_LLM = "llm.v2"
+PROMPT_VERSION = "intent-parser-v2"
+EXTRACTION_SCHEMA_VERSION = "llm-extraction.v1"

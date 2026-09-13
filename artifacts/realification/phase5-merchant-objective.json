@@ -1,0 +1,374 @@
+{
+  "phase": 5,
+  "title": "configurable-merchant-objective",
+  "git_sha": "f123aed6c413cd99ac1fd7345d3482d7c58e5d51",
+  "default_objective": {
+    "mode": "BALANCED",
+    "buyer_weight": 0.5,
+    "merchant_weight": 0.5,
+    "version": "merchant-objective-v1"
+  },
+  "objective_presets": {
+    "GROWTH": {
+      "buyer_weight": 0.7,
+      "merchant_weight": 0.3
+    },
+    "BALANCED": {
+      "buyer_weight": 0.5,
+      "merchant_weight": 0.5
+    },
+    "MARGIN": {
+      "buyer_weight": 0.3,
+      "merchant_weight": 0.7
+    }
+  },
+  "selection_formula_version": "normalized_weighted_sum",
+  "selection_formula": "score = w_buyer * norm(utility) + w_merchant * norm(contribution)",
+  "tie_break": [
+    "higher weighted score",
+    "higher contribution",
+    "higher buyer utility",
+    "lower intervention cost",
+    "SKU",
+    "offer ID"
+  ],
+  "hero_results_by_objective": {
+    "GROWTH": {
+      "mode": "GROWTH",
+      "offer_id": "ce112b72-710f-4924-b8e3-d3d6c423da15",
+      "product": "Atlas Cabin 72",
+      "sku": "ATL-T72-BLK",
+      "buyer_utility": 0.870736,
+      "contribution_margin_cents": 10064,
+      "intervention_cost_cents": 3200,
+      "score": 0.776473,
+      "frontier_size": 36
+    },
+    "BALANCED": {
+      "mode": "BALANCED",
+      "offer_id": "0ce20d22-d979-4b15-bc3b-ed7356e47b74",
+      "product": "Atlas Cabin 72",
+      "sku": "ATL-T72-BLK",
+      "buyer_utility": 0.868453,
+      "contribution_margin_cents": 10264,
+      "intervention_cost_cents": 3600,
+      "score": 0.722575,
+      "frontier_size": 36
+    },
+    "MARGIN": {
+      "mode": "MARGIN",
+      "offer_id": "7e4e7c85-2763-4b09-ad5e-9e94878f8737",
+      "product": "Aurora Commute 06",
+      "sku": "AUR-T06-BLK",
+      "buyer_utility": 0.831775,
+      "contribution_margin_cents": 12415,
+      "intervention_cost_cents": 3600,
+      "score": 0.770816,
+      "frontier_size": 36
+    }
+  },
+  "frontier_invariant_status": true,
+  "missions": [
+    {
+      "id": "urgent_traveller",
+      "profile": "URGENT_TRAVELLER",
+      "by_mode": {
+        "GROWTH": {
+          "mode": "GROWTH",
+          "offer_id": "ce112b72-710f-4924-b8e3-d3d6c423da15",
+          "product": "Atlas Cabin 72",
+          "sku": "ATL-T72-BLK",
+          "buyer_utility": 0.870736,
+          "contribution_margin_cents": 10064,
+          "intervention_cost_cents": 3200,
+          "score": 0.776473,
+          "frontier_size": 36
+        },
+        "BALANCED": {
+          "mode": "BALANCED",
+          "offer_id": "0ce20d22-d979-4b15-bc3b-ed7356e47b74",
+          "product": "Atlas Cabin 72",
+          "sku": "ATL-T72-BLK",
+          "buyer_utility": 0.868453,
+          "contribution_margin_cents": 10264,
+          "intervention_cost_cents": 3600,
+          "score": 0.722575,
+          "frontier_size": 36
+        },
+        "MARGIN": {
+          "mode": "MARGIN",
+          "offer_id": "7e4e7c85-2763-4b09-ad5e-9e94878f8737",
+          "product": "Aurora Commute 06",
+          "sku": "AUR-T06-BLK",
+          "buyer_utility": 0.831775,
+          "contribution_margin_cents": 12415,
+          "intervention_cost_cents": 3600,
+          "score": 0.770816,
+          "frontier_size": 36
+        }
+      },
+      "frontier_invariant": true,
+      "objective_sensitive": true,
+      "reselect_ms": [
+        8.934,
+        6.881,
+        6.761
+      ]
+    },
+    {
+      "id": "budget_buyer",
+      "profile": "BUDGET_SHOPPER",
+      "by_mode": {
+        "GROWTH": {
+          "mode": "GROWTH",
+          "offer_id": "b30aae55-4793-4a0c-a6e7-221177e87428",
+          "product": "Echo Lite 80",
+          "sku": "ECH-B80-BLK",
+          "buyer_utility": 0.707407,
+          "contribution_margin_cents": 2972,
+          "intervention_cost_cents": 2153,
+          "score": 0.7,
+          "frontier_size": 55
+        },
+        "BALANCED": {
+          "mode": "BALANCED",
+          "offer_id": "78fd57a4-4932-4b1c-bd57-5beed7920d87",
+          "product": "Sonic Run 39",
+          "sku": "SON-S39-BLK",
+          "buyer_utility": 0.473232,
+          "contribution_margin_cents": 10647,
+          "intervention_cost_cents": 2200,
+          "score": 0.610627,
+          "frontier_size": 55
+        },
+        "MARGIN": {
+          "mode": "MARGIN",
+          "offer_id": "85eea638-e741-456b-9a50-129f90c31db8",
+          "product": "Sonic Run 39",
+          "sku": "SON-S39-BLK",
+          "buyer_utility": 0.411283,
+          "contribution_margin_cents": 11547,
+          "intervention_cost_cents": 3100,
+          "score": 0.729403,
+          "frontier_size": 55
+        }
+      },
+      "frontier_invariant": true,
+      "objective_sensitive": true,
+      "reselect_ms": [
+        8.701,
+        7.481,
+        7.92
+      ]
+    },
+    {
+      "id": "assurance_buyer",
+      "profile": "ASSURANCE_BUYER",
+      "by_mode": {
+        "GROWTH": {
+          "mode": "GROWTH",
+          "offer_id": "b21d806d-c1b3-4938-a1e4-c09970687078",
+          "product": "Zenith Plus 147",
+          "sku": "ZEN-M147-SLV",
+          "buyer_utility": 0.76681,
+          "contribution_margin_cents": 11034,
+          "intervention_cost_cents": 2700,
+          "score": 0.761023,
+          "frontier_size": 30
+        },
+        "BALANCED": {
+          "mode": "BALANCED",
+          "offer_id": "b21d806d-c1b3-4938-a1e4-c09970687078",
+          "product": "Zenith Plus 147",
+          "sku": "ZEN-M147-SLV",
+          "buyer_utility": 0.76681,
+          "contribution_margin_cents": 11034,
+          "intervention_cost_cents": 2700,
+          "score": 0.768041,
+          "frontier_size": 30
+        },
+        "MARGIN": {
+          "mode": "MARGIN",
+          "offer_id": "d7b1e3e3-7b77-48e3-8380-9d371af30b54",
+          "product": "Zenith Plus 147",
+          "sku": "ZEN-M147-SLV",
+          "buyer_utility": 0.730374,
+          "contribution_margin_cents": 11934,
+          "intervention_cost_cents": 3600,
+          "score": 0.795123,
+          "frontier_size": 30
+        }
+      },
+      "frontier_invariant": true,
+      "objective_sensitive": true,
+      "reselect_ms": [
+        6.776,
+        6.347,
+        4.721
+      ]
+    },
+    {
+      "id": "quality_buyer",
+      "profile": "QUALITY_FIRST",
+      "by_mode": {
+        "GROWTH": {
+          "mode": "GROWTH",
+          "offer_id": "d71caeeb-0bae-4567-b15e-8898aa7f38ce",
+          "product": "Nova Fold 19",
+          "sku": "NOV-T19-WHT",
+          "buyer_utility": 0.666614,
+          "contribution_margin_cents": 9728,
+          "intervention_cost_cents": 2700,
+          "score": 0.724518,
+          "frontier_size": 26
+        },
+        "BALANCED": {
+          "mode": "BALANCED",
+          "offer_id": "4deecc0b-7ee8-4f95-a78d-3bf25729b6e8",
+          "product": "Nova Fold 19",
+          "sku": "NOV-T19-BLK",
+          "buyer_utility": 0.643323,
+          "contribution_margin_cents": 15661,
+          "intervention_cost_cents": 2700,
+          "score": 0.762905,
+          "frontier_size": 26
+        },
+        "MARGIN": {
+          "mode": "MARGIN",
+          "offer_id": "51b67eb6-20d4-4961-800c-52547aec735d",
+          "product": "Nova Fold 19",
+          "sku": "NOV-T19-BLK",
+          "buyer_utility": 0.633323,
+          "contribution_margin_cents": 16161,
+          "intervention_cost_cents": 2200,
+          "score": 0.80931,
+          "frontier_size": 26
+        }
+      },
+      "frontier_invariant": true,
+      "objective_sensitive": true,
+      "reselect_ms": [
+        6.615,
+        5.366,
+        5.608
+      ]
+    },
+    {
+      "id": "balanced_buyer",
+      "profile": "BALANCED",
+      "by_mode": {
+        "GROWTH": {
+          "mode": "GROWTH",
+          "offer_id": "a076d179-00f3-49fa-b35e-92622fcaae69",
+          "product": "Nova Shift 17",
+          "sku": "NOV-M17-BLK",
+          "buyer_utility": 0.689043,
+          "contribution_margin_cents": 8911,
+          "intervention_cost_cents": 4717,
+          "score": 0.775701,
+          "frontier_size": 26
+        },
+        "BALANCED": {
+          "mode": "BALANCED",
+          "offer_id": "795b1a29-abca-453b-a50c-2ae9c93b94ca",
+          "product": "Nova Shift 17",
+          "sku": "NOV-M17-BLK",
+          "buyer_utility": 0.670846,
+          "contribution_margin_cents": 10928,
+          "intervention_cost_cents": 2700,
+          "score": 0.691508,
+          "frontier_size": 26
+        },
+        "MARGIN": {
+          "mode": "MARGIN",
+          "offer_id": "9e3cd3ea-9e10-4007-a05a-ee62888d60bb",
+          "product": "Aurora Ultra 05",
+          "sku": "AUR-P05-WHT",
+          "buyer_utility": 0.569584,
+          "contribution_margin_cents": 15770,
+          "intervention_cost_cents": 2200,
+          "score": 0.724876,
+          "frontier_size": 26
+        }
+      },
+      "frontier_invariant": true,
+      "objective_sensitive": true,
+      "reselect_ms": [
+        4.988,
+        5.736,
+        5.08
+      ]
+    }
+  ],
+  "objective_sensitivity": {
+    "missions": 5,
+    "objective_sensitive_rate": 1.0,
+    "change_rate": {
+      "GROWTH_BALANCED": 0.8,
+      "BALANCED_MARGIN": 1.0,
+      "GROWTH_MARGIN": 1.0
+    },
+    "avg_buyer_utility_delta": {
+      "GROWTH_BALANCED": -0.0556,
+      "BALANCED_MARGIN": -0.0493,
+      "GROWTH_MARGIN": -0.1049
+    },
+    "avg_contribution_delta_cents": {
+      "GROWTH_BALANCED": 3165.0,
+      "BALANCED_MARGIN": 1858.6,
+      "GROWTH_MARGIN": 5023.6
+    }
+  },
+  "reselection_latency_ms": {
+    "n": 15,
+    "mean": 6.528,
+    "max": 8.934
+  },
+  "arena_objective_experiment": {
+    "mission_count": 8,
+    "seed": 2026,
+    "disclaimer": "Synthetic evaluation using transparent simulated buyer utility. Results do not represent observed real-world conversion uplift.",
+    "modes": {
+      "GROWTH": {
+        "selection_rate": 1.0,
+        "contribution_per_opportunity_cents": 8850.25,
+        "avg_buyer_utility": 0.758912,
+        "avg_intervention_cost_cents": 3570.0,
+        "no_offer_rate": 0.0,
+        "policy_violation_rate": 0.0
+      },
+      "BALANCED": {
+        "selection_rate": 1.0,
+        "contribution_per_opportunity_cents": 18668.25,
+        "avg_buyer_utility": 0.70821,
+        "avg_intervention_cost_cents": 2700.0,
+        "no_offer_rate": 0.0,
+        "policy_violation_rate": 0.0
+      },
+      "MARGIN": {
+        "selection_rate": 0.875,
+        "contribution_per_opportunity_cents": 20910.875,
+        "avg_buyer_utility": 0.632602,
+        "avg_intervention_cost_cents": 2737.5,
+        "no_offer_rate": 0.0,
+        "policy_violation_rate": 0.0
+      }
+    }
+  },
+  "formulas_unchanged": {
+    "buyer_utility": true,
+    "economics": true,
+    "pareto_dominance": true,
+    "semantic_matching": true,
+    "qualification": true
+  },
+  "test_results": {
+    "api_pytest": "394 passed, 3 skipped",
+    "ruff": "passed",
+    "mypy": "passed",
+    "frontend_tests": "23 passed",
+    "frontend_build": "passed"
+  },
+  "negotiation_behavior": "snapshot_at_session_creation",
+  "buyer_cannot_set_objective": true
+}

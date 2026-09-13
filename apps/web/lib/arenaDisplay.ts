@@ -1,3 +1,4 @@
+import { formatUtilityShort } from "@/lib/format";
 import { formatAudCents } from "./money";
 import type {
   ArenaRunResponse,
@@ -11,12 +12,12 @@ export const STRATEGY_META: Record<
 > = {
   DEFAULT: {
     title: "Default Merchant",
-    subtitle: "Base commercial configuration",
+    subtitle: "Standard product + standard terms",
     tooltip: "What happens if the retailer simply exposes its standard offer?",
   },
   ALWAYS_DISCOUNT: {
     title: "Always Discount",
-    subtitle: "Price-first intervention",
+    subtitle: "Price-first merchant strategy",
     tooltip: "What happens if the retailer's primary lever is price?",
   },
   CHEAPEST_ELIGIBLE: {
@@ -25,9 +26,15 @@ export const STRATEGY_META: Record<
     tooltip:
       "What happens if the retailer optimises for the lowest valid buyer price?",
   },
+  SEMANTIC_ONLY: {
+    title: "Semantic Only",
+    subtitle: "Best semantic product + standard terms",
+    tooltip:
+      "What happens if the retailer only improves product matching and keeps default terms?",
+  },
   ASTRAOS: {
     title: "AstraOS",
-    subtitle: "Multi-dimensional offer optimisation",
+    subtitle: "Whole-offer commercial optimisation",
     tooltip:
       "What happens if the retailer optimises across the entire offer vector?",
   },
@@ -96,9 +103,10 @@ export function warrantyLabel(
   months: number | null = null,
 ): string {
   if (months != null) return `${months}-month warranty`;
-  if (code === "STANDARD_12") return "12-month warranty";
-  if (code === "EXTENDED_36") return "36-month warranty";
   if (!code) return "No warranty";
+  if (code === "STANDARD_12") return "12-month warranty";
+  const extended = /^EXTENDED_(\d+)$/.exec(code);
+  if (extended) return `${extended[1]}-month warranty`;
   return titleCaseCode(code);
 }
 
@@ -107,6 +115,25 @@ export function bundleLabel(code: string | null): string {
   if (code === "HARD_CASE") return "Hard case";
   if (code === "TRAVEL_ADAPTER") return "Travel adapter";
   return titleCaseCode(code);
+}
+
+export function returnsLabel(
+  code: string | null,
+  days: number | null = null,
+): string {
+  if (days != null) return `${days}-day returns`;
+  if (!code) return "No returns";
+  if (code === "STANDARD_30") return "30-day returns";
+  const flex = /^(?:FLEX|STANDARD)_(\d+)$/.exec(code);
+  if (flex) return `${flex[1]}-day returns`;
+  return titleCaseCode(code);
+}
+
+export function feasibilityLabel(status: string | null): string {
+  if (!status) return "Unknown";
+  if (status === "FEASIBLE") return "Feasible";
+  if (status === "REJECTED") return "Rejected";
+  return titleCaseCode(status);
 }
 
 export function policyReasons(failure: string | null): string[] {
@@ -182,6 +209,8 @@ export type OfferDiff = {
   warrantyChanged: boolean;
   bundleChanged: boolean;
   priceChanged: boolean;
+  productChanged: boolean;
+  returnsChanged: boolean;
 };
 
 export function offerDiff(
@@ -194,6 +223,8 @@ export function offerDiff(
       warrantyChanged: false,
       bundleChanged: false,
       priceChanged: false,
+      productChanged: false,
+      returnsChanged: false,
     };
   }
   return {
@@ -203,7 +234,164 @@ export function offerDiff(
     priceChanged:
       current.total_customer_price_cents !==
       reference.total_customer_price_cents,
+    productChanged: current.sku !== reference.sku,
+    returnsChanged: (current.returns ?? "") !== (reference.returns ?? ""),
   };
+}
+
+export function findStrategy(
+  duel: ArenaRunResponse,
+  name: string,
+): ArenaStrategyResponse | null {
+  return (
+    duel.strategies.find((item) => item.response.strategy_name === name)
+      ?.response ?? null
+  );
+}
+
+export function componentDeltaLines(
+  duel: ArenaRunResponse,
+): { component: string; delta: number; signed: string }[] {
+  const rows = duel.explanation.component_deltas ?? [];
+  return rows.map((row) => ({
+    component: row.component,
+    delta: row.delta,
+    signed: signedDelta(row.delta, 2),
+  }));
+}
+
+export function commercialDifference(
+  left: ArenaStrategyResponse,
+  right: ArenaStrategyResponse,
+): { label: string; from: string; to: string; changed: boolean; delta?: string }[] {
+  const priceDeltaCents =
+    left.total_customer_price_cents != null &&
+    right.total_customer_price_cents != null
+      ? right.total_customer_price_cents - left.total_customer_price_cents
+      : null;
+  const utilityDelta =
+    left.buyer_utility != null && right.buyer_utility != null
+      ? right.buyer_utility - left.buyer_utility
+      : null;
+  const contributionDeltaCents =
+    left.merchant_contribution_cents != null &&
+    right.merchant_contribution_cents != null
+      ? right.merchant_contribution_cents - left.merchant_contribution_cents
+      : null;
+  const interventionDeltaCents =
+    left.intervention_cost_cents != null &&
+    right.intervention_cost_cents != null
+      ? right.intervention_cost_cents - left.intervention_cost_cents
+      : null;
+
+  return [
+    {
+      label: "Product",
+      from: left.product_name ?? "—",
+      to: right.product_name ?? "—",
+      changed: left.sku !== right.sku,
+    },
+    {
+      label: "Price",
+      from:
+        left.total_customer_price_cents != null
+          ? formatAudCents(left.total_customer_price_cents)
+          : "—",
+      to:
+        right.total_customer_price_cents != null
+          ? formatAudCents(right.total_customer_price_cents)
+          : "—",
+      changed:
+        left.total_customer_price_cents !== right.total_customer_price_cents,
+      delta: priceDeltaCents != null ? moneyDelta(priceDeltaCents) : undefined,
+    },
+    {
+      label: "Delivery",
+      from: deliveryLabel(left.delivery, left.delivery_days),
+      to: deliveryLabel(right.delivery, right.delivery_days),
+      changed: left.delivery !== right.delivery,
+    },
+    {
+      label: "Warranty",
+      from: warrantyLabel(left.warranty, left.warranty_months),
+      to: warrantyLabel(right.warranty, right.warranty_months),
+      changed: left.warranty !== right.warranty,
+    },
+    {
+      label: "Bundle",
+      from: bundleLabel(left.bundle),
+      to: bundleLabel(right.bundle),
+      changed: (left.bundle ?? "NONE") !== (right.bundle ?? "NONE"),
+    },
+    {
+      label: "Returns",
+      from: returnsLabel(left.returns),
+      to: returnsLabel(right.returns),
+      changed: (left.returns ?? "") !== (right.returns ?? ""),
+    },
+    {
+      label: "Buyer Utility",
+      from:
+        left.buyer_utility != null
+          ? formatUtilityShort(left.buyer_utility)
+          : "—",
+      to:
+        right.buyer_utility != null
+          ? formatUtilityShort(right.buyer_utility)
+          : "—",
+      changed: left.buyer_utility !== right.buyer_utility,
+      delta: utilityDelta != null ? signedDelta(utilityDelta) : undefined,
+    },
+    {
+      label: "Contribution",
+      from:
+        left.merchant_contribution_cents != null
+          ? formatAudCents(left.merchant_contribution_cents)
+          : "—",
+      to:
+        right.merchant_contribution_cents != null
+          ? formatAudCents(right.merchant_contribution_cents)
+          : "—",
+      changed:
+        left.merchant_contribution_cents !== right.merchant_contribution_cents,
+      delta:
+        contributionDeltaCents != null
+          ? moneyDelta(contributionDeltaCents)
+          : undefined,
+    },
+    {
+      label: "Intervention",
+      from:
+        left.intervention_cost_cents != null
+          ? formatAudCents(left.intervention_cost_cents)
+          : "—",
+      to:
+        right.intervention_cost_cents != null
+          ? formatAudCents(right.intervention_cost_cents)
+          : "—",
+      changed: left.intervention_cost_cents !== right.intervention_cost_cents,
+      delta:
+        interventionDeltaCents != null
+          ? moneyDelta(interventionDeltaCents)
+          : undefined,
+    },
+  ];
+}
+
+export function merchantEconomicsLine(
+  winner: ArenaStrategyResponse,
+  baseline: ArenaStrategyResponse,
+): string {
+  const fit = (winner.buyer_utility ?? 0) - (baseline.buyer_utility ?? 0);
+  const contrib =
+    (winner.merchant_contribution_cents ?? 0) -
+    (baseline.merchant_contribution_cents ?? 0);
+  const winnerName = strategyTitle(winner.strategy_name);
+  const baseName = strategyTitle(baseline.strategy_name);
+  if (contrib >= 0) {
+    return `${winnerName} gained ${signedDelta(fit)} simulated buyer utility while preserving ${moneyDelta(contrib)} contribution vs ${baseName}.`;
+  }
+  return `${winnerName} sacrificed ${moneyDelta(contrib)} contribution for ${signedDelta(fit)} simulated buyer utility vs ${baseName}.`;
 }
 
 export function winnerReasons(
@@ -276,12 +464,12 @@ export function comparisonRows(
 ) {
   return [
     {
-      label: "Buyer fit",
-      left: left.buyer_utility?.toFixed(2) ?? "—",
-      right: right.buyer_utility?.toFixed(2) ?? "—",
+      label: "Product",
+      left: left.product_name ?? "—",
+      right: right.product_name ?? "—",
     },
     {
-      label: "Customer price",
+      label: "Price",
       left:
         left.total_customer_price_cents != null
           ? formatAudCents(left.total_customer_price_cents)
@@ -307,7 +495,23 @@ export function comparisonRows(
       right: bundleLabel(right.bundle),
     },
     {
-      label: "Merchant contribution",
+      label: "Returns",
+      left: returnsLabel(left.returns),
+      right: returnsLabel(right.returns),
+    },
+    {
+      label: "Buyer Utility",
+      left:
+        left.buyer_utility != null
+          ? formatUtilityShort(left.buyer_utility)
+          : "—",
+      right:
+        right.buyer_utility != null
+          ? formatUtilityShort(right.buyer_utility)
+          : "—",
+    },
+    {
+      label: "Contribution",
       left:
         left.merchant_contribution_cents != null
           ? formatAudCents(left.merchant_contribution_cents)
@@ -318,7 +522,7 @@ export function comparisonRows(
           : "—",
     },
     {
-      label: "Intervention cost",
+      label: "Intervention",
       left:
         left.intervention_cost_cents != null
           ? formatAudCents(left.intervention_cost_cents)
@@ -327,6 +531,11 @@ export function comparisonRows(
         right.intervention_cost_cents != null
           ? formatAudCents(right.intervention_cost_cents)
           : "—",
+    },
+    {
+      label: "Policy Status",
+      left: isSelectable(left) ? "Policy safe" : "No safe offer",
+      right: isSelectable(right) ? "Policy safe" : "No safe offer",
     },
   ];
 }

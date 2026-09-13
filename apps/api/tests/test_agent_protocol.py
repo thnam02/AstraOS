@@ -68,6 +68,29 @@ def test_hero_agent_flow(client: TestClient) -> None:
     _restore(client)
 
 
+def test_price_counter_preserves_same_day_and_anc(client: TestClient) -> None:
+    agent = ExternalAgentClient(client)
+    offered = agent.request_offer(HERO)
+    first = offered["proposal"]
+    assert (first.get("delivery") or {}).get("days") == 0
+    countered = agent.counter_offer(
+        offered["negotiation_session_id"],
+        "Can you get the total a bit lower while keeping everything else?",
+    )
+    proposal = countered.get("proposal") or {}
+    assert proposal
+    assert (proposal.get("delivery") or {}).get("days") == 0
+    claims = {
+        item.get("claim"): item.get("value")
+        for item in countered.get("proof") or []
+    }
+    assert claims.get("anc") is True
+    hard = (countered.get("understood_intent") or {}).get("hard_constraints") or []
+    fields = {item.get("field") for item in hard}
+    assert "anc" in fields
+    _restore(client)
+
+
 def test_prompt_injection_cannot_force_one_dollar(client: TestClient) -> None:
     offered = ExternalAgentClient(client).request_offer(INJECTION)
     proposal = offered.get("proposal") or {}

@@ -11,11 +11,21 @@ import {
   ZAxis,
 } from "recharts";
 
+import { bundleLabel, deliveryLabel, warrantyLabel } from "@/lib/arenaDisplay";
+import { formatUtilityShort } from "@/lib/format";
 import { formatAudCents } from "@/lib/money";
 import type { PlotPoint } from "@/types";
 
 function dollars(cents: number): number {
   return Math.round(cents) / 100;
+}
+
+function selectPoint(
+  item: { offer_id?: string; payload?: { offer_id?: string } },
+  onSelect?: (offerId: string) => void,
+) {
+  const id = item.offer_id ?? item.payload?.offer_id;
+  if (id) onSelect?.(id);
 }
 
 function TooltipBody({
@@ -33,41 +43,51 @@ function TooltipBody({
       <p className="font-mono text-muted">{point.sku}</p>
       <p>Price {formatAudCents(point.total_price_cents)}</p>
       <p>
-        {point.delivery_code} · {point.warranty_code} · {point.bundle_code ?? "NONE"}
+        {deliveryLabel(point.delivery_code)} · {warrantyLabel(point.warranty_code)} ·{" "}
+        {bundleLabel(point.bundle_code)}
       </p>
-      <p>Simulated utility {point.buyer_utility.toFixed(3)}</p>
+      <p>Simulated utility {formatUtilityShort(point.buyer_utility)}</p>
       <p>Merchant contribution {formatAudCents(point.contribution_margin_cents)}</p>
       <p>Intervention {formatAudCents(point.intervention_cost_cents)}</p>
     </div>
   );
 }
 
-export function ParetoChart({ points }: { points: PlotPoint[] }) {
+export function ParetoChart({
+  points,
+  selectedOfferId,
+  onSelect,
+}: {
+  points: PlotPoint[];
+  selectedOfferId?: string | null;
+  onSelect?: (offerId: string) => void;
+}) {
   const dominated = points.filter((item) => !item.is_pareto_efficient);
   const frontier = points.filter(
     (item) => item.is_pareto_efficient && !item.is_recommended,
   );
   const recommended = points.filter((item) => item.is_recommended);
-  const selected = recommended[0];
+  const selected =
+    points.find((item) => item.offer_id === selectedOfferId) ?? recommended[0];
 
   return (
     <div>
       <div className="h-[320px] w-full" role="img" aria-label="Pareto scatter of merchant contribution versus simulated buyer utility">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-            <CartesianGrid stroke="#dddad2" />
+            <CartesianGrid stroke="var(--color-chart-grid)" />
             <XAxis
               type="number"
               dataKey="x"
               name="Contribution"
-              tick={{ fontSize: 11, fill: "#5c5a54" }}
+              tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
               tickFormatter={(value: number) => `$${value}`}
               label={{
                 value: "Merchant contribution (A$)",
                 position: "insideBottom",
                 offset: -2,
                 fontSize: 11,
-                fill: "#5c5a54",
+                fill: "var(--color-chart-axis)",
               }}
             />
             <YAxis
@@ -75,13 +95,13 @@ export function ParetoChart({ points }: { points: PlotPoint[] }) {
               dataKey="y"
               name="Utility"
               domain={[0, 1]}
-              tick={{ fontSize: 11, fill: "#5c5a54" }}
+              tick={{ fontSize: 11, fill: "var(--color-chart-axis)" }}
               label={{
                 value: "Simulated buyer utility",
                 angle: -90,
                 position: "insideLeft",
                 fontSize: 11,
-                fill: "#5c5a54",
+                fill: "var(--color-chart-axis)",
               }}
             />
             <ZAxis type="number" dataKey="z" range={[20, 160]} />
@@ -95,8 +115,9 @@ export function ParetoChart({ points }: { points: PlotPoint[] }) {
                 y: item.buyer_utility,
                 z: Math.max(item.intervention_cost_cents, 80),
               }))}
-              fill="#c4c4be"
+              fill="var(--color-chart-muted)"
               fillOpacity={0.45}
+              onClick={(item) => selectPoint(item, onSelect)}
             />
             <Scatter
               name="Pareto"
@@ -107,7 +128,8 @@ export function ParetoChart({ points }: { points: PlotPoint[] }) {
                 y: item.buyer_utility,
                 z: Math.max(item.intervention_cost_cents, 120),
               }))}
-              fill="#141413"
+              fill="var(--color-chart-selected)"
+              onClick={(item) => selectPoint(item, onSelect)}
             />
             <Scatter
               name="Recommended"
@@ -118,7 +140,8 @@ export function ParetoChart({ points }: { points: PlotPoint[] }) {
                 y: item.buyer_utility,
                 z: Math.max(item.intervention_cost_cents, 180),
               }))}
-              fill="#1b7f4a"
+              fill="var(--color-success)"
+              onClick={(item) => selectPoint(item, onSelect)}
             />
           </ScatterChart>
         </ResponsiveContainer>
@@ -132,7 +155,7 @@ export function ParetoChart({ points }: { points: PlotPoint[] }) {
         <p className="mt-2 font-mono text-xs tabular-nums">
           Selected {selected.product_name} · {formatAudCents(selected.total_price_cents)} ·
           contribution {formatAudCents(selected.contribution_margin_cents)} ·
-          utility {selected.buyer_utility.toFixed(3)}
+          utility {formatUtilityShort(selected.buyer_utility)}
         </p>
       ) : null}
       <p className="mt-1 text-[11px] text-muted">

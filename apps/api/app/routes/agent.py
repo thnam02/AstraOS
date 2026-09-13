@@ -10,6 +10,7 @@ from app.agent.errors import AgentProtocolError
 from app.agent.gateway import AgentGatewayService
 from app.agent.schemas import (
     AgentAcceptRequest,
+    AgentActivityResponse,
     AgentCapabilities,
     AgentCounterRequest,
     AgentOfferRequest,
@@ -34,6 +35,15 @@ async def capabilities(
     gateway: AgentGatewayService = Depends(_gateway),
 ) -> AgentCapabilities:
     return gateway.capabilities()
+
+
+@router.get("/activity", response_model=AgentActivityResponse)
+async def list_activity(
+    limit: int = 20,
+    gateway: AgentGatewayService = Depends(_gateway),
+) -> AgentActivityResponse:
+    """Read-only recent negotiation activity for merchant operator views."""
+    return await gateway.list_activity(limit=limit)
 
 
 @router.post("/offers/request", response_model=AgentOfferResponse)

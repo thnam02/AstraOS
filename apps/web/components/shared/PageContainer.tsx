@@ -8,9 +8,7 @@ export function PageContainer({
   wide?: boolean;
 }) {
   return (
-    <main
-      className={`mx-auto w-full px-6 py-6 ${wide ? "max-w-[1480px]" : "max-w-5xl"}`}
-    >
+    <main className={wide ? "page-shell py-6" : "mx-auto w-full max-w-5xl px-6 py-6"}>
       {children}
     </main>
   );

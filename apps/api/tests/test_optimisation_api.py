@@ -84,7 +84,10 @@ def test_no_policy_safe_is_explicit(client: TestClient) -> None:
     opt = response.json()["optimisation"]
     if opt["recommended_offer"] is None:
         assert opt["failure"] is not None
-        assert opt["failure"]["code"] == "NO_POLICY_SAFE_OFFER"
+        assert opt["failure"]["code"] in {
+            "NO_POLICY_SAFE_OFFER",
+            "NO_COMPLIANT_OFFER",
+        }
 
 
 def test_margin_floor_changes_frontier(client: TestClient) -> None:

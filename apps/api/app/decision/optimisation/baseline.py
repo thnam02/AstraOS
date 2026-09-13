@@ -30,6 +30,15 @@ def baseline_for_variant(
     return matches[0] if matches else None
 
 
+def conceptual_baselines(offers: Iterable[OfferCandidate]) -> list[OfferCandidate]:
+    """One conceptual baseline per variant, for presentation only."""
+    found: dict[object, OfferCandidate] = {}
+    for item in offers:
+        if is_conceptual_baseline(item):
+            found[item.variant_id] = item
+    return list(found.values())
+
+
 def lever_family(offer: OfferCandidate, baseline: OfferCandidate) -> str | None:
     """Return the single changed family, or None if 0 or 2+ levers differ."""
     changed: list[str] = []

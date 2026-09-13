@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.decision.intent.models import ConstraintField, ShoppingIntent
+from app.decision.intent.price import max_customer_total_cents
 from app.decision.negotiation.delta import (
     apply_working_intent,
     delta_from_turn,
@@ -38,6 +39,11 @@ from app.decision.negotiation.simulator import simulate_buyer
 from app.decision.negotiation.state_machine import NegotiationState as State
 from app.decision.negotiation.state_machine import buyer_may_act, transition
 from app.decision.optimisation.models import EngineResult, ScoredOffer
+from app.decision.optimisation.objective import (
+    MerchantObjectiveConfig,
+    from_snapshot,
+)
+from app.decision.proof.compiler import attach_proof_bundle
 from app.models.negotiation import (
     MerchantProposal,
     NegotiationSession,
@@ -61,6 +67,7 @@ from app.schemas.optimisation import (
 )
 from app.services.decision import DecisionService
 from app.services.matching import SemanticMatchingService
+from app.services.objective import MerchantObjectiveService
 from app.services.offers import OfferConstructionService
 from app.services.optimisation import OptimisationService
 
@@ -102,6 +109,7 @@ class NegotiationService:
         now = datetime.now(UTC)
         expires = now + timedelta(seconds=settings.negotiation_ttl_seconds)
         rec = decided.optimisation.recommended_offer
+        objective = await MerchantObjectiveService(self.session).active_config()
         opening_state = (
             State.MERCHANT_PROPOSAL_CREATED
             if rec is not None
@@ -126,11 +134,16 @@ class NegotiationService:
             max_turns=settings.max_negotiation_turns,
             expires_at=expires,
             session_metadata={
+                "channel": payload.channel,
+                "request_id": payload.request_id,
+                "buyer_agent_id": payload.buyer_agent_id,
                 "policy_snapshot": {
                     "minimum_margin_rate": str(policy.minimum_margin_rate),
                     "maximum_discount_rate": str(policy.maximum_discount_rate),
                     "policy_id": str(policy.id),
-                }
+                },
+                "merchant_objective": objective.snapshot(),
+                "objective_binding": "snapshot_at_session_creation",
             },
         )
         row.turns = []
@@ -157,16 +170,29 @@ class NegotiationService:
                 else MerchantOutcome.ACCEPT_BUYER_COUNTER
             ),
             offer_id=rec.offer_id if rec else None,
-            snapshot=rec.model_dump(mode="json") if rec else None,
+            snapshot=_snapshot_with_proof(rec, decided.match),
             codes=(
                 [ReasonCode.ORIGINAL_CONSTRAINTS_RETAINED.value]
                 if rec
-                else [ReasonCode.NO_POLICY_SAFE_OFFER.value]
+                else [
+                    (
+                        decided.optimisation.failure.code
+                        if decided.optimisation.failure
+                        else ReasonCode.NO_COMPLIANT_OFFER.value
+                    )
+                ]
             ),
             explanation=(
                 decided.optimisation.explanation
                 if rec
-                else ["No policy-safe offer exists for the opening request."]
+                else [
+                    decided.optimisation.failure.message
+                    if decided.optimisation.failure
+                    else (
+                        "No complete offer satisfies the buyer's "
+                        "mandatory constraints."
+                    )
+                ]
             ),
             next_acts=["ACCEPT", "REJECT", "COUNTER"] if rec else ["COUNTER", "REJECT"],
             expires=expires,
@@ -238,9 +264,11 @@ class NegotiationService:
             preview_limit=40,
             intent_override=working,
         )
+        objective = self._session_objective(row)
         response, engine = await self.optimisation.evaluate(
             construction.offer_run_id,
             buyer_profile=row.buyer_profile,
+            objective=objective,
         )
         assert isinstance(engine, EngineResult)
         row.offer_run_id = construction.offer_run_id
@@ -253,13 +281,16 @@ class NegotiationService:
             engine.scored,
             request=CounterConstraints(alternative_product_allowed=True),
             current_variant_id=current_variant,
+            objective=objective,
         )
         if found.offer is None:
             return None
         now = datetime.now(UTC)
         expires = now + timedelta(seconds=settings.negotiation_ttl_seconds)
         version = max((item.version for item in row.proposals), default=0) + 1
-        snapshot = to_public_scored(found.offer).model_dump(mode="json")
+        snapshot = attach_proof_bundle(
+            to_public_scored(found.offer).model_dump(mode="json")
+        )
         codes = [item.value for item in found.reason_codes]
         codes.insert(0, "RECOVERY_AFTER_REVALIDATION_FAILURE")
         explanation = [
@@ -423,6 +454,8 @@ class NegotiationService:
         working = apply_working_intent(original, deltas)
         row.working_intent = working.model_dump(mode="json")
         request = merged_constraints(deltas)
+        if request.max_total_price_cents is None:
+            request.max_total_price_cents = max_customer_total_cents(working)
         delta_ms = (time.perf_counter() - delta_started) * 1000
 
         reopt_started = time.perf_counter()
@@ -439,9 +472,11 @@ class NegotiationService:
             preview_limit=40,
             intent_override=working,
         )
+        objective = self._session_objective(row)
         response, engine = await self.optimisation.evaluate(
             construction.offer_run_id,
             buyer_profile=row.buyer_profile,
+            objective=objective,
         )
         assert isinstance(engine, EngineResult)
         row.offer_run_id = construction.offer_run_id
@@ -459,6 +494,7 @@ class NegotiationService:
             engine.scored,
             request=request,
             current_variant_id=current_variant,
+            objective=objective,
         )
         policy = await self.policy.get_active()
         margin = policy.minimum_margin_rate if policy else Decimal("0.15")
@@ -481,7 +517,7 @@ class NegotiationService:
         expires = now + timedelta(seconds=settings.negotiation_ttl_seconds)
         version = max((item.version for item in row.proposals), default=0) + 1
         snapshot = (
-            to_public_scored(found.offer).model_dump(mode="json")
+            attach_proof_bundle(to_public_scored(found.offer).model_dump(mode="json"))
             if found.offer
             else None
         )
@@ -687,6 +723,13 @@ class NegotiationService:
             ),
         )
 
+    def _session_objective(
+        self, row: NegotiationSession
+    ) -> MerchantObjectiveConfig:
+        """Use the objective snapshotted at session creation, not the live config."""
+        meta = row.session_metadata or {}
+        return from_snapshot(meta.get("merchant_objective"))
+
     async def _response(
         self,
         row: NegotiationSession,
@@ -736,6 +779,7 @@ class NegotiationService:
                     structured_action=item.structured_action,
                     structured_payload=item.structured_payload,
                     related_offer_id=item.related_offer_id,
+                    related_proposal_id=item.related_proposal_id,
                     created_at=item.created_at,
                 )
                 for item in row.turns
@@ -745,6 +789,7 @@ class NegotiationService:
             timing=timing,
             events=list(row.events),
             original_intent=row.original_intent,
+            working_intent=row.working_intent,
             merchant_policy_version=row.merchant_policy_version,
             match=match,
             construction=construction,
@@ -847,6 +892,17 @@ class NegotiationService:
             expires_at=item.expires_at,
             created_at=item.created_at,
         )
+
+
+def _snapshot_with_proof(rec: Any, match: Any = None) -> dict[str, Any] | None:
+    if rec is None:
+        return None
+    payload = rec.model_dump(mode="json")
+    proof: list[dict[str, Any]] = []
+    block = getattr(match, "semantic_matching", None)
+    if block is not None and block.matches:
+        proof = list(block.matches[0].proof or [])
+    return attach_proof_bundle(payload, proof)
 
 
 def _intent_budget(intent: ShoppingIntent) -> int | None:

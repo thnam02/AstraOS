@@ -4,7 +4,13 @@ from pydantic import BaseModel, Field
 
 from app.decision.economics.models import OfferEconomics
 from app.decision.intent.models import ShoppingIntent
+from app.decision.offers.buyer_constraints import (
+    buyer_price_reasons,
+    observed_price_cents,
+)
 from app.decision.offers.dimensions import delivery_meets_intent
+from app.decision.intent.normalizer import expected_value
+from app.decision.intent.price import price_constraints
 from app.decision.offers.models import FeasibilityStatus, OfferCandidate, RejectionCode
 from app.decision.offers.prices import money_rate
 from app.decision.policies.rejection_codes import PolicyRejectionCode
@@ -25,6 +31,12 @@ class OfferPolicyEvaluation(BaseModel):
     rejection_codes: list[str] = Field(default_factory=list)
 
 
+_BUYER_GATE_CODES = {
+    PolicyRejectionCode.BUYER_MAX_TOTAL_EXCEEDED.value,
+    PolicyRejectionCode.BUYER_MAX_PRODUCT_PRICE_EXCEEDED.value,
+    PolicyRejectionCode.INTENT_DELIVERY_INCOMPATIBLE.value,
+}
+
 _CONSTRUCTION_MAP: dict[RejectionCode, PolicyRejectionCode] = {
     RejectionCode.OUT_OF_STOCK: PolicyRejectionCode.OUT_OF_STOCK,
     RejectionCode.DELIVERY_NOT_AVAILABLE: PolicyRejectionCode.DELIVERY_DISABLED,
@@ -37,6 +49,12 @@ _CONSTRUCTION_MAP: dict[RejectionCode, PolicyRejectionCode] = {
     RejectionCode.PRODUCT_INACTIVE: PolicyRejectionCode.PRODUCT_INACTIVE,
     RejectionCode.MISSING_OPERATIONAL_DATA: (
         PolicyRejectionCode.MISSING_OPERATIONAL_DATA
+    ),
+    RejectionCode.BUYER_MAX_TOTAL_EXCEEDED: (
+        PolicyRejectionCode.BUYER_MAX_TOTAL_EXCEEDED
+    ),
+    RejectionCode.BUYER_MAX_PRODUCT_PRICE_EXCEEDED: (
+        PolicyRejectionCode.BUYER_MAX_PRODUCT_PRICE_EXCEEDED
     ),
 }
 
@@ -224,6 +242,38 @@ def evaluate_offer_policy(
         else "Flexible returns are disabled by merchant policy.",
     )
 
+    price_failures = buyer_price_reasons(
+        intent=intent,
+        total_customer_price_cents=offer.total_customer_price_cents,
+        product_price_cents=offer.final_product_price_cents,
+    )
+    failed_codes = {item.code for item in price_failures}
+    seen_price_codes: set[str] = set()
+    for constraint in price_constraints(intent):
+        observed, reject_code = observed_price_cents(
+            constraint,
+            total_customer_price_cents=offer.total_customer_price_cents,
+            product_price_cents=offer.final_product_price_cents,
+        )
+        policy_code = _CONSTRUCTION_MAP[reject_code]
+        if policy_code.value in seen_price_codes:
+            continue
+        seen_price_codes.add(policy_code.value)
+        passed = reject_code not in failed_codes
+        expected = expected_value(constraint)
+        _add(
+            checks,
+            code=policy_code,
+            passed=passed,
+            message=(
+                "Buyer price constraint holds."
+                if passed
+                else "Offer exceeds the buyer's mandatory spend."
+            ),
+            observed=observed,
+            limit=expected if isinstance(expected, int | float) else None,
+        )
+
     if offer.feasibility_status == FeasibilityStatus.REJECTED:
         for reason in offer.rejection_reasons:
             mapped = _CONSTRUCTION_MAP.get(reason.code)
@@ -249,8 +299,11 @@ def evaluate_offer_policy(
             continue
         seen.add(code)
         unique.append(code)
+    merchant_rejected = [
+        code for code in unique if code not in _BUYER_GATE_CODES
+    ]
     return OfferPolicyEvaluation(
-        policy_safe=len(unique) == 0,
+        policy_safe=len(merchant_rejected) == 0,
         checks=checks,
-        rejection_codes=unique,
+        rejection_codes=merchant_rejected,
     )

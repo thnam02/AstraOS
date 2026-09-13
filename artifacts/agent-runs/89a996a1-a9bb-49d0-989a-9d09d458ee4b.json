@@ -1,0 +1,77 @@
+{
+  "run_id": "89a996a1-a9bb-49d0-989a-9d09d458ee4b",
+  "buyer_agent_version": "0.4.0",
+  "prompt_version": "buyer-agent-v1",
+  "buyer_mode": "llm",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "mission": {
+    "mission_id": "budget-buyer",
+    "request": "I want wireless headphones under A$150. Same-day is nice but I will not pay more than my budget.",
+    "persona": "BUDGET_BUYER",
+    "profile": {
+      "urgency": "low",
+      "comfort": "medium",
+      "reliability": "medium",
+      "price_sensitivity": "high",
+      "quality": "low"
+    },
+    "hard": {
+      "max_total_cents": 15000,
+      "same_day_required": false,
+      "max_delivery_days": null,
+      "require_anc": false,
+      "require_wireless": true,
+      "excluded_brands": []
+    },
+    "acceptance_threshold": 0.7,
+    "max_turns": 3,
+    "negotiation_style": "price_first"
+  },
+  "capabilities": {
+    "protocol_name": "astraos-agent",
+    "version": "1.0",
+    "operations": [
+      "capabilities",
+      "request_offer",
+      "inspect_offer",
+      "counter_offer",
+      "accept_offer",
+      "get_transaction",
+      "get_order"
+    ],
+    "protocol": [
+      "REST",
+      "MCP"
+    ]
+  },
+  "actions": [
+    "REQUEST",
+    "ACCEPT"
+  ],
+  "history": [
+    {
+      "buyer": "REQUEST",
+      "merchant": "PROPOSED"
+    }
+  ],
+  "proposal_id": "1dae804c-b1fc-469a-991b-d6d2e44dd290",
+  "session_id": "11fb2642-5364-4c04-8ed7-bd91464d3533",
+  "transaction_id": null,
+  "order_ref": null,
+  "end_state": "TRANSACTION_FAILED",
+  "turns": 0,
+  "latencies_ms": {
+    "capabilities_ms": 2.17,
+    "request_offer_ms": 1790.58,
+    "buyer_decision_ms": 1438.5,
+    "accept_ms": 1906.67,
+    "session_ms": 5138.14
+  },
+  "token_usage": {
+    "input_tokens": 999,
+    "output_tokens": 29,
+    "total_tokens": 1028
+  },
+  "policy_violations": []
+}

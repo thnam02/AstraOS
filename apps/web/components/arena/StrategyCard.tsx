@@ -1,14 +1,17 @@
 import { FitBar } from "@/components/arena/FitBar";
+import { AstraStatusBadge } from "@/components/astra";
 import {
   bundleLabel,
   deliveryLabel,
   isSelectable,
   offerDiff,
   policyReasons,
+  returnsLabel,
   strategyTitle,
   STRATEGY_META,
   warrantyLabel,
 } from "@/lib/arenaDisplay";
+import { formatUtilityShort } from "@/lib/format";
 import { formatAudCents } from "@/lib/money";
 import type { ArenaStrategyResponse } from "@/types";
 
@@ -50,7 +53,7 @@ export function StrategyCard({
         </div>
         {selected ? (
           <span className="text-[11px] font-medium tracking-[0.06em] text-success">
-            SELECTED
+            WON
           </span>
         ) : null}
       </div>
@@ -64,10 +67,7 @@ export function StrategyCard({
           contributionDelta={contributionDelta}
         />
       ) : (
-        <BlockedBody
-          response={response}
-          reasons={reasons}
-        />
+        <BlockedBody response={response} reasons={reasons} diff={diff} />
       )}
     </article>
   );
@@ -88,56 +88,25 @@ function ValidBody({
 }) {
   return (
     <div className="mt-3 flex flex-1 flex-col justify-between gap-4">
-      <div>
-        <h3 className="text-base font-semibold tracking-tight">
-          {response.product_name}
-        </h3>
-        <p className="font-mono text-[11px] text-muted">{response.sku}</p>
-        <p className="mt-2 font-mono text-xl font-semibold tabular-nums">
-          {formatAudCents(response.total_customer_price_cents ?? 0)}
-        </p>
-        <ul className="mt-2 space-y-0.5 text-sm">
-          <li className={diff.deliveryChanged ? "font-medium" : "text-muted"}>
-            {deliveryLabel(response.delivery, response.delivery_days)}
-            {diff.deliveryChanged ? " ↑" : ""}
-          </li>
-          <li className={diff.warrantyChanged ? "font-medium" : "text-muted"}>
-            {warrantyLabel(response.warranty, response.warranty_months)}
-            {diff.warrantyChanged ? " ↑" : ""}
-          </li>
-          <li className={diff.bundleChanged ? "font-medium" : "text-muted"}>
-            {bundleLabel(response.bundle)}
-            {diff.bundleChanged && response.bundle ? " +" : ""}
-          </li>
-        </ul>
-      </div>
+      <OfferSchema
+        response={response}
+        diff={diff}
+        emphasizeChanged
+      />
       <div className="space-y-3">
-        <FitBar value={response.buyer_utility ?? 0} compact={!selected} />
-        {selected && fitDelta ? (
-          <p className="text-xs text-muted">{fitDelta} vs next best</p>
+        {response.buyer_utility != null ? (
+          <div>
+            <FitBar value={response.buyer_utility} compact={!selected} />
+            {selected && fitDelta ? (
+              <p className="mt-1 text-xs text-muted">{fitDelta} vs next best</p>
+            ) : null}
+          </div>
         ) : null}
-        <dl className="space-y-1 text-sm">
-          <div className="flex justify-between gap-3">
-            <dt className="text-muted">Merchant contribution</dt>
-            <dd className="text-right">
-              <span className="font-mono tabular-nums">
-                {formatAudCents(response.merchant_contribution_cents ?? 0)}
-              </span>
-              {selected && contributionDelta ? (
-                <span className="block text-[11px] text-muted">
-                  {contributionDelta} vs cheapest valid
-                </span>
-              ) : null}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-muted">Intervention cost</dt>
-            <dd className="font-mono tabular-nums">
-              {formatAudCents(response.intervention_cost_cents ?? 0)}
-            </dd>
-          </div>
-        </dl>
-        <p className="text-[11px] tracking-[0.06em] text-success">POLICY SAFE</p>
+        <SchemaEconomics
+          response={response}
+          contributionDelta={selected ? contributionDelta : undefined}
+        />
+        <PolicyStatus safe />
       </div>
     </div>
   );
@@ -146,27 +115,35 @@ function ValidBody({
 function BlockedBody({
   response,
   reasons,
+  diff,
 }: {
   response: ArenaStrategyResponse;
   reasons: string[];
+  diff: ReturnType<typeof offerDiff>;
 }) {
+  const hasOfferShape =
+    response.product_name != null ||
+    response.total_customer_price_cents != null ||
+    response.delivery != null;
+
   return (
     <div className="mt-4 flex flex-1 flex-col justify-between gap-4">
-      <div>
+      <div className="space-y-3">
         <p className="text-sm font-semibold">No policy-safe offer</p>
-        {response.total_customer_price_cents != null ? (
-          <p className="mt-2 text-sm">
-            Attempted{" "}
+        {hasOfferShape ? (
+          <OfferSchema response={response} diff={diff} />
+        ) : null}
+        {response.buyer_utility != null ? (
+          <div className="flex justify-between gap-3 text-sm">
+            <span className="text-muted">Buyer Utility</span>
             <span className="font-mono tabular-nums">
-              {formatAudCents(response.total_customer_price_cents)}
+              {formatUtilityShort(response.buyer_utility)}
             </span>
-          </p>
+          </div>
         ) : null}
-        {response.product_name ? (
-          <p className="mt-1 text-xs text-muted">{response.product_name}</p>
-        ) : null}
+        <SchemaEconomics response={response} />
         {reasons.length ? (
-          <div className="mt-3">
+          <div>
             <p className="text-[11px] text-muted">Blocked by</p>
             <ul className="mt-1 space-y-1 text-sm">
               {reasons.map((reason) => (
@@ -176,9 +153,147 @@ function BlockedBody({
           </div>
         ) : null}
       </div>
-      <p className="text-xs text-muted">
-        This strategy does not enter buyer selection.
-      </p>
+      <div className="space-y-2">
+        <PolicyStatus safe={false} />
+        <p className="text-xs text-muted">
+          This strategy does not enter buyer selection.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function OfferSchema({
+  response,
+  diff,
+  emphasizeChanged = false,
+}: {
+  response: ArenaStrategyResponse;
+  diff: ReturnType<typeof offerDiff>;
+  emphasizeChanged?: boolean;
+}) {
+  const rows: {
+    label: string;
+    value: string | null;
+    changed?: boolean;
+    mono?: boolean;
+  }[] = [
+    {
+      label: "Product",
+      value: response.product_name
+        ? response.sku
+          ? `${response.product_name} · ${response.sku}`
+          : response.product_name
+        : response.sku,
+      changed: diff.productChanged,
+    },
+    {
+      label: "Price",
+      value:
+        response.total_customer_price_cents != null
+          ? formatAudCents(response.total_customer_price_cents)
+          : null,
+      changed: diff.priceChanged,
+      mono: true,
+    },
+    {
+      label: "Delivery",
+      value:
+        response.delivery != null || response.delivery_days != null
+          ? deliveryLabel(response.delivery, response.delivery_days)
+          : null,
+      changed: diff.deliveryChanged,
+    },
+    {
+      label: "Warranty",
+      value:
+        response.warranty != null || response.warranty_months != null
+          ? warrantyLabel(response.warranty, response.warranty_months)
+          : null,
+      changed: diff.warrantyChanged,
+    },
+    {
+      label: "Bundle",
+      value:
+        response.bundle != null || response.offer_id
+          ? bundleLabel(response.bundle)
+          : null,
+      changed: diff.bundleChanged,
+    },
+    {
+      label: "Returns",
+      value: response.returns != null ? returnsLabel(response.returns) : null,
+      changed: diff.returnsChanged,
+    },
+  ];
+
+  return (
+    <dl className="space-y-1 text-sm">
+      {rows
+        .filter((row) => row.value != null)
+        .map((row) => {
+          const changed = emphasizeChanged && row.changed;
+          return (
+            <div key={row.label} className="flex justify-between gap-3">
+              <dt className="text-muted">{row.label}</dt>
+              <dd
+                className={`text-right ${row.mono ? "font-mono tabular-nums" : ""} ${
+                  changed ? "font-medium" : ""
+                }`}
+              >
+                {row.value}
+                {changed ? " ↑" : ""}
+              </dd>
+            </div>
+          );
+        })}
+    </dl>
+  );
+}
+
+function SchemaEconomics({
+  response,
+  contributionDelta,
+}: {
+  response: ArenaStrategyResponse;
+  contributionDelta?: string;
+}) {
+  return (
+    <dl className="space-y-1 text-sm">
+      {response.merchant_contribution_cents != null ? (
+        <div className="flex justify-between gap-3">
+          <dt className="text-muted">Contribution</dt>
+          <dd className="text-right">
+            <span className="font-mono tabular-nums">
+              {formatAudCents(response.merchant_contribution_cents)}
+            </span>
+            {contributionDelta ? (
+              <span className="block text-[11px] text-muted">
+                {contributionDelta} vs cheapest valid
+              </span>
+            ) : null}
+          </dd>
+        </div>
+      ) : null}
+      {response.intervention_cost_cents != null ? (
+        <div className="flex justify-between gap-3">
+          <dt className="text-muted">Intervention</dt>
+          <dd className="font-mono tabular-nums">
+            {formatAudCents(response.intervention_cost_cents)}
+          </dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
+function PolicyStatus({ safe }: { safe: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-muted">Policy Status</span>
+      <AstraStatusBadge tone={safe ? "positive" : "warning"}>
+        {safe ? "Policy safe" : "No safe offer"}
+      </AstraStatusBadge>
     </div>
   );
 }

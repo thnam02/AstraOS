@@ -1,0 +1,125 @@
+{
+  "phase": 7,
+  "title": "hero-evidence-realification",
+  "git_sha": "69dafd9d1a701cc474768465ae59b02373567cfc",
+  "hero_merchant_source": "examples/merchant-data/harbor-sound.json",
+  "source_types": [
+    "MERCHANT_PRODUCT_FEED",
+    "MERCHANT_INVENTORY",
+    "PRICING_FEED",
+    "FULFILMENT_CONFIGURATION",
+    "WARRANTY_POLICY",
+    "BUNDLE_CONFIGURATION",
+    "RETURN_POLICY",
+    "EXAMPLE_MERCHANT_IMPORT",
+    "SYNTHETIC_DEMO_FIXTURE"
+  ],
+  "ingestion_status": "COMPLETED_WITH_WARNINGS",
+  "top_product": {
+    "sku": "HS-CAB-12-BLK",
+    "name": "Harbor Cabin 12",
+    "reasons": [
+      "ANC: True",
+      "battery hours: 42",
+      "weight: 230.0",
+      "foldable: True",
+      "travel score: 0.94"
+    ]
+  },
+  "selected_offer": {
+    "sku": "HS-CAB-12-BLK",
+    "delivery": {
+      "code": "SAME_DAY",
+      "days": 0,
+      "name": "Same Day Delivery"
+    },
+    "warranty": {
+      "code": "EXTENDED_24",
+      "name": "Extended 24-month warranty",
+      "months": 24
+    },
+    "bundle": {
+      "code": "TRAVEL_ADAPTER",
+      "name": "Travel charging adapter"
+    },
+    "returns": {
+      "code": "FLEX_60",
+      "window_days": 60
+    },
+    "price": {
+      "product_price_cents": 27900,
+      "total_price_cents": 32300,
+      "currency": "AUD"
+    }
+  },
+  "displayed_claim_count": 9,
+  "claims_with_evidence": 9,
+  "verified_count": 9,
+  "unverified_count": 0,
+  "stale_count": 0,
+  "conflicted_count": 0,
+  "unknown_count": 0,
+  "synthetic_count": 0,
+  "example_import_count": 0,
+  "unsupported_displayed_claim_rate": 0.0,
+  "hard_constraint_proof_rate": 1.0,
+  "commercial_term_proof_rate": 1.0,
+  "match_rationale_proof_rate": 1.0,
+  "public_agent_proof_status": "PASS",
+  "public_proof_leaked_private": false,
+  "public_proof_claims": [
+    "anc",
+    "battery_hours",
+    "bundle",
+    "comfort_score",
+    "delivery",
+    "foldable",
+    "lightweight",
+    "price",
+    "returns",
+    "same_day",
+    "same_day_delivery",
+    "travel_score",
+    "warranty",
+    "weight_g",
+    "wireless"
+  ],
+  "hero_end_to_end_status": "PASS",
+  "transaction_status": "CONFIRMED",
+  "transaction_revalidation_present": true,
+  "stale_conflict_validation": {
+    "night_anc_stale_present": true,
+    "cabin_battery_unconflicted": true
+  },
+  "same_day_in_public_proof": true,
+  "commercial_keys_in_public_proof": [
+    "bundle",
+    "delivery",
+    "price",
+    "returns",
+    "warranty"
+  ],
+  "formulas_unchanged": {
+    "intent": true,
+    "qualification": true,
+    "semantic_scoring": true,
+    "offer_economics": true,
+    "merchant_objective": true,
+    "pareto": true,
+    "negotiation": true,
+    "transaction": true
+  },
+  "full_backend_suite_run": false,
+  "targeted_tests_run": [
+    "apps/api/tests/test_proof.py",
+    "apps/api/tests/test_agent_proof.py",
+    "apps/web/lib/matchDisplay.test.ts"
+  ],
+  "targeted_lint_type_frontend": [
+    "ruff check <changed Phase 7 Python modules>",
+    "npx tsc --noEmit (apps/web)",
+    "npm test (includes lib/matchDisplay.test.ts)"
+  ],
+  "mypy": "deferred",
+  "full_frontend_production_build": false
+}

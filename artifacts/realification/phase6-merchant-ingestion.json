@@ -1,0 +1,280 @@
+{
+  "phase": 6,
+  "title": "merchant-data-ingestion",
+  "git_sha": "0cba5a2ef8e934e768bf0df38c625924c67888b1",
+  "supported_sources": [
+    "json",
+    "csv"
+  ],
+  "schema_version": "1.0",
+  "example_import_counts": {
+    "products": 14,
+    "variants": 15,
+    "inventory": 15,
+    "delivery_options": 3,
+    "warranties": 2,
+    "bundles": 2,
+    "return_policies": 2,
+    "evidence": 7,
+    "validation_errors": [],
+    "validation_warnings": 3
+  },
+  "validation_test_summary": {
+    "ingestion_tests": 34,
+    "backend_tests": "428 passed, 3 skipped"
+  },
+  "dry_run": {
+    "status": "DRY_RUN",
+    "products_created": 14,
+    "variants_created": 15,
+    "errors": 0,
+    "warnings": 3
+  },
+  "apply": {
+    "status": "COMPLETED_WITH_WARNINGS",
+    "schema_version": "1.0",
+    "source_type": "json",
+    "source_name": "harbor-sound.json",
+    "file_hash": "3f9939620794a4d9c58d1493bda53c0b8ff5867105cd7cb6dd74d2c1a0c17a35",
+    "snapshot_mode": "FULL",
+    "dry_run": false,
+    "merchant_data_mode": "MIXED",
+    "run_id": "2aecb4a8-77a4-4b76-a14f-bd6d4d90d5c8",
+    "counts": {
+      "products": {
+        "received": 14,
+        "created": 14,
+        "updated": 0,
+        "unchanged": 0,
+        "deactivated": 0,
+        "rejected": 0
+      },
+      "variants": {
+        "received": 15,
+        "created": 15,
+        "updated": 0,
+        "unchanged": 0,
+        "deactivated": 0,
+        "rejected": 0
+      },
+      "inventory": {
+        "received": 15,
+        "created": 15,
+        "updated": 0,
+        "unchanged": 0,
+        "deactivated": 0,
+        "rejected": 0
+      },
+      "delivery_options": {
+        "received": 3,
+        "created": 0,
+        "updated": 0,
+        "unchanged": 3,
+        "deactivated": 0,
+        "rejected": 0
+      },
+      "warranty_options": {
+        "received": 2,
+        "created": 0,
+        "updated": 0,
+        "unchanged": 2,
+        "deactivated": 0,
+        "rejected": 0
+      },
+      "bundles": {
+        "received": 2,
+        "created": 0,
+        "updated": 0,
+        "unchanged": 2,
+        "deactivated": 0,
+        "rejected": 0
+      },
+      "return_policies": {
+        "received": 2,
+        "created": 0,
+        "updated": 0,
+        "unchanged": 2,
+        "deactivated": 0,
+        "rejected": 0
+      },
+      "evidence": {
+        "received": 7,
+        "created": 7,
+        "updated": 0,
+        "unchanged": 0,
+        "deactivated": 0,
+        "rejected": 0
+      }
+    },
+    "records_received": 60,
+    "records_created": 51,
+    "records_updated": 0,
+    "records_unchanged": 9,
+    "records_rejected": 0,
+    "records_deactivated": 0,
+    "warnings": [
+      {
+        "severity": "WARNING",
+        "code": "missing_optional_attribute",
+        "message": "Variant HS-STD-20-WHT has no battery_hours; the value remains unknown.",
+        "location": "variants[HS-STD-20-WHT].battery_hours",
+        "record_id": "HS-STD-20-WHT"
+      },
+      {
+        "severity": "WARNING",
+        "code": "missing_optional_attribute",
+        "message": "Variant HS-MIN-03-BLK has no battery_hours; the value remains unknown.",
+        "location": "variants[HS-MIN-03-BLK].battery_hours",
+        "record_id": "HS-MIN-03-BLK"
+      },
+      {
+        "severity": "WARNING",
+        "code": "missing_optional_attribute",
+        "message": "Variant HS-NGT-14-BLK has no weight_g; the value remains unknown.",
+        "location": "variants[HS-NGT-14-BLK].weight_g",
+        "record_id": "HS-NGT-14-BLK"
+      }
+    ],
+    "errors": [],
+    "semantic_documents_changed": 15,
+    "embeddings_refreshed": 15,
+    "embeddings_reused": 0,
+    "timing_ms": {
+      "validation": 0.33,
+      "apply": 78.763,
+      "reindex": 40.299,
+      "total": 130.994
+    },
+    "economics_ready": true,
+    "economics_reason": null
+  },
+  "idempotency": {
+    "second_created": 0,
+    "second_updated": 0,
+    "second_unchanged": 60
+  },
+  "changed_record": {
+    "products_updated": 1,
+    "semantic_documents_changed": 1,
+    "embeddings_refreshed": 1
+  },
+  "csv_dry_run_status": "DRY_RUN",
+  "import_timings_ms": {
+    "validation": 0.671,
+    "dry_run_total": 40.26,
+    "apply_total": 133.185,
+    "reindex": 40.299
+  },
+  "semantic_refresh": {
+    "embeddings_refreshed": 15,
+    "embeddings_reused": 0,
+    "changed_after_rename": 1,
+    "inventory_only_does_not_reembed": true
+  },
+  "external_agent_e2e": {
+    "status": "PROPOSED",
+    "policy_status": "POLICY_SAFE",
+    "imported_sku_present": true,
+    "seed_deactivated_during_request": true,
+    "proposal_sku": "HS-CAB-12-BLK",
+    "used_imported_catalogue": true,
+    "qualification": {
+      "variants_checked": 15,
+      "eligible": 5,
+      "violated": 9,
+      "uncertain": 1
+    },
+    "semantic": {
+      "match_count": 5,
+      "top_sku": "HS-CAB-12-BLK",
+      "variants_checked": 15,
+      "eligible": 5,
+      "offer_configurations": 150,
+      "policy_safe": 60,
+      "pareto_efficient": 10
+    }
+  },
+  "readiness": {
+    "status": "degraded",
+    "checks": [
+      {
+        "name": "database",
+        "ok": true,
+        "detail": "reachable",
+        "required": true
+      },
+      {
+        "name": "merchant_policy",
+        "ok": true,
+        "detail": "active policy present",
+        "required": true
+      },
+      {
+        "name": "merchant_catalogue",
+        "ok": true,
+        "detail": "170 active products, 347 active variants; mode=MIXED",
+        "required": true
+      },
+      {
+        "name": "seed_catalogue",
+        "ok": true,
+        "detail": "353 variants",
+        "required": true
+      },
+      {
+        "name": "economics_ready",
+        "ok": true,
+        "detail": "active variants have required price and COGS",
+        "required": false
+      },
+      {
+        "name": "embeddings",
+        "ok": true,
+        "detail": "347 cached; hashing fallback available",
+        "required": false
+      },
+      {
+        "name": "semantic_retrieval",
+        "ok": true,
+        "detail": "requested_provider=hashing; configured_model=hashing-vectorizer-384; model_cached=true; index_ready=true; indexed_documents=347; expected_documents=353; fallback_available=true",
+        "required": false
+      },
+      {
+        "name": "import_index",
+        "ok": false,
+        "detail": "indexed 347 of 353 variants",
+        "required": false
+      },
+      {
+        "name": "learned_model",
+        "ok": true,
+        "detail": "experimental artifact /Users/hainamtran/Desktop/AstraOS/AstraOS/apps/api/artifacts/models/ba12f53c-e037-45bf-84db-c4683fdf5f5d.joblib",
+        "required": false
+      },
+      {
+        "name": "intent_parser",
+        "ok": true,
+        "detail": "requested_mode=rule_based; provider_configured=false; fallback_available=true",
+        "required": false
+      },
+      {
+        "name": "protocol_adapter",
+        "ok": true,
+        "detail": "REST /api/v1/agent guaranteed; MCP stdio optional",
+        "required": true
+      }
+    ]
+  },
+  "formulas_unchanged": {
+    "intent": true,
+    "qualification": true,
+    "semantic_scoring": true,
+    "offer_construction": true,
+    "economics": true,
+    "buyer_utility": true,
+    "merchant_objective": true,
+    "pareto": true,
+    "negotiation": true,
+    "transaction": true
+  }
+}

@@ -8,6 +8,8 @@ from uuid import UUID
 from app.config import settings
 from app.decision.economics.calculator import compute_economics
 from app.decision.intent.models import ShoppingIntent
+from app.decision.offers.buyer_constraints import buyer_price_reasons
+from app.decision.intent.price import price_constraints
 from app.decision.offers.feasibility import sellable_units
 from app.decision.offers.models import OfferCandidate
 from app.decision.offers.prices import money_rate
@@ -154,6 +156,26 @@ class TransactionRevalidationService:
             )
         else:
             add("INVENTORY", True, available_units=units)
+
+        intent = ShoppingIntent.model_validate(session.working_intent)
+        price_failures = buyer_price_reasons(
+            intent=intent,
+            total_customer_price_cents=offer.total_customer_price_cents,
+            product_price_cents=offer.final_product_price_cents,
+        )
+        if price_constraints(intent):
+            failure = price_failures[0] if price_failures else None
+            add(
+                "BUYER_PRICE",
+                failure is None,
+                TransactionFailureCode(
+                    failure.code.value
+                    if failure
+                    else TransactionFailureCode.BUYER_MAX_TOTAL_EXCEEDED.value
+                ),
+                observed=offer.total_customer_price_cents,
+                message=failure.message if failure else None,
+            )
 
         catalogue_changed = int(variant.base_price_cents) != int(offer.base_price_cents)
         snapshot["catalogue_price_changed"] = catalogue_changed

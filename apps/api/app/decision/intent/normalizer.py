@@ -12,6 +12,7 @@ from app.decision.intent.models import (
     IntentStatus,
     ShoppingIntent,
 )
+from app.decision.intent.price import infer_price_basis
 
 WORD_NUMBERS = {
     "zero": 0,
@@ -95,10 +96,19 @@ def normalize_intent(intent: ShoppingIntent) -> ShoppingIntent:
     for constraint in intent.hard_constraints:
         value = constraint.value
         unit = constraint.unit
+        applies_to = constraint.applies_to
         if constraint.field == ConstraintField.PRICE:
             if constraint.unit != "AUD_CENTS":
                 value = dollars_to_cents(constraint.value)
             unit = "AUD_CENTS"
+            if applies_to is None:
+                applies_to = infer_price_basis(
+                    " ".join(
+                        part
+                        for part in (intent.raw_text, constraint.source_phrase)
+                        if part
+                    )
+                )
         elif constraint.field == ConstraintField.WEIGHT_G:
             grams = normalize_weight_grams(constraint.source_phrase, constraint.value)
             if grams is not None:
@@ -121,7 +131,12 @@ def normalize_intent(intent: ShoppingIntent) -> ShoppingIntent:
             unit = "BOOL"
             value = bool(constraint.value)
         normalized_constraint = constraint.model_copy(
-            update={"normalized_value": value, "value": value, "unit": unit}
+            update={
+                "normalized_value": value,
+                "value": value,
+                "unit": unit,
+                "applies_to": applies_to,
+            }
         )
         updated.append(same_day_as_delivery_days(normalized_constraint))
 
@@ -133,6 +148,7 @@ def normalize_intent(intent: ShoppingIntent) -> ShoppingIntent:
             constraint.field.value,
             constraint.operator.value,
             repr(constraint.normalized_value),
+            constraint.applies_to.value if constraint.applies_to else "",
         )
         if key in seen:
             continue

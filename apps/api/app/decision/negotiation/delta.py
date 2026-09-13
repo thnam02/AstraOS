@@ -11,7 +11,12 @@ from app.decision.intent.models import (
     ConstraintField,
     ConstraintOperator,
     HardConstraint,
+    PriceBasis,
     ShoppingIntent,
+)
+from app.decision.intent.price import (
+    max_customer_total_cents,
+    resolved_price_basis,
 )
 from app.decision.negotiation.models import (
     CounterConstraints,
@@ -61,9 +66,34 @@ def apply_working_intent(
 
     Tightened price is NOT applied here. Price counters filter constructed
     offers so a $329 list-price SKU can still yield a $319 counteroffer.
+    An explicit higher budget is applied so construction can emit newly
+    affordable complete offers.
     """
     intent = original.model_copy(deep=True)
     for delta in deltas:
+        if delta.price_constraint_change is not None:
+            current = max_customer_total_cents(intent)
+            if current is None or delta.price_constraint_change > current:
+                intent.hard_constraints = [
+                    item
+                    for item in intent.hard_constraints
+                    if not (
+                        item.field == ConstraintField.PRICE
+                        and resolved_price_basis(item) == PriceBasis.CUSTOMER_TOTAL
+                    )
+                ]
+                intent.hard_constraints.append(
+                    HardConstraint(
+                        id="nego-total-price",
+                        field=ConstraintField.PRICE,
+                        operator=ConstraintOperator.LTE,
+                        value=delta.price_constraint_change,
+                        unit="AUD_CENTS",
+                        source_phrase="negotiation price relaxation",
+                        normalized_value=delta.price_constraint_change,
+                        applies_to=PriceBasis.CUSTOMER_TOTAL,
+                    )
+                )
         if delta.relax_same_day:
             intent.hard_constraints = [
                 item

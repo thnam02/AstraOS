@@ -6,11 +6,11 @@ export default function ArenaPage() {
   return (
     <PageContainer wide>
       <SectionHeader
-        eyebrow="Arena"
-        title="Merchant strategy comparison"
-        description="Same buyer, catalogue, inventory, and merchant policy. Only the merchant strategy changes."
+        eyebrow="Evaluate"
+        title="Strategy evaluation"
+        description="Compare AstraOS with simpler merchant decision strategies under identical commercial conditions."
       />
-      <div className="mt-6">
+      <div className="mt-5">
         <ArenaWorkbench />
       </div>
     </PageContainer>

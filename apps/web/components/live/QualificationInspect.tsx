@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 
+import { QualificationResults } from "@/components/live/QualificationResults";
 import { Drawer } from "@/components/shared/Drawer";
 import { qualifyIntent } from "@/lib/api";
-import { formatAudCents } from "@/lib/money";
-import type { QualifyResponse, VariantQualificationCard } from "@/types";
+import type { QualifyResponse } from "@/types";
 
 export function QualificationInspect({
   intentText,
@@ -35,62 +35,38 @@ export function QualificationInspect({
 
   return (
     <>
-      <button type="button" className="btn-ghost" onClick={() => void inspect()}>
+      <button type="button" className="btn-quiet" onClick={() => void inspect()}>
         Inspect qualification
       </button>
       <Drawer open={open} title="Qualification" onClose={() => setOpen(false)}>
         {busy ? <p className="text-sm text-muted">Loading eligibility…</p> : null}
         {error ? <p className="text-sm text-danger">{error}</p> : null}
         {detail ? (
-          <div className="space-y-5">
-            <Group title="Satisfied" items={detail.eligible_products} />
-            <Group title="Violated" items={detail.rejected_products} truncated={detail.rejected_truncated} />
-            <Group
-              title="Unknown"
-              items={detail.uncertain_products}
-              truncated={detail.uncertain_truncated}
-            />
+          <div className="space-y-6">
+            <dl className="grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <dt className="type-small text-muted">Eligible</dt>
+                <dd className="mt-1 font-mono tabular-nums">
+                  {detail.eligible_products.length}
+                </dd>
+              </div>
+              <div>
+                <dt className="type-small text-muted">Violated</dt>
+                <dd className="mt-1 font-mono tabular-nums">
+                  {detail.rejected_products.length}
+                </dd>
+              </div>
+              <div>
+                <dt className="type-small text-muted">Unknown</dt>
+                <dd className="mt-1 font-mono tabular-nums">
+                  {detail.uncertain_products.length}
+                </dd>
+              </div>
+            </dl>
+            <QualificationResults detail={detail} />
           </div>
         ) : null}
       </Drawer>
     </>
-  );
-}
-
-function Group({
-  title,
-  items,
-  truncated,
-}: {
-  title: string;
-  items: VariantQualificationCard[];
-  truncated?: boolean;
-}) {
-  return (
-    <section>
-      <p className="eyebrow">
-        {title} · {items.length}
-        {truncated ? "+" : ""}
-      </p>
-      {items.length === 0 ? (
-        <p className="mt-2 text-sm text-muted">None</p>
-      ) : (
-        <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto text-sm">
-          {items.slice(0, 40).map((item) => (
-            <li key={item.variant_id} className="border-b border-line py-2">
-              <p className="font-medium">{item.product_name}</p>
-              <p className="font-mono text-[11px] text-muted">
-                {item.sku} · {formatAudCents(item.base_price_cents)}
-              </p>
-              {item.exclusion_reasons.length ? (
-                <p className="mt-1 text-xs text-muted">
-                  {item.exclusion_reasons.slice(0, 2).join(" · ")}
-                </p>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }

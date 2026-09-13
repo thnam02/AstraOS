@@ -44,6 +44,24 @@ class TransactionRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_latest_for_negotiation(
+        self, negotiation_session_id: UUID
+    ) -> CommerceTransaction | None:
+        result = await self.session.execute(
+            select(CommerceTransaction)
+            .where(
+                CommerceTransaction.negotiation_session_id == negotiation_session_id
+            )
+            .options(
+                selectinload(CommerceTransaction.reservations),
+                selectinload(CommerceTransaction.orders),
+            )
+            .order_by(CommerceTransaction.created_at.desc())
+            .limit(1)
+            .execution_options(populate_existing=True)
+        )
+        return result.scalar_one_or_none()
+
     async def get_confirmed_for_proposal(
         self, proposal_id: UUID
     ) -> CommerceTransaction | None:

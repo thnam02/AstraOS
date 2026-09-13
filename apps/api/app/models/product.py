@@ -43,6 +43,14 @@ class Product(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     description: Mapped[str | None] = mapped_column(Text)
     model_number: Mapped[str | None] = mapped_column(String(80))
     manufacturer: Mapped[str | None] = mapped_column(String(160))
+    external_id: Mapped[str | None] = mapped_column(String(80), unique=True, index=True)
+    source_system: Mapped[str | None] = mapped_column(String(40), index=True)
+    source_record_id: Mapped[str | None] = mapped_column(String(120))
+    import_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("merchant_ingestion_runs.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, index=True
     )
@@ -70,6 +78,13 @@ class ProductVariant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     sku: Mapped[str] = mapped_column(String(64), nullable=False)
     variant_name: Mapped[str | None] = mapped_column(String(120))
+    source_system: Mapped[str | None] = mapped_column(String(40), index=True)
+    source_record_id: Mapped[str | None] = mapped_column(String(120))
+    import_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("merchant_ingestion_runs.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="AUD")
     base_price_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     cogs_cents: Mapped[int] = mapped_column(Integer, nullable=False)

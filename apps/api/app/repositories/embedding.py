@@ -66,13 +66,16 @@ def is_current(
     model: str,
     version: str,
     document_hash: str,
+    dimensions: int | None = None,
 ) -> bool:
     if row is None:
         return False
     payload: Any = row.embedding
-    return (
+    if not (
         row.embedding_model == model
         and row.semantic_document_version == version
         and row.document_hash == document_hash
         and isinstance(payload, list)
-    )
+    ):
+        return False
+    return not (dimensions is not None and len(payload) != dimensions)

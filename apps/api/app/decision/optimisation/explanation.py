@@ -14,9 +14,15 @@ def explain_recommendation(
     counterfactuals: list[CounterfactualRow],
     frontier: bool,
 ) -> list[str]:
-    reasons = [
-        "Satisfies all mandatory requirements and current merchant policy guardrails."
-    ]
+    reasons: list[str] = []
+    if (
+        recommended.all_mandatory_buyer_constraints_satisfied
+        and recommended.policy.policy_safe
+        and recommended.feasible
+    ):
+        reasons.append(
+            "Satisfies all mandatory requirements and current merchant policy guardrails."
+        )
     if recommended.product_fit >= 0.7:
         reasons.append(
             f"Strong semantic product fit ({recommended.product_fit:.2f}) "

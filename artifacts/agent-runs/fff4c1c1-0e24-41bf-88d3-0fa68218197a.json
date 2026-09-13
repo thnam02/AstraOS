@@ -1,0 +1,77 @@
+{
+  "run_id": "fff4c1c1-0e24-41bf-88d3-0fa68218197a",
+  "buyer_agent_version": "0.4.0",
+  "prompt_version": "buyer-agent-v1",
+  "buyer_mode": "llm",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "mission": {
+    "mission_id": "quality-buyer",
+    "request": "I want comfortable wireless noise-cancelling headphones under A$400 that I can wear for hours. Comfort matters more than price.",
+    "persona": "QUALITY_BUYER",
+    "profile": {
+      "urgency": "low",
+      "comfort": "high",
+      "reliability": "high",
+      "price_sensitivity": "low",
+      "quality": "high"
+    },
+    "hard": {
+      "max_total_cents": 40000,
+      "same_day_required": false,
+      "max_delivery_days": null,
+      "require_anc": true,
+      "require_wireless": true,
+      "excluded_brands": []
+    },
+    "acceptance_threshold": 0.64,
+    "max_turns": 4,
+    "negotiation_style": "quality"
+  },
+  "capabilities": {
+    "protocol_name": "astraos-agent",
+    "version": "1.0",
+    "operations": [
+      "capabilities",
+      "request_offer",
+      "inspect_offer",
+      "counter_offer",
+      "accept_offer",
+      "get_transaction",
+      "get_order"
+    ],
+    "protocol": [
+      "REST",
+      "MCP"
+    ]
+  },
+  "actions": [
+    "REQUEST",
+    "ACCEPT"
+  ],
+  "history": [
+    {
+      "buyer": "REQUEST",
+      "merchant": "PROPOSED"
+    }
+  ],
+  "proposal_id": "9ed8396a-2daa-4b90-8c9d-74dc132a9a05",
+  "session_id": "f06dfddc-6135-43c8-bdf6-796af5da208c",
+  "transaction_id": null,
+  "order_ref": null,
+  "end_state": "TRANSACTION_FAILED",
+  "turns": 0,
+  "latencies_ms": {
+    "capabilities_ms": 2.17,
+    "request_offer_ms": 1971.94,
+    "buyer_decision_ms": 1480.12,
+    "accept_ms": 1977.43,
+    "session_ms": 5431.92
+  },
+  "token_usage": {
+    "input_tokens": 1132,
+    "output_tokens": 32,
+    "total_tokens": 1164
+  },
+  "policy_violations": []
+}

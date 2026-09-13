@@ -8,12 +8,16 @@ from pydantic import BaseModel, Field
 
 from app.decision.optimisation.models import (
     CounterfactualRow,
+    MerchantObjectiveSnapshot,
     NamedComparison,
+    NearMissCandidate,
+    ObjectiveComparison,
     OptimisationFailure,
     ScoredOffer,
     SelectionScore,
 )
 from app.decision.pareto.models import ObjectiveSpec
+from app.decision.proof.compiler import compile_commercial_terms
 from app.decision.utility.models import UTILITY_DISCLAIMER
 
 BuyerProfile = Literal[
@@ -29,7 +33,7 @@ BuyerProfile = Literal[
 class OptimiseRequest(BaseModel):
     offer_run_id: UUID
     buyer_profile: BuyerProfile = "INTENT_ADAPTED"
-    alpha: float = Field(default=0.5, ge=0, le=1)
+    alpha: float | None = Field(default=None, ge=0, le=1)
 
 
 class DecisionRequest(BaseModel):
@@ -37,11 +41,13 @@ class DecisionRequest(BaseModel):
     parser_mode: Literal["rule_based", "llm"] | None = None
     buyer_profile: BuyerProfile = "INTENT_ADAPTED"
     max_products: int = Field(default=8, ge=1, le=20)
-    alpha: float = Field(default=0.5, ge=0, le=1)
+    alpha: float | None = Field(default=None, ge=0, le=1)
 
 
 class OptimisationSummary(BaseModel):
     offers_considered: int
+    feasible: int = 0
+    buyer_compliant: int = 0
     policy_safe: int
     policy_rejected: int
     pareto_efficient: int
@@ -99,6 +105,13 @@ class PublicScoredOffer(BaseModel):
     utility_trace: dict[str, Any]
     policy_safe: bool
     policy_rejection_codes: list[str]
+    buyer_constraint_status: str = "SATISFIED"
+    buyer_constraint_codes: list[str] = Field(default_factory=list)
+    all_mandatory_buyer_constraints_satisfied: bool = True
+    feasible: bool = True
+    selectable: bool = False
+    pareto_eligible: bool = False
+    proposal_eligible: bool = False
     is_pareto_efficient: bool
     dominated_by_offer_id: UUID | None
     is_recommended: bool
@@ -106,6 +119,7 @@ class PublicScoredOffer(BaseModel):
     product_fit: float
     learned_synthetic_score: float | None = None
     learned_score_label: str | None = None
+    proof_bundle: dict[str, Any] | None = None
 
 
 class OptimisationResponse(BaseModel):
@@ -124,8 +138,11 @@ class OptimisationResponse(BaseModel):
     comparisons: list[NamedComparison]
     explanation: list[str]
     failure: OptimisationFailure | None
+    near_miss: NearMissCandidate | None = None
     objectives: list[ObjectiveSpec]
     created_at: datetime | None = None
+    merchant_objective: MerchantObjectiveSnapshot | None = None
+    objective_comparisons: list[ObjectiveComparison] = Field(default_factory=list)
 
 
 def to_public_scored(item: ScoredOffer) -> PublicScoredOffer:
@@ -172,12 +189,61 @@ def to_public_scored(item: ScoredOffer) -> PublicScoredOffer:
         utility_trace=item.utility.trace.model_dump(),
         policy_safe=item.policy.policy_safe,
         policy_rejection_codes=item.policy.rejection_codes,
+        buyer_constraint_status=item.buyer_constraint_status.value,
+        buyer_constraint_codes=item.buyer_constraint_codes,
+        all_mandatory_buyer_constraints_satisfied=(
+            item.all_mandatory_buyer_constraints_satisfied
+        ),
+        feasible=item.feasible,
+        selectable=item.selectable,
+        pareto_eligible=item.pareto_eligible,
+        proposal_eligible=item.proposal_eligible,
         is_pareto_efficient=item.is_pareto_efficient,
         dominated_by_offer_id=item.dominated_by_offer_id,
         is_recommended=item.is_recommended,
         is_baseline=item.is_baseline,
         product_fit=item.product_fit,
+        proof_bundle=_commercial_proof_bundle(item),
     )
+
+
+def _commercial_proof_bundle(item: ScoredOffer) -> dict[str, Any]:
+    offer = {
+        "sku": item.sku,
+        "pricing": {
+            "product_price_cents": item.product_price_cents,
+            "total_price_cents": item.total_customer_price_cents,
+        },
+        "delivery": {
+            "code": item.delivery_code,
+            "name": item.delivery_name,
+            "days": item.delivery_days,
+        },
+        "warranty": {
+            "code": item.warranty_code,
+            "name": item.warranty_name,
+            "months": item.warranty_months,
+        },
+        "bundle": (
+            None
+            if not item.bundle_code
+            else {"code": item.bundle_code, "name": item.bundle_name}
+        ),
+        "returns": (
+            None
+            if not item.return_policy_code
+            else {
+                "code": item.return_policy_code,
+                "name": getattr(item, "return_policy_name", None),
+                "window_days": item.return_window_days,
+            }
+        ),
+    }
+    items = compile_commercial_terms(offer, sku=item.sku)
+    return {
+        "items": [row.model_dump(mode="json") for row in items],
+        "issued_at": None,
+    }
 
 
 def to_plot_point(item: ScoredOffer) -> PlotPoint:

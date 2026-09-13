@@ -5,12 +5,18 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { MerchantPolicyDrawer } from "@/components/shared/MerchantPolicyDrawer";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/", label: "LIVE" },
-  { href: "/arena", label: "ARENA" },
+  { href: "/integrations", label: "INTEGRATIONS" },
+  { href: "/arena", label: "EVALUATE" },
   { href: "/learn", label: "LEARN" },
 ] as const;
+
+const FOCUS_RING =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -18,54 +24,61 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
+      <header className="sticky top-0 z-30 border-b border-line bg-surface">
+        <div className="page-shell flex h-12 items-center gap-6">
           <Link
             href="/"
-            className="text-sm font-semibold tracking-[0.08em] text-ink"
+            className={cn("text-sm font-semibold tracking-[0.12em]", FOCUS_RING)}
           >
             ASTRAOS
           </Link>
-          <div className="flex items-center gap-2">
-            <nav className="flex items-center gap-1" aria-label="Primary">
-              {NAV_ITEMS.map((item) => {
-                const isActive =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href);
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`rounded-[6px] px-3 py-1.5 text-xs font-medium tracking-[0.06em] transition-colors ${
-                      isActive
-                        ? "bg-ink text-surface"
-                        : "text-muted hover:bg-canvas hover:text-ink"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
+          <nav className="flex items-center gap-1" aria-label="Primary">
+            {NAV_ITEMS.map((item) => {
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "px-2.5 py-1 text-xs font-semibold tracking-[0.08em]",
+                    FOCUS_RING,
+                    isActive
+                      ? "bg-ink text-surface"
+                      : "text-muted hover:text-ink",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="ml-auto flex items-center gap-3">
+            <Separator orientation="vertical" className="hidden h-4 bg-line sm:block" />
             <Link
               href="/catalogue"
-              className={`rounded-[6px] px-3 py-1.5 text-xs font-medium tracking-[0.06em] ${
-                pathname.startsWith("/catalogue")
-                  ? "bg-canvas text-ink"
-                  : "text-muted hover:text-ink"
-              }`}
+              aria-label="Merchant Data"
+              className={cn(
+                "text-[11px] tracking-[0.04em] text-muted hover:text-ink",
+                FOCUS_RING,
+                pathname.startsWith("/catalogue") && "text-ink",
+              )}
             >
-              Merchant Data
+              Data
             </Link>
             <button
               type="button"
               onClick={() => setRulesOpen(true)}
-              className="btn-ghost"
+              aria-label="Merchant Rules"
+              className={cn(
+                "cursor-pointer text-[11px] tracking-[0.04em] text-muted hover:text-ink",
+                FOCUS_RING,
+              )}
             >
-              Merchant Rules
+              Rules
             </button>
           </div>
         </div>

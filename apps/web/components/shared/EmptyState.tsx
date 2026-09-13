@@ -1,3 +1,5 @@
+import { AstraEmptyState, AstraErrorState } from "@/components/astra";
+
 export function EmptyState({
   title,
   body,
@@ -5,18 +7,9 @@ export function EmptyState({
   title: string;
   body: string;
 }) {
-  return (
-    <div className="border border-dashed border-line px-4 py-6">
-      <p className="text-sm font-medium">{title}</p>
-      <p className="mt-1 text-sm text-muted">{body}</p>
-    </div>
-  );
+  return <AstraEmptyState title={title} body={body} />;
 }
 
 export function ErrorState({ message }: { message: string }) {
-  return (
-    <p className="border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
-      {message}
-    </p>
-  );
+  return <AstraErrorState message={message} />;
 }

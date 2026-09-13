@@ -1,43 +1,101 @@
 import { contextLabel, fieldLabel } from "@/lib/intent";
-import type { RankedProductMatch } from "@/types";
+import type { ProofItem, RankedProductMatch } from "@/types";
 
 export type SourceBadge = {
-  code: "SPEC" | "SYNTHETIC" | "FULFILMENT" | "INVENTORY" | "PRICING";
+  code:
+    | "PRODUCT FEED"
+    | "INVENTORY"
+    | "PRICING"
+    | "FULFILMENT"
+    | "WARRANTY"
+    | "BUNDLE"
+    | "RETURNS"
+    | "EXAMPLE IMPORT"
+    | "SYNTHETIC";
   title: string;
 };
 
-export function sourceBadge(sourceName: string | null): SourceBadge {
-  const raw = sourceName ?? "Source";
+const OPERATIONAL = new Set([
+  "units_available",
+  "base_price_cents",
+  "same_day",
+  "same_day_delivery",
+]);
+
+export function sourceBadge(
+  sourceType: string | null | undefined,
+  sourceName: string | null | undefined = null,
+): SourceBadge {
+  const raw = `${sourceType ?? ""} ${sourceName ?? ""}`.trim() || "Source";
   const text = raw.toLowerCase();
   if (text.includes("synthetic") || text.includes("fixture")) {
-    return { code: "SYNTHETIC", title: raw };
+    return { code: "SYNTHETIC", title: sourceName || sourceType || raw };
+  }
+  if (text.includes("example")) {
+    return { code: "EXAMPLE IMPORT", title: sourceName || sourceType || raw };
+  }
+  if (text.includes("inventor")) {
+    return { code: "INVENTORY", title: sourceName || sourceType || raw };
+  }
+  if (text.includes("pric")) {
+    return { code: "PRICING", title: sourceName || sourceType || raw };
   }
   if (
     text.includes("fulfil") ||
     text.includes("fulfill") ||
     text.includes("delivery")
   ) {
-    return { code: "FULFILMENT", title: raw };
+    return { code: "FULFILMENT", title: sourceName || sourceType || raw };
   }
-  if (text.includes("inventor")) {
-    return { code: "INVENTORY", title: raw };
+  if (text.includes("warrant")) {
+    return { code: "WARRANTY", title: sourceName || sourceType || raw };
   }
-  if (text.includes("price") || text.includes("pricing")) {
-    return { code: "PRICING", title: raw };
+  if (text.includes("bundle")) {
+    return { code: "BUNDLE", title: sourceName || sourceType || raw };
   }
-  return { code: "SPEC", title: raw };
+  if (text.includes("return")) {
+    return { code: "RETURNS", title: sourceName || sourceType || raw };
+  }
+  return { code: "PRODUCT FEED", title: sourceName || sourceType || raw };
 }
 
-export function uniqueFacts(match: RankedProductMatch) {
+export type DisplayFact = {
+  attribute: string;
+  display: string;
+  source_name: string | null;
+  source_type: string | null;
+  source_record_id: string | null;
+  evidence_id: string | null;
+  verification_status: string | null;
+  freshness: string | null;
+  derived: boolean;
+  derivation_rule: string | null;
+  observed_at: string | null;
+  need: string;
+  value: unknown;
+};
+
+export function isSupportedFact(fact: {
+  evidence_id?: string | null;
+  derived?: boolean;
+  verification_status?: string | null;
+  freshness?: string | null;
+  attribute: string;
+}): boolean {
+  if (fact.verification_status === "CONFLICTED") return false;
+  if (!fact.evidence_id && !fact.derived) return false;
+  if (OPERATIONAL.has(fact.attribute) && fact.freshness === "STALE") {
+    return false;
+  }
+  return true;
+}
+
+export function uniqueFacts(match: RankedProductMatch): DisplayFact[] {
   const seen = new Set<string>();
-  const facts: {
-    attribute: string;
-    display: string;
-    source_name: string | null;
-    need: string;
-  }[] = [];
+  const facts: DisplayFact[] = [];
   for (const reason of match.reasons) {
     for (const fact of reason.facts) {
+      if (!isSupportedFact(fact)) continue;
       const key = fact.display.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
@@ -45,7 +103,16 @@ export function uniqueFacts(match: RankedProductMatch) {
         attribute: fact.attribute,
         display: fact.display,
         source_name: fact.source_name,
+        source_type: fact.source_type ?? null,
+        source_record_id: fact.source_record_id ?? null,
+        evidence_id: fact.evidence_id,
+        verification_status: fact.verification_status ?? null,
+        freshness: fact.freshness ?? null,
+        derived: Boolean(fact.derived),
+        derivation_rule: fact.derivation_rule ?? null,
+        observed_at: fact.observed_at ?? null,
         need: reason.need,
+        value: fact.value,
       });
     }
   }
@@ -62,6 +129,7 @@ export function groupedRationale(match: RankedProductMatch, limit = 3) {
   for (const reason of match.reasons) {
     const facts: string[] = [];
     for (const fact of reason.facts) {
+      if (!isSupportedFact(fact)) continue;
       const key = fact.display.toLowerCase();
       if (used.has(key)) continue;
       used.add(key);
@@ -99,6 +167,7 @@ export function factValue(
   attributes: string[],
 ): string | null {
   for (const fact of match.evidence) {
+    if (!isSupportedFact(fact)) continue;
     if (attributes.includes(fact.attribute) && fact.display) {
       return fact.display;
     }
@@ -109,6 +178,74 @@ export function factValue(
     }
   }
   return null;
+}
+
+export function displayedCoverage(match: RankedProductMatch): number | null {
+  const rate = match.proof_coverage?.match_rationale_proof_rate;
+  if (typeof rate === "number") return rate;
+  const facts = uniqueFacts(match);
+  if (!facts.length) return null;
+  return 1;
+}
+
+function factToProof(fact: DisplayFact): ProofItem {
+  return {
+    claim_key: fact.attribute,
+    display_claim: prettyFactDisplay(fact.attribute, fact.display),
+    value: fact.value,
+    evidence_id: fact.evidence_id,
+    source_type: fact.source_type ?? "MERCHANT_PRODUCT_FEED",
+    source_name: fact.source_name,
+    source_record_id: fact.source_record_id,
+    verification_status: fact.verification_status ?? "UNKNOWN",
+    freshness_status: fact.freshness ?? "UNKNOWN",
+    observed_at: fact.observed_at,
+    derived: fact.derived,
+    derivation_rule: fact.derivation_rule,
+    group: "PRODUCT",
+  };
+}
+
+function looseFacts(match: RankedProductMatch): DisplayFact[] {
+  const seen = new Set<string>();
+  const facts: DisplayFact[] = [];
+  const rows = [
+    ...(match.reasons ?? []).flatMap((reason) =>
+      (reason.facts ?? []).map((fact) => ({ fact, need: reason.need })),
+    ),
+    ...(match.evidence ?? []).map((fact) => ({ fact, need: fact.attribute })),
+  ];
+  for (const { fact, need } of rows) {
+    const key = (fact.display || fact.attribute).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    facts.push({
+      attribute: fact.attribute,
+      display: fact.display,
+      source_name: fact.source_name,
+      source_type: fact.source_type ?? null,
+      source_record_id: fact.source_record_id ?? null,
+      evidence_id: fact.evidence_id,
+      verification_status: fact.verification_status ?? null,
+      freshness: fact.freshness ?? null,
+      derived: Boolean(fact.derived),
+      derivation_rule: fact.derivation_rule ?? null,
+      observed_at: fact.observed_at ?? null,
+      need,
+      value: fact.value,
+    });
+  }
+  return facts;
+}
+
+export function proofItems(match: RankedProductMatch): ProofItem[] {
+  const proof = Array.isArray(match.proof) ? match.proof : [];
+  const complete = proof.filter((item) => !item.incomplete);
+  if (complete.length) return complete;
+  if (proof.length) return proof;
+  const supported = uniqueFacts(match);
+  if (supported.length) return supported.map(factToProof);
+  return looseFacts(match).map(factToProof);
 }
 
 export function tradeOffLine(
@@ -127,7 +264,7 @@ export function tradeOffLine(
     return `Lower preference fit than ${leader.product_name}.`;
   }
   if (match.context_fit + 0.04 < leader.context_fit) {
-    return `Weaker travel-context fit than the top match.`;
+    return `Weaker context fit than ${leader.product_name}.`;
   }
   return null;
 }

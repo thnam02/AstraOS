@@ -13,7 +13,7 @@ from app.decision.offers.models import (
     OfferCandidate,
     RejectionCode,
 )
-from tests.offer_fixtures import travel_intent, wired_variant
+from tests.offer_fixtures import construction_intent, travel_intent, wired_variant
 from tests.qualification_fixtures import intent_with
 
 
@@ -25,7 +25,7 @@ def _build(**kwargs):
     variant, policy = wired_variant(**kwargs)
     limits = ConstructionLimits()
     expires = datetime.now(UTC) + timedelta(minutes=5)
-    intent = travel_intent()
+    intent = construction_intent()
     offers, dims = construct_variant(
         variant=variant,
         intent=intent,

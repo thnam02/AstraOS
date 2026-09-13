@@ -1,17 +1,22 @@
-"""Optional structured LLM parser. Never decides eligibility."""
+"""Structured LLM parser. Interprets language; never decides eligibility."""
 
 from __future__ import annotations
 
-import json
-from typing import Any, Protocol
+from typing import Any
+
+from pydantic import ValidationError
 
 from app.config import settings
 from app.decision.intent.exceptions import (
     LLMParserUnavailable,
     UnsupportedIntentFieldError,
 )
+from app.decision.intent.extraction import LLMIntentExtraction
+from app.decision.intent.faithfulness import apply_faithfulness
 from app.decision.intent.models import (
+    EXTRACTION_SCHEMA_VERSION,
     PARSER_VERSION_LLM,
+    PROMPT_VERSION,
     SUPPORTED_CONSTRAINT_FIELDS,
     SUPPORTED_OPERATORS,
     ConstraintField,
@@ -20,7 +25,7 @@ from app.decision.intent.models import (
     HardConstraint,
     IntentAmbiguity,
     IntentContext,
-    PreferenceDirection,
+    ParserMetadata,
     PreferenceField,
     ShoppingIntent,
     SoftPreference,
@@ -28,7 +33,11 @@ from app.decision.intent.models import (
     UnsupportedSemanticNeed,
     ValuePreference,
 )
-from app.decision.intent.rule_based_parser import RuleBasedIntentParser
+from app.decision.intent.prompts import SYSTEM_PROMPT_V2, repair_prompt
+from app.decision.intent.provider import (
+    StructuredLLMProvider,
+    optional_live_client,
+)
 from app.decision.intent.taxonomy import (
     CANONICAL_CONTEXTS,
     CANONICAL_OUTCOMES,
@@ -40,238 +49,195 @@ from app.decision.intent.taxonomy import (
     ValueField,
 )
 
-SYSTEM_PROMPT = """You extract a structured shopping intent for AstraOS.
-Return JSON only. Use only allow-listed fields, operators, and canonical labels.
-Do not decide product eligibility, prices, discounts, or merchant policy.
-Do not invent product facts.
-Preserve source_phrase from the buyer's text.
-Populate hard_constraints, soft_preferences, context_items, desired_outcomes,
-values, and tradeoffs when the text supports them.
-If a mandatory requirement has no supported field, record it as an ambiguity
-with reason unsupported_attribute and appears_mandatory true.
-If a semantic need cannot be represented by merchant data, record
-unsupported_semantic_needs rather than inventing a score.
-"""
-
-
-class StructuredLLMClient(Protocol):
-    """Provider-agnostic structured completion."""
-
-    async def complete_json(
-        self, *, system: str, user: str, schema: dict[str, Any]
-    ) -> dict[str, Any]: ...
-
-
-def _configured_api_key() -> str:
-    return settings.llm_api_key or settings.openai_api_key
-
-
-class OpenAICompatibleJSONClient:
-    """Optional OpenAI-compatible structured JSON client. Tests inject fakes."""
-
-    def __init__(
-        self,
-        *,
-        api_key: str,
-        model: str,
-        base_url: str,
-    ) -> None:
-        self.api_key = api_key
-        self.model = model
-        self.base_url = base_url.rstrip("/")
-
-    async def complete_json(
-        self, *, system: str, user: str, schema: dict[str, Any]
-    ) -> dict[str, Any]:
-        try:
-            import httpx
-        except ImportError as exc:
-            raise LLMParserUnavailable("httpx is required for the LLM parser.") from exc
-
-        payload = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            "response_format": {"type": "json_object"},
-            "temperature": 0,
-        }
-        timeout = settings.llm_timeout_seconds
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            try:
-                response = await client.post(
-                    f"{self.base_url}/chat/completions",
-                    headers={"Authorization": f"Bearer {self.api_key}"},
-                    json=payload,
-                )
-                response.raise_for_status()
-                body = response.json()
-            except httpx.TimeoutException as exc:
-                raise LLMParserUnavailable("LLM request timed out.") from exc
-        content = body["choices"][0]["message"]["content"]
-        parsed = json.loads(content)
-        if not isinstance(parsed, dict):
-            raise ValueError("LLM output was not a JSON object.")
-        _ = schema
-        return parsed
-
 
 class LLMIntentParser:
-    """Schema-constrained parser with a single validation retry."""
+    """Schema-constrained parser with one structured repair attempt."""
 
     parser_type = "llm"
 
-    def __init__(self, client: StructuredLLMClient | None = None) -> None:
-        self.client = client or _optional_live_client()
+    def __init__(self, client: StructuredLLMProvider | None = None) -> None:
+        self.client = client if client is not None else optional_live_client()
+        self.repair_count = 0
+        self.last_usage: dict[str, int | str | None] = {}
 
     def available(self) -> bool:
         return self.client is not None
 
     async def parse(self, text: str) -> ShoppingIntent:
-        if not self.available():
+        if not self.available() or self.client is None:
             raise LLMParserUnavailable(
                 "LLM parser requested but no client or credentials are configured."
             )
+        self.repair_count = 0
         last_error: Exception | None = None
-        for _attempt in range(2):
+        attempts = 1 + max(0, settings.llm_max_retries)
+        user = text
+        for attempt in range(attempts):
             try:
-                payload = await self._complete(text)
-                return self._validate(text, payload)
+                payload = await self.client.complete_json(
+                    system=SYSTEM_PROMPT_V2,
+                    user=user,
+                    schema=LLMIntentExtraction.model_json_schema(),
+                )
+                self._capture_usage()
+                intent = self._to_intent(text, payload)
+                return apply_faithfulness(intent)
             except (
                 UnsupportedIntentFieldError,
+                ValidationError,
                 ValueError,
                 LLMParserUnavailable,
             ) as exc:
                 last_error = exc
-        fallback = await RuleBasedIntentParser().parse(text)
-        if last_error is not None:
-            fallback.ambiguities.append(
-                IntentAmbiguity(
-                    source_phrase=text[:120],
-                    reason="llm_validation_failed",
-                    suggested_resolution=str(last_error),
-                    appears_mandatory=False,
-                )
-            )
-        return fallback
-
-    async def _complete(self, text: str) -> dict[str, Any]:
-        if self.client is None:
-            raise LLMParserUnavailable("No structured LLM client bound.")
-        return await self.client.complete_json(
-            system=SYSTEM_PROMPT,
-            user=text,
-            schema=ShoppingIntent.model_json_schema(),
+                if attempt + 1 >= attempts:
+                    break
+                self.repair_count += 1
+                user = f"{text}\n\n{repair_prompt(_safe_error(exc))}"
+        raise LLMParserUnavailable(
+            f"LLM extraction failed after repair: {_safe_error(last_error)}"
         )
 
-    def _validate(self, raw_text: str, payload: dict[str, Any]) -> ShoppingIntent:
+    def metadata_fields(self) -> dict[str, Any]:
+        usage = self.last_usage
+        provider = getattr(self.client, "provider_name", None)
+        model = getattr(self.client, "model_name", None) or usage.get("model")
+        return {
+            "provider": provider,
+            "model": model,
+            "prompt_version": PROMPT_VERSION,
+            "schema_version": EXTRACTION_SCHEMA_VERSION,
+            "repair_count": self.repair_count,
+            "input_tokens": usage.get("input_tokens"),
+            "output_tokens": usage.get("output_tokens"),
+            "total_tokens": usage.get("total_tokens"),
+        }
+
+    def _capture_usage(self) -> None:
+        usage = getattr(self.client, "last_usage", None)
+        if usage is None:
+            self.last_usage = {}
+            return
+        self.last_usage = {
+            "input_tokens": getattr(usage, "input_tokens", None),
+            "output_tokens": getattr(usage, "output_tokens", None),
+            "total_tokens": getattr(usage, "total_tokens", None),
+            "model": getattr(usage, "model", None),
+        }
+
+    def _to_intent(self, raw_text: str, payload: dict[str, Any]) -> ShoppingIntent:
+        extracted = LLMIntentExtraction.model_validate(payload)
         constraints: list[HardConstraint] = []
-        for index, row in enumerate(payload.get("hard_constraints") or []):
-            field = str(row.get("field", ""))
-            operator = str(row.get("operator", ""))
+        ambiguities: list[IntentAmbiguity] = [
+            IntentAmbiguity(
+                source_phrase=row.source_phrase,
+                reason=row.reason,
+                suggested_resolution=row.suggested_resolution,
+                appears_mandatory=row.appears_mandatory,
+            )
+            for row in extracted.ambiguities
+        ]
+        for index, constraint in enumerate(extracted.hard_constraints):
+            field = constraint.field
             if field not in SUPPORTED_CONSTRAINT_FIELDS:
                 raise UnsupportedIntentFieldError(f"Unsupported field: {field}")
-            if operator not in SUPPORTED_OPERATORS:
-                raise UnsupportedIntentFieldError(f"Unsupported operator: {operator}")
+            if constraint.operator.value not in SUPPORTED_OPERATORS:
+                raise UnsupportedIntentFieldError(
+                    f"Unsupported operator: {constraint.operator}"
+                )
+            if not constraint.explicit_mandatory:
+                ambiguities.append(
+                    IntentAmbiguity(
+                        source_phrase=constraint.source_phrase,
+                        reason="not_explicitly_mandatory",
+                        suggested_resolution=(
+                            "Recorded as ambiguity, not a hard constraint."
+                        ),
+                        appears_mandatory=False,
+                    )
+                )
+                continue
             constraints.append(
                 HardConstraint(
-                    id=str(row.get("id") or f"c_{index + 1}"),
+                    id=f"c_{index + 1}",
                     field=ConstraintField(field),
-                    operator=ConstraintOperator(operator),
-                    value=row.get("value"),
-                    unit=row.get("unit"),
-                    source_phrase=str(row.get("source_phrase") or raw_text),
-                    normalized_value=row.get("normalized_value"),
+                    operator=ConstraintOperator(constraint.operator),
+                    value=constraint.value,
+                    unit=constraint.unit,
+                    source_phrase=constraint.source_phrase or raw_text,
+                    normalized_value=constraint.value,
                 )
             )
         preferences: list[SoftPreference] = []
-        for index, row in enumerate(payload.get("soft_preferences") or []):
-            field = str(row.get("field", ""))
-            if field not in {item.value for item in PreferenceField}:
+        for index, preference in enumerate(extracted.soft_preferences):
+            if preference.field not in {item.value for item in PreferenceField}:
                 continue
             preferences.append(
                 SoftPreference(
-                    id=str(row.get("id") or f"p_{index + 1}"),
-                    field=PreferenceField(field),
-                    direction=PreferenceDirection(
-                        str(row.get("direction", "MAXIMIZE"))
-                    ),
-                    importance=float(row.get("importance", 0.5)),
-                    source_phrase=str(row.get("source_phrase") or raw_text),
+                    id=f"p_{index + 1}",
+                    field=PreferenceField(preference.field),
+                    direction=preference.direction,
+                    importance=preference.importance,
+                    source_phrase=preference.source_phrase or raw_text,
                 )
             )
-        ambiguities = [
-            IntentAmbiguity.model_validate(row)
-            for row in payload.get("ambiguities") or []
-        ]
         context_items: list[IntentContext] = []
-        for row in payload.get("context_items") or []:
-            label = str(row.get("label", ""))
-            if label not in CANONICAL_CONTEXTS:
+        for context in extracted.context_items:
+            if context.label.value not in CANONICAL_CONTEXTS:
                 continue
             context_items.append(
                 IntentContext(
-                    label=ContextLabel(label),
-                    importance=float(row.get("importance", 0.7)),
-                    source_phrase=str(row.get("source_phrase") or raw_text),
-                    confidence=row.get("confidence"),
+                    label=ContextLabel(context.label),
+                    importance=context.importance,
+                    source_phrase=context.source_phrase or raw_text,
+                    confidence=context.confidence,
                 )
             )
-        outcomes: list[DesiredOutcome] = []
-        for row in payload.get("desired_outcomes") or []:
-            label = str(row.get("label", ""))
-            if label not in CANONICAL_OUTCOMES:
-                continue
-            outcomes.append(
-                DesiredOutcome(
-                    label=OutcomeLabel(label),
-                    importance=float(row.get("importance", 0.7)),
-                    source_phrase=str(row.get("source_phrase") or raw_text),
-                    confidence=row.get("confidence"),
-                )
+        outcomes = [
+            DesiredOutcome(
+                label=OutcomeLabel(outcome.label),
+                importance=outcome.importance,
+                source_phrase=outcome.source_phrase or raw_text,
+                confidence=outcome.confidence,
             )
-        values: list[ValuePreference] = []
-        for row in payload.get("values") or []:
-            field = str(row.get("field", ""))
-            if field not in CANONICAL_VALUES:
-                continue
-            values.append(
-                ValuePreference(
-                    field=ValueField(field),
-                    direction=PreferenceDirection(
-                        str(row.get("direction", "MAXIMIZE"))
-                    ),
-                    importance=float(row.get("importance", 0.6)),
-                    source_phrase=str(row.get("source_phrase") or raw_text),
-                )
-            )
-        tradeoffs: list[TradeoffPreference] = []
-        for row in payload.get("tradeoffs") or []:
-            preferred = str(row.get("preferred_dimension", ""))
-            over = str(row.get("over_dimension", ""))
-            if preferred not in CANONICAL_TRADEOFFS or over not in CANONICAL_TRADEOFFS:
-                continue
-            tradeoffs.append(
-                TradeoffPreference(
-                    preferred_dimension=TradeoffDimension(preferred),
-                    over_dimension=TradeoffDimension(over),
-                    strength=float(row.get("strength", 0.7)),
-                    source_phrase=str(row.get("source_phrase") or raw_text),
-                )
-            )
-        unsupported = [
-            UnsupportedSemanticNeed.model_validate(row)
-            for row in payload.get("unsupported_semantic_needs") or []
+            for outcome in extracted.desired_outcomes
+            if outcome.label.value in CANONICAL_OUTCOMES
         ]
-        tags = [str(tag) for tag in payload.get("context_tags") or []]
+        values = [
+            ValuePreference(
+                field=ValueField(value.field),
+                direction=value.direction,
+                importance=value.importance,
+                source_phrase=value.source_phrase or raw_text,
+            )
+            for value in extracted.values
+            if value.field.value in CANONICAL_VALUES
+        ]
+        tradeoffs = [
+            TradeoffPreference(
+                preferred_dimension=TradeoffDimension(tradeoff.preferred_dimension),
+                over_dimension=TradeoffDimension(tradeoff.over_dimension),
+                strength=tradeoff.strength,
+                source_phrase=tradeoff.source_phrase or raw_text,
+            )
+            for tradeoff in extracted.tradeoffs
+            if tradeoff.preferred_dimension.value in CANONICAL_TRADEOFFS
+            and tradeoff.over_dimension.value in CANONICAL_TRADEOFFS
+        ]
+        unsupported = [
+            UnsupportedSemanticNeed(
+                label=need.label,
+                source_phrase=need.source_phrase,
+                reason=need.reason,
+            )
+            for need in extracted.unsupported_semantic_needs
+        ]
+        tags = [str(tag) for tag in extracted.context_tags]
         for item in context_items:
             if item.label.value not in tags:
                 tags.append(item.label.value)
-        category = payload.get("category")
         return ShoppingIntent(
             raw_text=raw_text,
-            category=str(category) if category else None,
+            category=extracted.category,
             hard_constraints=constraints,
             soft_preferences=preferences,
             context_tags=tags,
@@ -283,15 +249,28 @@ class LLMIntentParser:
             ambiguities=ambiguities,
             parser_type=self.parser_type,
             parser_version=PARSER_VERSION_LLM,
+            parser_metadata=ParserMetadata(
+                parser_requested="llm",
+                parser_used="llm",
+                provider=getattr(self.client, "provider_name", None),
+                model=getattr(self.client, "model_name", None),
+                prompt_version=PROMPT_VERSION,
+                schema_version=EXTRACTION_SCHEMA_VERSION,
+                repair_count=self.repair_count,
+            ),
         )
 
 
-def _optional_live_client() -> StructuredLLMClient | None:
-    key = _configured_api_key()
-    if not key:
-        return None
-    return OpenAICompatibleJSONClient(
-        api_key=key,
-        model=settings.llm_model,
-        base_url=settings.llm_base_url,
-    )
+def _safe_error(exc: Exception | None) -> str:
+    if exc is None:
+        return "unknown_validation_error"
+    text = str(exc)
+    lowered = text.lower()
+    if "api key" in lowered or "bearer" in lowered or "sk-" in lowered:
+        return "provider_error"
+    return text[:240]
+
+
+# Backwards-compatible aliases for existing tests.
+StructuredLLMClient = StructuredLLMProvider
+_optional_live_client = optional_live_client

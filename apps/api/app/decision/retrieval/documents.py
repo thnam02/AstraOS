@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -102,6 +103,11 @@ def build_product_document(snapshot: VariantSnapshot) -> ProductSemanticDocument
         facts=facts,
         text="\n".join(lines),
     )
+
+
+def document_hash(document: ProductSemanticDocument | str) -> str:
+    text = document if isinstance(document, str) else document.text
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def _derived_usecase(facts: list[DocumentFact]) -> str:

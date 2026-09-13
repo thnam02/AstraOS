@@ -62,6 +62,7 @@ class ArenaService:
                 "buyer_model_version": BUYER_MODEL_VERSION,
                 "strategy_set_version": STRATEGY_SET_VERSION,
                 "runtime_ms": result.runtime_ms,
+                "merchant_objective": payload.get("merchant_objective"),
             },
         )
         await self.runs.add_run(row)
@@ -94,7 +95,10 @@ class ArenaService:
             started_at=started,
             completed_at=None,
             status="RUNNING",
-            config=config.model_dump(),
+            config={
+                **config.model_dump(),
+                "merchant_objective": config.merchant_objective().snapshot(),
+            },
             summary={},
             events=[],
             run_metadata={"arena_version": ARENA_VERSION},
@@ -146,7 +150,7 @@ class ArenaService:
                             item.model_dump(mode="json") for item in result.responses
                         ],
                         selection=result.selection.model_dump(mode="json"),
-                        explanation={},
+                        explanation=result.explanation,
                         events=[],
                         run_metadata={"source": "benchmark"},
                         benchmark_run_id=row.id,
@@ -195,6 +199,7 @@ class ArenaService:
             timing=dict(summary.get("timing") or {}),
             config=row.config,
             disclaimer=ARENA_DISCLAIMER,
+            ablation=dict(summary.get("ablation") or {}),
         )
 
     async def export_benchmark(

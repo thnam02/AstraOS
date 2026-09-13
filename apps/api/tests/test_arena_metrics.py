@@ -92,3 +92,4 @@ def test_no_purchase_and_violation_rates() -> None:
     )
     assert summary.no_purchase_rate == 0.5
     assert summary.segment_metrics
+    assert "incremental_deltas" in summary.ablation

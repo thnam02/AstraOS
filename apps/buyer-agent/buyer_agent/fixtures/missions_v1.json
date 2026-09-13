@@ -1,0 +1,580 @@
+{
+  "version": "missions_v1",
+  "missions": [
+    {
+      "mission_id": "urgent-traveller-1",
+      "request": "I'm flying from Sydney to Singapore tomorrow and need wireless noise-cancelling headphones under A$350. I need them delivered today. I'll wear them for hours, so comfort and reliability matter more than getting the absolute cheapest option. Please keep the same constraints.",
+      "persona": "URGENT_TRAVELLER",
+      "profile": {
+        "urgency": "high",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "medium",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 35000,
+        "same_day_required": true,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.62,
+      "max_turns": 4,
+      "negotiation_style": "urgent"
+    },
+    {
+      "mission_id": "budget-buyer-1",
+      "request": "I want wireless headphones under A$150. Same-day is nice but I will not pay more than my budget. Please keep the same constraints.",
+      "persona": "BUDGET_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "high",
+        "quality": "low"
+      },
+      "hard": {
+        "max_total_cents": 15000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": false,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.7,
+      "max_turns": 3,
+      "negotiation_style": "price_first"
+    },
+    {
+      "mission_id": "assurance-buyer-1",
+      "request": "I need reliable wireless ANC headphones under A$400 with a long warranty. Delivery within two days is fine. Please keep the same constraints.",
+      "persona": "ASSURANCE_BUYER",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": 2,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.6,
+      "max_turns": 4,
+      "negotiation_style": "assurance"
+    },
+    {
+      "mission_id": "quality-buyer-1",
+      "request": "I want comfortable wireless noise-cancelling headphones under A$400 that I can wear for hours. Comfort matters more than price. Please keep the same constraints.",
+      "persona": "QUALITY_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.64,
+      "max_turns": 4,
+      "negotiation_style": "quality"
+    },
+    {
+      "mission_id": "balanced-1",
+      "request": "Looking for wireless ANC headphones under A$280 for commuting. A good mix of comfort and value. Please keep the same constraints.",
+      "persona": "BALANCED",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "medium",
+        "quality": "medium"
+      },
+      "hard": {
+        "max_total_cents": 28000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.66,
+      "max_turns": 4,
+      "negotiation_style": "balanced"
+    },
+    {
+      "mission_id": "urgent-traveller-2",
+      "request": "I'm flying from Sydney to Singapore tomorrow and need wireless noise-cancelling headphones under A$350. I need them delivered today. I'll wear them for hours, so comfort and reliability matter more than getting the absolute cheapest option. I am buying for myself.",
+      "persona": "URGENT_TRAVELLER",
+      "profile": {
+        "urgency": "high",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "medium",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 35000,
+        "same_day_required": true,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.62,
+      "max_turns": 4,
+      "negotiation_style": "urgent"
+    },
+    {
+      "mission_id": "budget-buyer-2",
+      "request": "I want wireless headphones under A$150. Same-day is nice but I will not pay more than my budget. I am buying for myself.",
+      "persona": "BUDGET_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "high",
+        "quality": "low"
+      },
+      "hard": {
+        "max_total_cents": 15000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": false,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.7,
+      "max_turns": 3,
+      "negotiation_style": "price_first"
+    },
+    {
+      "mission_id": "assurance-buyer-2",
+      "request": "I need reliable wireless ANC headphones under A$400 with a long warranty. Delivery within two days is fine. I am buying for myself.",
+      "persona": "ASSURANCE_BUYER",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": 2,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.6,
+      "max_turns": 4,
+      "negotiation_style": "assurance"
+    },
+    {
+      "mission_id": "quality-buyer-2",
+      "request": "I want comfortable wireless noise-cancelling headphones under A$400 that I can wear for hours. Comfort matters more than price. I am buying for myself.",
+      "persona": "QUALITY_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.64,
+      "max_turns": 4,
+      "negotiation_style": "quality"
+    },
+    {
+      "mission_id": "balanced-2",
+      "request": "Looking for wireless ANC headphones under A$280 for commuting. A good mix of comfort and value. I am buying for myself.",
+      "persona": "BALANCED",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "medium",
+        "quality": "medium"
+      },
+      "hard": {
+        "max_total_cents": 28000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.66,
+      "max_turns": 4,
+      "negotiation_style": "balanced"
+    },
+    {
+      "mission_id": "urgent-traveller-3",
+      "request": "I'm flying from Sydney to Singapore tomorrow and need wireless noise-cancelling headphones under A$350. I need them delivered today. I'll wear them for hours, so comfort and reliability matter more than getting the absolute cheapest option. Prefer a reputable brand if possible.",
+      "persona": "URGENT_TRAVELLER",
+      "profile": {
+        "urgency": "high",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "medium",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 35000,
+        "same_day_required": true,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.62,
+      "max_turns": 4,
+      "negotiation_style": "urgent"
+    },
+    {
+      "mission_id": "budget-buyer-3",
+      "request": "I want wireless headphones under A$150. Same-day is nice but I will not pay more than my budget. Prefer a reputable brand if possible.",
+      "persona": "BUDGET_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "high",
+        "quality": "low"
+      },
+      "hard": {
+        "max_total_cents": 15000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": false,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.7,
+      "max_turns": 3,
+      "negotiation_style": "price_first"
+    },
+    {
+      "mission_id": "assurance-buyer-3",
+      "request": "I need reliable wireless ANC headphones under A$400 with a long warranty. Delivery within two days is fine. Prefer a reputable brand if possible.",
+      "persona": "ASSURANCE_BUYER",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": 2,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.6,
+      "max_turns": 4,
+      "negotiation_style": "assurance"
+    },
+    {
+      "mission_id": "quality-buyer-3",
+      "request": "I want comfortable wireless noise-cancelling headphones under A$400 that I can wear for hours. Comfort matters more than price. Prefer a reputable brand if possible.",
+      "persona": "QUALITY_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.64,
+      "max_turns": 4,
+      "negotiation_style": "quality"
+    },
+    {
+      "mission_id": "balanced-3",
+      "request": "Looking for wireless ANC headphones under A$280 for commuting. A good mix of comfort and value. Prefer a reputable brand if possible.",
+      "persona": "BALANCED",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "medium",
+        "quality": "medium"
+      },
+      "hard": {
+        "max_total_cents": 28000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.66,
+      "max_turns": 4,
+      "negotiation_style": "balanced"
+    },
+    {
+      "mission_id": "urgent-traveller-4",
+      "request": "I'm flying from Sydney to Singapore tomorrow and need wireless noise-cancelling headphones under A$350. I need them delivered today. I'll wear them for hours, so comfort and reliability matter more than getting the absolute cheapest option. Do not invent features I did not ask for.",
+      "persona": "URGENT_TRAVELLER",
+      "profile": {
+        "urgency": "high",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "medium",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 35000,
+        "same_day_required": true,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.62,
+      "max_turns": 4,
+      "negotiation_style": "urgent"
+    },
+    {
+      "mission_id": "budget-buyer-4",
+      "request": "I want wireless headphones under A$150. Same-day is nice but I will not pay more than my budget. Do not invent features I did not ask for.",
+      "persona": "BUDGET_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "high",
+        "quality": "low"
+      },
+      "hard": {
+        "max_total_cents": 15000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": false,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.7,
+      "max_turns": 3,
+      "negotiation_style": "price_first"
+    },
+    {
+      "mission_id": "assurance-buyer-4",
+      "request": "I need reliable wireless ANC headphones under A$400 with a long warranty. Delivery within two days is fine. Do not invent features I did not ask for.",
+      "persona": "ASSURANCE_BUYER",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": 2,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.6,
+      "max_turns": 4,
+      "negotiation_style": "assurance"
+    },
+    {
+      "mission_id": "quality-buyer-4",
+      "request": "I want comfortable wireless noise-cancelling headphones under A$400 that I can wear for hours. Comfort matters more than price. Do not invent features I did not ask for.",
+      "persona": "QUALITY_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.64,
+      "max_turns": 4,
+      "negotiation_style": "quality"
+    },
+    {
+      "mission_id": "balanced-4",
+      "request": "Looking for wireless ANC headphones under A$280 for commuting. A good mix of comfort and value. Do not invent features I did not ask for.",
+      "persona": "BALANCED",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "medium",
+        "quality": "medium"
+      },
+      "hard": {
+        "max_total_cents": 28000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.66,
+      "max_turns": 4,
+      "negotiation_style": "balanced"
+    },
+    {
+      "mission_id": "urgent-traveller-5",
+      "request": "I'm flying from Sydney to Singapore tomorrow and need wireless noise-cancelling headphones under A$350. I need them delivered today. I'll wear them for hours, so comfort and reliability matter more than getting the absolute cheapest option. I will reject anything over budget.",
+      "persona": "URGENT_TRAVELLER",
+      "profile": {
+        "urgency": "high",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "medium",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 35000,
+        "same_day_required": true,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.62,
+      "max_turns": 4,
+      "negotiation_style": "urgent"
+    },
+    {
+      "mission_id": "budget-buyer-5",
+      "request": "I want wireless headphones under A$150. Same-day is nice but I will not pay more than my budget. I will reject anything over budget.",
+      "persona": "BUDGET_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "high",
+        "quality": "low"
+      },
+      "hard": {
+        "max_total_cents": 15000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": false,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.7,
+      "max_turns": 3,
+      "negotiation_style": "price_first"
+    },
+    {
+      "mission_id": "assurance-buyer-5",
+      "request": "I need reliable wireless ANC headphones under A$400 with a long warranty. Delivery within two days is fine. I will reject anything over budget.",
+      "persona": "ASSURANCE_BUYER",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": 2,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.6,
+      "max_turns": 4,
+      "negotiation_style": "assurance"
+    },
+    {
+      "mission_id": "quality-buyer-5",
+      "request": "I want comfortable wireless noise-cancelling headphones under A$400 that I can wear for hours. Comfort matters more than price. I will reject anything over budget.",
+      "persona": "QUALITY_BUYER",
+      "profile": {
+        "urgency": "low",
+        "comfort": "high",
+        "reliability": "high",
+        "price_sensitivity": "low",
+        "quality": "high"
+      },
+      "hard": {
+        "max_total_cents": 40000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.64,
+      "max_turns": 4,
+      "negotiation_style": "quality"
+    },
+    {
+      "mission_id": "balanced-5",
+      "request": "Looking for wireless ANC headphones under A$280 for commuting. A good mix of comfort and value. I will reject anything over budget.",
+      "persona": "BALANCED",
+      "profile": {
+        "urgency": "medium",
+        "comfort": "medium",
+        "reliability": "medium",
+        "price_sensitivity": "medium",
+        "quality": "medium"
+      },
+      "hard": {
+        "max_total_cents": 28000,
+        "same_day_required": false,
+        "max_delivery_days": null,
+        "require_anc": true,
+        "require_wireless": true,
+        "excluded_brands": []
+      },
+      "acceptance_threshold": 0.66,
+      "max_turns": 4,
+      "negotiation_style": "balanced"
+    }
+  ]
+}

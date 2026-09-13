@@ -8,6 +8,7 @@ class AgentErrorCode(StrEnum):
     CLARIFICATION_REQUIRED = "CLARIFICATION_REQUIRED"
     NO_ELIGIBLE_PRODUCT = "NO_ELIGIBLE_PRODUCT"
     NO_POLICY_SAFE_OFFER = "NO_POLICY_SAFE_OFFER"
+    NO_COMPLIANT_OFFER = "NO_COMPLIANT_OFFER"
     PROPOSAL_EXPIRED = "PROPOSAL_EXPIRED"
     OUT_OF_STOCK = "OUT_OF_STOCK"
     NEGOTIATION_LIMIT_REACHED = "NEGOTIATION_LIMIT_REACHED"
@@ -39,9 +40,11 @@ class AgentProtocolError(Exception):
         self.http_status = http_status
 
     def as_dict(self) -> dict[str, object]:
+        retryable = self.http_status >= 500
         return {
             "error_code": self.code.value,
             "machine_message": self.machine_message,
             "human_debug_message": self.human_debug_message,
             "allowed_next_actions": self.allowed_next_actions,
+            "retryable": retryable,
         }

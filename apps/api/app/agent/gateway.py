@@ -4,15 +4,22 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.errors import AgentErrorCode, AgentProtocolError
-from app.agent.proof import claims_from_match, claims_from_offer, merge_claims
+from app.agent.proof import (
+    claims_from_bundle,
+    claims_from_match,
+    claims_from_offer,
+    merge_claims,
+)
 from app.agent.schemas import (
     AgentAcceptRequest,
+    AgentActivityItem,
+    AgentActivityResponse,
     AgentCapabilities,
     AgentCounterRequest,
     AgentErrorBody,
@@ -39,7 +46,7 @@ logger = logging.getLogger("astraos.agent")
 
 CAPABILITIES = AgentCapabilities(
     operations=[
-        "analyse_intent",
+        "capabilities",
         "request_offer",
         "inspect_offer",
         "counter_offer",
@@ -66,6 +73,33 @@ CAPABILITIES = AgentCapabilities(
         "canonical services. It does not price, qualify, or optimise offers."
     ),
 )
+
+
+def _activity_kind(state: str) -> str:
+    mapping = {
+        "BUYER_REQUEST_RECEIVED": "REQUEST_RECEIVED",
+        "MERCHANT_PROPOSAL_CREATED": "PROPOSAL_GENERATED",
+        "BUYER_COUNTER_RECEIVED": "COUNTER_RECEIVED",
+        "MERCHANT_COUNTER_CREATED": "COUNTEROFFER_RETURNED",
+        "BUYER_ACCEPTED": "OFFER_ACCEPTED",
+        "READY_FOR_CHECKOUT": "OFFER_ACCEPTED",
+        "BUYER_REJECTED": "OFFER_REJECTED",
+        "NO_POLICY_SAFE_COUNTER": "NO_SAFE_OFFER",
+        "CLARIFICATION_REQUIRED": "CLARIFICATION_REQUIRED",
+        "NEGOTIATION_LIMIT_REACHED": "LIMIT_REACHED",
+        "EXPIRED": "EXPIRED",
+    }
+    if state in mapping:
+        return mapping[state]
+    if "ACCEPT" in state:
+        return "OFFER_ACCEPTED"
+    if "COUNTER" in state and "BUYER" in state:
+        return "COUNTER_RECEIVED"
+    if "COUNTER" in state:
+        return "COUNTEROFFER_RETURNED"
+    if "PROPOSAL" in state:
+        return "PROPOSAL_GENERATED"
+    return state or "UNKNOWN"
 
 
 def _budget_cents(intent: ShoppingIntent) -> int | None:
@@ -134,7 +168,7 @@ def _proposal_view(session: NegotiationResponse) -> AgentProposalView | None:
         }
         if offer
         else None,
-        pricing=pricing or None,
+        pricing=_public_pricing(pricing) or None,
         delivery=offer.get("delivery"),
         warranty=offer.get("warranty"),
         bundle=offer.get("bundle"),
@@ -154,6 +188,9 @@ def _status_from_session(session: NegotiationResponse) -> str:
     if session.proposal is None:
         if session.match and session.match.qualification.eligible == 0:
             return "NO_ELIGIBLE_PRODUCT"
+        failure = session.optimisation.failure if session.optimisation else None
+        if failure is not None and failure.code == "NO_COMPLIANT_OFFER":
+            return "NO_COMPLIANT_OFFER"
         return "NO_POLICY_SAFE_OFFER"
     outcome = session.proposal.outcome
     if outcome == "DECLINE":
@@ -192,9 +229,25 @@ def _from_session(
             machine_message="No constructed offer clears current merchant policy.",
             allowed_next_actions=["REQUEST"],
         )
+    elif status == "NO_COMPLIANT_OFFER":
+        failure = session.optimisation.failure if session.optimisation else None
+        error = AgentErrorBody(
+            error_code=AgentErrorCode.NO_COMPLIANT_OFFER.value,
+            machine_message=(
+                failure.message
+                if failure
+                else "No complete offer satisfies the buyer's mandatory constraints."
+            ),
+            allowed_next_actions=["REQUEST", "COUNTER"],
+        )
     match = session.match
     construction = session.construction
     optimisation = session.optimisation
+    understood = (
+        match.intent.model_dump(mode="json")
+        if match
+        else session.original_intent
+    )
     timing = {
         "total_ms": round((time.perf_counter() - started) * 1000, 2),
         "intent_ms": match.timing.intent_parse_ms if match else 0,
@@ -213,7 +266,7 @@ def _from_session(
         decision_id=optimisation.optimisation_run_id if optimisation else None,
         negotiation_session_id=session.session_id,
         status=status,
-        understood_intent=match.intent.model_dump(mode="json") if match else None,
+        understood_intent=understood,
         qualification_summary=match.qualification.model_dump() if match else None,
         semantic_match_summary=(
             {
@@ -237,10 +290,13 @@ def _from_session(
             else None
         ),
         proposal=_proposal_view(session),
-        merchant_reasoning=list(session.proposal.explanation)
-        if session.proposal
-        else [],
+        merchant_reasoning=_public_reasoning(
+            list(session.proposal.explanation) if session.proposal else []
+        ),
         proof=merge_claims(
+            claims_from_bundle(
+                (offer_payload or {}).get("proof_bundle") if offer_payload else None
+            ),
             claims_from_match(match),
             claims_from_offer(rec or offer_payload),
         ),
@@ -265,6 +321,62 @@ def _from_session(
     )
 
 
+def _public_pricing(pricing: dict[str, Any] | None) -> dict[str, Any]:
+    """Customer-facing money only. Never COGS or margin."""
+    if not pricing:
+        return {}
+    return {
+        "product_price_cents": pricing.get("product_price_cents"),
+        "total_price_cents": pricing.get("total_price_cents"),
+        "currency": pricing.get("currency") or "AUD",
+    }
+
+
+_PRIVATE_REASON_MARKERS = (
+    "margin floor",
+    "contribution rate",
+    "contribution than",
+    "merchant contribution",
+    "cogs",
+    "pareto",
+    "merchant's",
+    "merchant objective",
+    "merchant strategy",
+    "commercial objective",
+    "buyer fit /",
+    "contribution preservation",
+    "buyer_weight",
+    "merchant_weight",
+)
+
+
+def _public_reasoning(lines: list[str]) -> list[str]:
+    """Buyer-visible reasons. Merchant economics stay private."""
+    kept: list[str] = []
+    for line in lines:
+        lowered = line.lower()
+        if any(marker in lowered for marker in _PRIVATE_REASON_MARKERS):
+            continue
+        kept.append(line)
+    return kept
+
+
+async def _public_session(
+    db: AsyncSession,
+    session: NegotiationResponse,
+    *,
+    request_id: UUID,
+    started: float,
+    discrepancies: list[str] | None = None,
+) -> AgentOfferResponse:
+    return _from_session(
+        session,
+        request_id=request_id,
+        discrepancies=discrepancies,
+        started=started,
+    )
+
+
 class AgentGatewayService:
     """External Buyer Agent entry. Delegates to Stage 2–7 services."""
 
@@ -275,6 +387,61 @@ class AgentGatewayService:
 
     def capabilities(self) -> AgentCapabilities:
         return CAPABILITIES
+
+    async def list_activity(self, *, limit: int = 20) -> AgentActivityResponse:
+        """Read-only merchant operator view of recent negotiation exchanges."""
+        capped = max(1, min(limit, 50))
+        rows = await self.negotiations.rows.list_recent(limit=capped)
+        items: list[AgentActivityItem] = []
+        for row in rows:
+            meta = row.session_metadata or {}
+            channel_raw = meta.get("channel")
+            channel: Literal["AGENT_API", "OPERATOR", "UNKNOWN"]
+            if channel_raw == "AGENT_API":
+                channel = "AGENT_API"
+            elif channel_raw == "OPERATOR":
+                channel = "OPERATOR"
+            else:
+                channel = "UNKNOWN"
+            proposal = row.proposals[-1] if row.proposals else None
+            snapshot = (proposal.offer_snapshot or {}) if proposal else {}
+            pricing = snapshot.get("pricing") if isinstance(snapshot, dict) else None
+            total_cents = None
+            currency = "AUD"
+            if isinstance(pricing, dict):
+                total_cents = pricing.get("total_price_cents")
+                currency = str(pricing.get("currency") or "AUD")
+            txn = await self.transactions.rows.get_latest_for_negotiation(row.id)
+            order_number = None
+            transaction_id = None
+            if txn is not None:
+                transaction_id = txn.id
+                if txn.orders:
+                    order_number = txn.orders[0].order_number
+            intent = (row.raw_intent or "").strip().replace("\n", " ")
+            summary = intent if len(intent) <= 120 else f"{intent[:117]}…"
+            items.append(
+                AgentActivityItem(
+                    occurred_at=row.updated_at or row.created_at,
+                    kind=_activity_kind(row.current_state),
+                    status=row.current_state,
+                    channel=channel,
+                    buyer_agent_id=(
+                        str(meta["buyer_agent_id"])
+                        if meta.get("buyer_agent_id")
+                        else None
+                    ),
+                    request_id=str(meta["request_id"]) if meta.get("request_id") else None,
+                    negotiation_session_id=row.id,
+                    proposal_id=proposal.id if proposal else row.current_proposal_id,
+                    transaction_id=transaction_id,
+                    order_number=order_number,
+                    intent_summary=summary or "—",
+                    total_amount_cents=total_cents if isinstance(total_cents, int) else None,
+                    currency=currency,
+                )
+            )
+        return AgentActivityResponse(items=items)
 
     async def request_offer(self, payload: AgentOfferRequest) -> AgentOfferResponse:
         started = time.perf_counter()
@@ -297,9 +464,13 @@ class AgentGatewayService:
                 intent=text,
                 buyer_profile=payload.buyer_profile,
                 buyer_agent_type="MANUAL",
+                channel="AGENT_API",
+                request_id=str(request_id),
+                buyer_agent_id=payload.buyer_agent_id,
             )
         )
-        return _from_session(
+        return await _public_session(
+            self.session,
             session,
             request_id=request_id,
             discrepancies=discrepancies,
@@ -312,7 +483,9 @@ class AgentGatewayService:
         started = time.perf_counter()
         rid = request_id or uuid4()
         session = await self._session_for_proposal(proposal_id)
-        return _from_session(session, request_id=rid, started=started)
+        return await _public_session(
+            self.session, session, request_id=rid, started=started
+        )
 
     async def counter_offer(self, payload: AgentCounterRequest) -> AgentOfferResponse:
         started = time.perf_counter()
@@ -338,7 +511,9 @@ class AgentGatewayService:
                 http_status=409,
                 allowed_next_actions=["INSPECT", "REQUEST"],
             ) from exc
-        return _from_session(session, request_id=request_id, started=started)
+        return await _public_session(
+            self.session, session, request_id=request_id, started=started
+        )
 
     async def accept_offer(
         self, payload: AgentAcceptRequest

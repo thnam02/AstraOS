@@ -5,6 +5,7 @@ from app.services.decision import DecisionService
 from app.services.demo_state import DemoStateService
 from app.services.matching import SemanticMatchingService
 from app.services.negotiation import NegotiationService
+from app.services.objective import MerchantObjectiveService, ObjectiveValidationError
 from app.services.offers import OfferConstructionService
 from app.services.optimisation import OptimisationService
 from app.services.policy import MerchantPolicyService, PolicyValidationError
@@ -16,7 +17,9 @@ __all__ = [
     "DecisionService",
     "DemoStateService",
     "IntentQualificationService",
+    "MerchantObjectiveService",
     "MerchantPolicyService",
+    "ObjectiveValidationError",
     "NegotiationService",
     "OfferConstructionService",
     "OptimisationService",

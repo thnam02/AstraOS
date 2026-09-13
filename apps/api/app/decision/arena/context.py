@@ -22,6 +22,10 @@ from app.decision.offers.models import (
     OfferCandidate,
 )
 from app.decision.optimisation.engine import score_space
+from app.decision.optimisation.objective import (
+    MerchantObjectiveConfig,
+    default_objective,
+)
 from app.decision.retrieval.embeddings import default_embedding_provider
 from app.decision.retrieval.matcher import rank_eligible
 from app.decision.utility.scorer import weights_for
@@ -79,6 +83,7 @@ class ArenaContextBuilder:
         mission: BuyerMission,
         *,
         max_products: int = 8,
+        objective: MerchantObjectiveConfig | None = None,
     ) -> ArenaContext:
         await self.cache.load(self.session)
         policy = self.cache.policy
@@ -120,6 +125,7 @@ class ArenaContextBuilder:
         product_fits = {
             item.variant_id: item.overall_semantic_fit for item in top
         }
+        chosen = objective or default_objective()
         engine = score_space(
             offers,
             intent=intent,
@@ -127,6 +133,7 @@ class ArenaContextBuilder:
             variants=self.cache.by_id,
             product_fits=product_fits,
             profile_id=mission.buyer_profile,
+            objective=chosen,
         )
         feasible = sum(
             1
@@ -157,6 +164,7 @@ class ArenaContextBuilder:
             optimisation_failure=(
                 engine.failure.message if engine.failure else None
             ),
+            merchant_objective=chosen.snapshot(),
         )
 
 

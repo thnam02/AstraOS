@@ -27,6 +27,7 @@ from app.decision.offers.models import (
     OfferCandidate,
 )
 from app.decision.offers.prices import generate_price_options
+from app.decision.optimisation.baseline import conceptual_baselines
 from app.decision.retrieval.models import RankedProductMatch
 from app.models.offer import OfferCandidateRow, OfferConstructionRun
 from app.repositories.match import MatchRepository
@@ -221,6 +222,9 @@ class OfferConstructionService:
             dimensions=dimensions,
             timing=timing,
             offers=[to_public(item) for item in preview],
+            product_baselines=[
+                to_public(item) for item in conceptual_baselines(constructed)
+            ],
             truncated=len(preview_src) > preview_limit,
         )
 

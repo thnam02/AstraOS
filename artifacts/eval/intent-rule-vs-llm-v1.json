@@ -1,0 +1,1057 @@
+{
+  "dataset_version": "intent_eval_v1",
+  "case_count": 130,
+  "groups": {
+    "hard_constraints": 15,
+    "soft_preferences": 15,
+    "context_outcomes": 15,
+    "tradeoffs": 15,
+    "negation": 10,
+    "ambiguity": 10,
+    "values": 10,
+    "unsupported": 10,
+    "adversarial": 10,
+    "mixed": 20
+  },
+  "rule_based": {
+    "metrics": {
+      "cases": 130,
+      "hard_constraints": {
+        "precision": 0.9192,
+        "recall": 0.9308,
+        "f1": 0.9121
+      },
+      "soft_preferences": {
+        "precision": 0.7846,
+        "recall": 0.7487,
+        "f1": 0.7603
+      },
+      "context": {
+        "precision": 0.9462,
+        "recall": 0.9462,
+        "f1": 0.9462
+      },
+      "desired_outcomes": {
+        "precision": 0.7346,
+        "recall": 0.85,
+        "f1": 0.7295
+      },
+      "values": {
+        "precision": 0.8615,
+        "recall": 0.8615,
+        "f1": 0.8615
+      },
+      "tradeoffs": {
+        "precision": 0.8538,
+        "recall": 0.8538,
+        "f1": 0.8538
+      },
+      "ambiguity": {
+        "precision": 0.8077,
+        "recall": 0.8077,
+        "f1": 0.8077
+      },
+      "unsupported_needs": {
+        "precision": 0.8308,
+        "recall": 0.9231,
+        "f1": 0.8308
+      },
+      "hard_constraint_false_positive_rate": 0.0231,
+      "critical_constraint_omission_rate": 0.0538,
+      "schema_valid_rate": 1.0,
+      "llm_success_rate": null,
+      "fallback_rate": 0.0,
+      "repair_rate": 0.0,
+      "mean_latency_ms": 0.15,
+      "p50_latency_ms": 0.06,
+      "p95_latency_ms": 0.19
+    },
+    "errors": [
+      {
+        "id": "A05",
+        "query": "headphones with at least 40 hours battery",
+        "group": "hard_constraints",
+        "categories": [
+          "wrong_operator_or_normalization"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "A11",
+        "query": "only Sony headphones",
+        "group": "hard_constraints",
+        "categories": [
+          "missed_hard_constraint",
+          "wrong_operator_or_normalization"
+        ],
+        "critical_omissions": [
+          "brand"
+        ],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B03",
+        "query": "I prefer Sony but I'm open to other brands.",
+        "group": "soft_preferences",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B11",
+        "query": "delivery speed would be nice",
+        "group": "soft_preferences",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B12",
+        "query": "I prefer staying near A$250",
+        "group": "soft_preferences",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B14",
+        "query": "Price isn't my main concern; I care much more about reliability.",
+        "group": "soft_preferences",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B15",
+        "query": "I'd prefer to stay near A$250, but I could stretch if comfort is meaningfully better.",
+        "group": "soft_preferences",
+        "categories": [
+          "missed_tradeoff",
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C05",
+        "query": "I'll wear them all flight.",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C10",
+        "query": "I fly every week",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C11",
+        "query": "short hop to Melbourne",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C12",
+        "query": "I am flying tomorrow.",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C13",
+        "query": "I'll wear them for ten hours straight and don't want something tiring.",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C15",
+        "query": "I need this before my flight tomorrow.",
+        "group": "context_outcomes",
+        "categories": [
+          "missed_hard_constraint",
+          "wrong_operator_or_normalization",
+          "hallucinated_context"
+        ],
+        "critical_omissions": [
+          "delivery_days"
+        ],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D02",
+        "query": "I'd pay more for reliability",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D03",
+        "query": "delivery speed is more important than saving $20",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D04",
+        "query": "battery life matters, but not if the headset becomes too heavy",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D06",
+        "query": "warranty matters more than bundle extras",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D07",
+        "query": "I'd rather pay less than A$350 than get the absolute best one",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D08",
+        "query": "travel convenience over long battery",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D09",
+        "query": "comfort over weight savings",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D10",
+        "query": "reliability over delivery speed",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D12",
+        "query": "save money unless comfort is much better",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D13",
+        "query": "same-day is worth more than a cheaper pair",
+        "group": "tradeoffs",
+        "categories": [
+          "invented_hard_constraint",
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [
+          "delivery_days"
+        ],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D14",
+        "query": "I will pay extra for a longer warranty",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D15",
+        "query": "lightness matters more than battery bragging rights",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E01",
+        "query": "I don't need ANC.",
+        "group": "negation",
+        "categories": [
+          "wrong_operator_or_normalization"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E04",
+        "query": "Noise cancellation isn't important.",
+        "group": "negation",
+        "categories": [
+          "invented_hard_constraint",
+          "preference_to_mandatory"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [
+          "anc"
+        ],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E05",
+        "query": "I don't need same-day delivery.",
+        "group": "negation",
+        "categories": [
+          "invented_hard_constraint",
+          "preference_to_mandatory"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [
+          "delivery_days"
+        ],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E08",
+        "query": "I'd rather avoid leather.",
+        "group": "negation",
+        "categories": [
+          "ambiguity_guessed_or_missed",
+          "unsupported_need_dropped"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E09",
+        "query": "I don't want refurbished.",
+        "group": "negation",
+        "categories": [
+          "ambiguity_guessed_or_missed",
+          "unsupported_need_dropped"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F01",
+        "query": "I need it soon.",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F02",
+        "query": "Not too expensive.",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F03",
+        "query": "Good battery.",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F05",
+        "query": "around A$300",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F06",
+        "query": "A$250\u2013A$350 range is fine",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F07",
+        "query": "Not too expensive, but quality matters.",
+        "group": "ambiguity",
+        "categories": [
+          "missed_tradeoff",
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F08",
+        "query": "something premium",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F09",
+        "query": "as soon as you can",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F10",
+        "query": "a decent pair for the price",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "H01",
+        "query": "must use vegan glue",
+        "group": "unsupported",
+        "categories": [
+          "unsupported_need_dropped"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      }
+    ]
+  },
+  "llm": {
+    "metrics": {
+      "cases": 130,
+      "hard_constraints": {
+        "precision": 0.9192,
+        "recall": 0.9308,
+        "f1": 0.9121
+      },
+      "soft_preferences": {
+        "precision": 0.7846,
+        "recall": 0.7487,
+        "f1": 0.7603
+      },
+      "context": {
+        "precision": 0.9462,
+        "recall": 0.9462,
+        "f1": 0.9462
+      },
+      "desired_outcomes": {
+        "precision": 0.7346,
+        "recall": 0.85,
+        "f1": 0.7295
+      },
+      "values": {
+        "precision": 0.8615,
+        "recall": 0.8615,
+        "f1": 0.8615
+      },
+      "tradeoffs": {
+        "precision": 0.8538,
+        "recall": 0.8538,
+        "f1": 0.8538
+      },
+      "ambiguity": {
+        "precision": 0.8077,
+        "recall": 0.8077,
+        "f1": 0.8077
+      },
+      "unsupported_needs": {
+        "precision": 0.8308,
+        "recall": 0.9231,
+        "f1": 0.8308
+      },
+      "hard_constraint_false_positive_rate": 0.0231,
+      "critical_constraint_omission_rate": 0.0538,
+      "schema_valid_rate": 1.0,
+      "llm_success_rate": 0.0,
+      "fallback_rate": 1.0,
+      "repair_rate": 0.0,
+      "mean_latency_ms": 0.07,
+      "p50_latency_ms": 0.06,
+      "p95_latency_ms": 0.11
+    },
+    "errors": [
+      {
+        "id": "A05",
+        "query": "headphones with at least 40 hours battery",
+        "group": "hard_constraints",
+        "categories": [
+          "wrong_operator_or_normalization"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "A11",
+        "query": "only Sony headphones",
+        "group": "hard_constraints",
+        "categories": [
+          "missed_hard_constraint",
+          "wrong_operator_or_normalization"
+        ],
+        "critical_omissions": [
+          "brand"
+        ],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B03",
+        "query": "I prefer Sony but I'm open to other brands.",
+        "group": "soft_preferences",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B11",
+        "query": "delivery speed would be nice",
+        "group": "soft_preferences",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B12",
+        "query": "I prefer staying near A$250",
+        "group": "soft_preferences",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B14",
+        "query": "Price isn't my main concern; I care much more about reliability.",
+        "group": "soft_preferences",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "B15",
+        "query": "I'd prefer to stay near A$250, but I could stretch if comfort is meaningfully better.",
+        "group": "soft_preferences",
+        "categories": [
+          "missed_tradeoff",
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C05",
+        "query": "I'll wear them all flight.",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C10",
+        "query": "I fly every week",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C11",
+        "query": "short hop to Melbourne",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C12",
+        "query": "I am flying tomorrow.",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C13",
+        "query": "I'll wear them for ten hours straight and don't want something tiring.",
+        "group": "context_outcomes",
+        "categories": [
+          "hallucinated_context"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "C15",
+        "query": "I need this before my flight tomorrow.",
+        "group": "context_outcomes",
+        "categories": [
+          "missed_hard_constraint",
+          "wrong_operator_or_normalization",
+          "hallucinated_context"
+        ],
+        "critical_omissions": [
+          "delivery_days"
+        ],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D02",
+        "query": "I'd pay more for reliability",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D03",
+        "query": "delivery speed is more important than saving $20",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D04",
+        "query": "battery life matters, but not if the headset becomes too heavy",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D06",
+        "query": "warranty matters more than bundle extras",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D07",
+        "query": "I'd rather pay less than A$350 than get the absolute best one",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D08",
+        "query": "travel convenience over long battery",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D09",
+        "query": "comfort over weight savings",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D10",
+        "query": "reliability over delivery speed",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D12",
+        "query": "save money unless comfort is much better",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D13",
+        "query": "same-day is worth more than a cheaper pair",
+        "group": "tradeoffs",
+        "categories": [
+          "invented_hard_constraint",
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [
+          "delivery_days"
+        ],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D14",
+        "query": "I will pay extra for a longer warranty",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "D15",
+        "query": "lightness matters more than battery bragging rights",
+        "group": "tradeoffs",
+        "categories": [
+          "missed_tradeoff"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E01",
+        "query": "I don't need ANC.",
+        "group": "negation",
+        "categories": [
+          "wrong_operator_or_normalization"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E04",
+        "query": "Noise cancellation isn't important.",
+        "group": "negation",
+        "categories": [
+          "invented_hard_constraint",
+          "preference_to_mandatory"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [
+          "anc"
+        ],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E05",
+        "query": "I don't need same-day delivery.",
+        "group": "negation",
+        "categories": [
+          "invented_hard_constraint",
+          "preference_to_mandatory"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [
+          "delivery_days"
+        ],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E08",
+        "query": "I'd rather avoid leather.",
+        "group": "negation",
+        "categories": [
+          "ambiguity_guessed_or_missed",
+          "unsupported_need_dropped"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "E09",
+        "query": "I don't want refurbished.",
+        "group": "negation",
+        "categories": [
+          "ambiguity_guessed_or_missed",
+          "unsupported_need_dropped"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F01",
+        "query": "I need it soon.",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F02",
+        "query": "Not too expensive.",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F03",
+        "query": "Good battery.",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F05",
+        "query": "around A$300",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F06",
+        "query": "A$250\u2013A$350 range is fine",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F07",
+        "query": "Not too expensive, but quality matters.",
+        "group": "ambiguity",
+        "categories": [
+          "missed_tradeoff",
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F08",
+        "query": "something premium",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F09",
+        "query": "as soon as you can",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "F10",
+        "query": "a decent pair for the price",
+        "group": "ambiguity",
+        "categories": [
+          "ambiguity_guessed_or_missed"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      },
+      {
+        "id": "H01",
+        "query": "must use vegan glue",
+        "group": "unsupported",
+        "categories": [
+          "unsupported_need_dropped"
+        ],
+        "critical_omissions": [],
+        "hard_false_positives": [],
+        "parser_used": "rule_based"
+      }
+    ]
+  },
+  "llm_ran": true,
+  "llm_configured": false,
+  "label": "SYNTHETIC LABELS ARE MANUAL. Not generated by the evaluated model.",
+  "llm_extraction_measured": false,
+  "note": "LLM extraction quality was not measured. Without credentials the factory falls back to rule_based on every case (fallback_rate=1.0, llm_success_rate=0.0). Do not treat the LLM block F1 scores as model accuracy; they are fallback copies of the rule-based parser.",
+  "provider": "openai_compatible",
+  "model_configured": "gpt-4o-mini",
+  "prompt_version": "intent-parser-v2",
+  "schema_version": "llm-extraction.v1"
+}

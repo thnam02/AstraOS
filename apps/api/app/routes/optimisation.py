@@ -25,7 +25,6 @@ async def run_optimisation(
         return await service.run(
             payload.offer_run_id,
             buyer_profile=payload.buyer_profile,
-            alpha=payload.alpha,
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -56,3 +55,14 @@ async def get_counterfactuals(
     service: OptimisationService = Depends(_service),
 ) -> OptimisationResponse:
     return await get_optimisation_run(run_id, service)
+
+
+@router.post("/runs/{run_id}/reselect", response_model=OptimisationResponse)
+async def reselect_optimisation(
+    run_id: uuid.UUID,
+    service: OptimisationService = Depends(_service),
+) -> OptimisationResponse:
+    try:
+        return await service.reselect(run_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

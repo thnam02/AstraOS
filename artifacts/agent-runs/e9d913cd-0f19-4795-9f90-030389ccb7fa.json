@@ -1,0 +1,77 @@
+{
+  "run_id": "e9d913cd-0f19-4795-9f90-030389ccb7fa",
+  "buyer_agent_version": "0.4.0",
+  "prompt_version": "buyer-agent-v1",
+  "buyer_mode": "llm",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "mission": {
+    "mission_id": "balanced",
+    "request": "Looking for wireless ANC headphones under A$280 for commuting. A good mix of comfort and value.",
+    "persona": "BALANCED",
+    "profile": {
+      "urgency": "medium",
+      "comfort": "medium",
+      "reliability": "medium",
+      "price_sensitivity": "medium",
+      "quality": "medium"
+    },
+    "hard": {
+      "max_total_cents": 28000,
+      "same_day_required": false,
+      "max_delivery_days": null,
+      "require_anc": true,
+      "require_wireless": true,
+      "excluded_brands": []
+    },
+    "acceptance_threshold": 0.66,
+    "max_turns": 4,
+    "negotiation_style": "balanced"
+  },
+  "capabilities": {
+    "protocol_name": "astraos-agent",
+    "version": "1.0",
+    "operations": [
+      "capabilities",
+      "request_offer",
+      "inspect_offer",
+      "counter_offer",
+      "accept_offer",
+      "get_transaction",
+      "get_order"
+    ],
+    "protocol": [
+      "REST",
+      "MCP"
+    ]
+  },
+  "actions": [
+    "REQUEST",
+    "ACCEPT"
+  ],
+  "history": [
+    {
+      "buyer": "REQUEST",
+      "merchant": "PROPOSED"
+    }
+  ],
+  "proposal_id": "0892defe-eeaa-401b-a4c2-afce8f064492",
+  "session_id": "11d394db-2f7e-4867-839a-35d0da19079f",
+  "transaction_id": "da19dc31-6262-4855-ab13-f8c447a9a5a0",
+  "order_ref": "AST-2026-000003",
+  "end_state": "ACCEPTED",
+  "turns": 0,
+  "latencies_ms": {
+    "capabilities_ms": 2.33,
+    "request_offer_ms": 1927.18,
+    "buyer_decision_ms": 1061.77,
+    "accept_ms": 49.71,
+    "session_ms": 3055.97
+  },
+  "token_usage": {
+    "input_tokens": 1075,
+    "output_tokens": 29,
+    "total_tokens": 1104
+  },
+  "policy_violations": []
+}

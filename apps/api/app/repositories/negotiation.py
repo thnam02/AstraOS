@@ -20,6 +20,18 @@ class NegotiationRepository:
         await self.session.flush()
         return row
 
+    async def list_recent(self, *, limit: int = 20) -> list[NegotiationSession]:
+        result = await self.session.execute(
+            select(NegotiationSession)
+            .options(
+                selectinload(NegotiationSession.proposals),
+                selectinload(NegotiationSession.turns),
+            )
+            .order_by(NegotiationSession.created_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
     async def get(self, session_id: UUID) -> NegotiationSession | None:
         result = await self.session.execute(
             select(NegotiationSession)

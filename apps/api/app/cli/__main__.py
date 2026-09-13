@@ -18,8 +18,15 @@ def main() -> None:
 
         demo_main()
         return
+    if args[0] in {"ingest", "ingest-merchant"}:
+        sys.argv = [sys.argv[0], *args[1:]]
+        from app.cli.ingest_merchant import main as ingest_main
+
+        ingest_main()
+        return
     raise SystemExit(
-        "Usage: python -m app.cli reset-demo | python -m app.cli demo hero"
+        "Usage: python -m app.cli reset-demo | python -m app.cli demo hero | "
+        "python -m app.cli ingest --file ..."
     )
 
 

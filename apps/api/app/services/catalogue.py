@@ -4,10 +4,13 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.decision.proof.quality import catalogue_evidence_quality
 from app.models import (
     AttributeEvidence,
+    Merchant,
     Product,
     ProductVariant,
     VariantBundleOption,
@@ -142,6 +145,8 @@ class CatalogueService:
             brands=base["brands"],
             categories=base["categories"],
             evidence_records=await self.catalogue.evidence_count(),
+            data_mode=await self._data_mode(),
+            evidence_quality=catalogue_evidence_quality(list(items)),
         )
 
     def _to_product_summary(self, product: Product) -> ProductSummary:
@@ -152,6 +157,7 @@ class CatalogueService:
             category=product.category,
             model_number=product.model_number,
             is_active=product.is_active,
+            source_system=product.source_system,
             variant_count=len(product.variants),
             variants=[
                 self._to_variant_summary(variant) for variant in product.variants
@@ -174,6 +180,7 @@ class CatalogueService:
             battery_hours=_attr_number(variant.attributes, "battery_hours"),
             is_active=variant.is_active,
             has_missing_attributes=_has_missing_attributes(variant.attributes),
+            source_system=variant.source_system,
         )
 
     def _to_variant_detail(self, variant: ProductVariant) -> ProductVariantDetail:
@@ -187,6 +194,7 @@ class CatalogueService:
             cogs_cents=variant.cogs_cents,
             attributes=variant.attributes,
             is_active=variant.is_active,
+            source_system=variant.source_system,
             inventory=(
                 InventoryResponse.model_validate(variant.inventory)
                 if variant.inventory
@@ -280,3 +288,9 @@ class CatalogueService:
             expires_at=row.expires_at,
             is_stale=is_stale,
         )
+
+    async def _data_mode(self) -> str | None:
+        merchant = (
+            await self.products.session.scalars(select(Merchant).limit(1))
+        ).first()
+        return merchant.data_mode if merchant is not None else None

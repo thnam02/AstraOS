@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { AstraErrorState, AstraLoadingState } from "@/components/astra";
 import { DataBadge } from "@/components/shared/DataBadge";
+import { deliveryLabel, titleCaseCode, warrantyLabel } from "@/lib/arenaDisplay";
 import { getProduct } from "@/lib/api";
 import { formatAudCents } from "@/lib/money";
 import type { ProductDetail } from "@/types";
@@ -25,21 +27,55 @@ function Section({
   );
 }
 
+function displayValue(value: unknown): string {
+  if (value === null || value === undefined || value === "null") return "—";
+  return String(value);
+}
+
 export function ProductInspector({ productId }: { productId: string }) {
   const [detail, setDetail] = useState<ProductDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     getProduct(productId)
-      .then(setDetail)
-      .catch(() => setError("Product could not be loaded."));
+      .then((next) => {
+        if (!cancelled) {
+          setDetail(next);
+          setError(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDetail(null);
+          setError("Product could not be loaded.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [productId]);
 
   if (error) {
-    return <p className="text-sm text-danger">{error}</p>;
+    return (
+      <AstraErrorState
+        title="Product unavailable"
+        message={error}
+        next="Return to the catalogue and try another product."
+      />
+    );
   }
   if (!detail) {
-    return <p className="text-sm text-muted">Loading merchant data…</p>;
+    return (
+      <AstraLoadingState
+        title="Loading product"
+        steps={[
+          "Fetching merchant record",
+          "Loading variants and evidence",
+          "Ready to inspect",
+        ]}
+      />
+    );
   }
 
   return (
@@ -54,6 +90,15 @@ export function ProductInspector({ productId }: { productId: string }) {
         <p className="text-sm text-muted">
           {detail.product.brand} · {detail.product.model_number ?? "No model"}
         </p>
+        {detail.product.source_system ? (
+          <div className="mt-2">
+            <DataBadge tone="uncertain">
+              {detail.product.source_system === "merchant_json"
+                ? "PRODUCT FEED"
+                : detail.product.source_system.toUpperCase()}
+            </DataBadge>
+          </div>
+        ) : null}
       </div>
 
       <Section title="PRODUCT">
@@ -86,10 +131,8 @@ export function ProductInspector({ productId }: { productId: string }) {
               <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm md:grid-cols-3">
                 {Object.entries(variant.attributes).map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-3">
-                    <dt className="text-muted">{key}</dt>
-                    <dd className="tabular-nums text-ink">
-                      {value === null ? "null" : String(value)}
-                    </dd>
+                    <dt className="text-muted">{titleCaseCode(key)}</dt>
+                    <dd className="tabular-nums text-ink">{displayValue(value)}</dd>
                   </div>
                 ))}
               </dl>
@@ -108,8 +151,10 @@ export function ProductInspector({ productId }: { productId: string }) {
                 {variant.delivery_options.map((option) => (
                   <li key={option.id} className="flex justify-between gap-4">
                     <span>
-                      <span className="font-mono text-xs">{option.code}</span>{" "}
-                      {option.name}
+                      {deliveryLabel(option.code)}
+                      {option.name && option.name !== option.code
+                        ? ` · ${option.name}`
+                        : ""}
                     </span>
                     <DataBadge tone={option.available ? "success" : "neutral"}>
                       {option.available ? "Available" : "Unavailable"}
@@ -123,10 +168,7 @@ export function ProductInspector({ productId }: { productId: string }) {
               <ul className="space-y-1 text-sm">
                 {variant.warranty_options.map((option) => (
                   <li key={option.id} className="flex justify-between gap-4">
-                    <span>
-                      <span className="font-mono text-xs">{option.code}</span>{" "}
-                      {option.months} months
-                    </span>
+                    <span>{warrantyLabel(option.code, option.months)}</span>
                     <span className="text-muted">
                       {formatAudCents(option.customer_price_cents)}
                     </span>
@@ -179,7 +221,9 @@ export function ProductInspector({ productId }: { productId: string }) {
                       <tr key={row.id} className="border-t border-line">
                         <td className="py-1 pr-3 font-mono">{row.attribute_name}</td>
                         <td className="py-1 pr-3">
-                          {JSON.stringify(row.value)}
+                          {row.value === null || row.value === "null"
+                            ? "—"
+                            : JSON.stringify(row.value)}
                         </td>
                         <td className="py-1 pr-3">{row.source.name}</td>
                         <td className="py-1 pr-3">

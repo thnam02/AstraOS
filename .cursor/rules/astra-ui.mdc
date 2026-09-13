@@ -1,0 +1,32 @@
+---
+description: AstraOS frontend design system and UX rules
+globs: apps/web/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# Astra UI rules
+
+1. Reuse `components/astra` before creating a new visual primitive.
+2. Do not use arbitrary colors when a design token exists (`canvas`, `surface`, `ink`, `muted`, `line`, semantic states).
+3. Do not use arbitrary radius values. Prefer `radius-control` (6px) or none.
+4. Avoid gradients and glassmorphism.
+5. Do not create giant KPI cards.
+6. Prefer typography + spacing over nested boxes.
+7. Summary first, reasoning second, evidence on demand.
+8. Do not expose raw JSON by default.
+9. Do not expose raw backend enums when readable labels exist.
+10. Do not invent numbers.
+11. Do not hardcode benchmark results.
+12. Do not hardcode selected products.
+13. Do not put business logic in React.
+14. Backend remains the source of truth.
+15. Do not create Presentation Mode, Demo Mode, Judge Mode, or Pitch Mode.
+16. Technical detail belongs in Inspector/Drawer (`AstraInspector`).
+17. Status cannot depend on color alone. Use `AstraStatusBadge` (includes a text tone label).
+18. Use `AstraSourceBadge` for provenance.
+19. Use `AstraStatusBadge` for state.
+20. Prefer dense enterprise layouts over decorative cards.
+21. Use motion only when it explains state change. Respect `prefers-reduced-motion`.
+22. Keep LIVE as the primary visual experience.
+
+shadcn primitives in `components/ui` are implementation details. Feature pages should import Astra components, not raw `Badge`/`Card` with one-off classes.

@@ -2,8 +2,14 @@
 
 import { Disclosure } from "@/components/shared/Disclosure";
 import { StatStrip } from "@/components/shared/StatStrip";
+import { counterfactualStory } from "@/lib/decisionNarrative";
+import { formatUtility, formatUtilityShort, humanizeEnum } from "@/lib/format";
 import { formatAudCents } from "@/lib/money";
-import type { BuyerProfile, OptimisationResponse } from "@/types";
+import type {
+  BuyerProfile,
+  MerchantObjectiveSnapshot,
+  OptimisationResponse,
+} from "@/types";
 
 import { RecommendedOffer } from "./RecommendedOffer";
 
@@ -33,15 +39,23 @@ export function OptimisationPanel({
   onProfile,
   busy,
   showRecommendation = true,
+  selectedOfferId,
+  onSelectOffer,
+  productSummary,
 }: {
   optimisation: OptimisationResponse;
   profile: BuyerProfile;
   onProfile: (profile: BuyerProfile) => void;
   busy: boolean;
   showRecommendation?: boolean;
+  selectedOfferId?: string | null;
+  onSelectOffer?: (offerId: string) => void;
+  productSummary?: string;
 }) {
   const rec = optimisation.recommended_offer;
   const weights = optimisation.buyer_model.weights;
+  const objective = optimisation.merchant_objective;
+  const comparisons = optimisation.objective_comparisons ?? [];
 
   return (
     <section className="space-y-4">
@@ -50,6 +64,9 @@ export function OptimisationPanel({
         <h2 className="mt-1 text-xl font-semibold tracking-tight">
           Pareto frontier
         </h2>
+        {productSummary ? (
+          <p className="mt-1 text-xs text-muted">{productSummary}</p>
+        ) : null}
         <div className="mt-3">
           <StatStrip
             items={[
@@ -63,7 +80,9 @@ export function OptimisationPanel({
 
       {optimisation.failure && !rec ? (
         <div className="border border-danger px-4 py-3 text-sm">
-          <p className="tracking-[0.12em] text-danger">NO POLICY-SAFE OFFER</p>
+          <p className="font-medium text-danger">
+            {humanizeEnum(optimisation.failure.code)}
+          </p>
           <p className="mt-2">{optimisation.failure.message}</p>
           {optimisation.failure.requested_max_price_cents != null ? (
             <p className="mt-2 text-muted">
@@ -77,16 +96,17 @@ export function OptimisationPanel({
         </div>
       ) : null}
 
-      <ParetoChart points={optimisation.plot_points} />
+      {objective ? <ObjectiveStrip objective={objective} /> : null}
+
+      <ParetoChart
+        points={optimisation.plot_points}
+        selectedOfferId={selectedOfferId}
+        onSelect={onSelectOffer}
+      />
       <p className="text-sm text-muted">
-        Offers on the frontier cannot improve buyer fit without sacrificing
-        merchant contribution, or improve contribution without sacrificing
-        buyer fit.
-      </p>
-      <p className="text-[11px] text-muted">
-        Muted = dominated · black = Pareto-efficient · green = AstraOS response.
-        Bubble size is intervention cost. Buyer utility is a cold-start
-        simulation, not a purchase probability.
+        Each frontier offer is an efficient buyer/merchant trade-off: improving
+        one objective requires sacrificing the other. Changing the merchant
+        objective moves the selected point, not the frontier.
       </p>
 
       <div className="flex flex-wrap items-end gap-4">
@@ -120,73 +140,183 @@ export function OptimisationPanel({
       </div>
 
       {showRecommendation && rec ? (
-        <div className="border border-line px-4 py-4">
-          <RecommendedOffer offer={rec} explanation={optimisation.explanation} />
+        <div>
+          <RecommendedOffer
+            offer={rec}
+            explanation={optimisation.explanation}
+            objective={objective}
+            selection={optimisation.selection}
+          />
         </div>
       ) : null}
 
-      <div>
-          <p className="text-[11px] tracking-[0.14em] text-muted">
-            WHAT SHOULD THE MERCHANT CHANGE?
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Single-lever counterfactuals from the conceptual baseline. Not a
-            recommended ranking.
-          </p>
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-line text-[11px] tracking-[0.08em] text-muted">
-                  <th className="py-2 font-medium">Intervention</th>
-                  <th className="py-2 font-medium">Utility</th>
-                  <th className="py-2 font-medium">Δ U</th>
-                  <th className="py-2 font-medium">Contribution</th>
-                  <th className="py-2 font-medium">Δ C</th>
-                  <th className="py-2 font-medium">Cost</th>
-                  <th className="py-2 font-medium">Status</th>
+      {comparisons.length ? (
+        <ObjectiveComparisonTable rows={comparisons} />
+      ) : null}
+
+      <CounterfactualStory rows={optimisation.counterfactuals} />
+
+      <Disclosure title="All counterfactual levers">
+          <table className="w-full min-w-[640px] text-left text-xs">
+            <thead>
+              <tr className="border-b border-line text-muted">
+                <th className="py-2 font-medium">Intervention</th>
+                <th className="py-2 font-medium">Utility</th>
+                <th className="py-2 font-medium">Δ U</th>
+                <th className="py-2 font-medium">Contribution</th>
+                <th className="py-2 font-medium">Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {optimisation.counterfactuals.map((row) => (
+                <tr key={`${row.lever}-${row.label}-${row.offer_id}`} className="border-b border-line">
+                  <td className="py-2">{row.label}</td>
+                  <td className="py-2 tabular-nums">
+                    {formatUtilityShort(row.buyer_utility)}
+                  </td>
+                  <td className="py-2 tabular-nums">
+                    {row.delta_utility >= 0 ? "+" : ""}
+                    {formatUtilityShort(row.delta_utility)}
+                  </td>
+                  <td className="py-2 tabular-nums">
+                    {formatAudCents(row.contribution_margin_cents)}
+                  </td>
+                  <td className="py-2 tabular-nums">
+                    {formatAudCents(row.incremental_intervention_cost_cents)}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {optimisation.counterfactuals.map((row) => {
-                  const highlight =
-                    row.lever === "delivery" && row.delivery_code === "SAME_DAY";
-                  return (
-                    <tr
-                      key={`${row.lever}-${row.label}-${row.offer_id}`}
-                      className={`border-b border-line ${highlight ? "bg-canvas" : ""}`}
-                    >
-                      <td className="py-2">{row.label}</td>
-                      <td className="py-2 tabular-nums">{row.buyer_utility.toFixed(3)}</td>
-                      <td className="py-2 tabular-nums">
-                        {row.delta_utility >= 0 ? "+" : ""}
-                        {row.delta_utility.toFixed(3)}
-                      </td>
-                      <td className="py-2 tabular-nums">
-                        {formatAudCents(row.contribution_margin_cents)}
-                      </td>
-                      <td className="py-2 tabular-nums">
-                        {formatAudCents(row.delta_contribution_cents)}
-                      </td>
-                      <td className="py-2 tabular-nums">
-                        {formatAudCents(row.incremental_intervention_cost_cents)}
-                      </td>
-                      <td className="py-2">
-                        {row.policy_safe ? "safe" : "blocked"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-3 text-[11px] text-muted">
-            {optimisation.timing.total_optimisation_ms.toFixed(0)} ms ·
-            economics {optimisation.timing.economics_ms.toFixed(0)} ·
-            policy {optimisation.timing.policy_filter_ms.toFixed(0)} ·
-            utility {optimisation.timing.utility_ms.toFixed(0)} ·
-            pareto {optimisation.timing.pareto_ms.toFixed(0)}
-          </p>
-      </div>
+              ))}
+            </tbody>
+          </table>
+      </Disclosure>
     </section>
+  );
+}
+
+function ObjectiveStrip({
+  objective,
+}: {
+  objective: MerchantObjectiveSnapshot;
+}) {
+  return (
+    <div>
+      <p className="eyebrow">Merchant objective</p>
+      <p className="mt-1 text-sm font-medium">{humanizeEnum(objective.mode)}</p>
+      <dl className="mt-2 grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <dt className="text-xs text-muted">Buyer fit</dt>
+          <dd className="font-mono tabular-nums">
+            {Math.round(objective.buyer_weight * 100)}%
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted">Contribution</dt>
+          <dd className="font-mono tabular-nums">
+            {Math.round(objective.merchant_weight * 100)}%
+          </dd>
+        </div>
+      </dl>
+      <p className="mt-2 text-xs text-muted">
+        Merchant strategy changed the selected efficient offer, not the
+        feasible offer space.
+      </p>
+    </div>
+  );
+}
+
+function ObjectiveComparisonTable({
+  rows,
+}: {
+  rows: NonNullable<OptimisationResponse["objective_comparisons"]>;
+}) {
+  const distinct = new Set(rows.map((row) => row.offer_id).filter(Boolean));
+  return (
+    <div>
+      <p className="eyebrow">Same frontier, different strategy</p>
+      <p className="mt-1 text-xs text-muted">
+        {distinct.size > 1
+          ? "Both offers are Pareto-efficient. The merchant objective determines which trade-off AstraOS selects."
+          : "This mission is objective-insensitive — the same efficient offer scores highest under all three strategies."}
+      </p>
+      <table className="mt-3 w-full text-left text-xs">
+        <thead>
+          <tr className="border-b border-line text-muted">
+            <th className="py-2 font-medium">Objective</th>
+            <th className="py-2 font-medium">Product</th>
+            <th className="py-2 font-medium">Utility</th>
+            <th className="py-2 font-medium">Contribution</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.mode} className="border-b border-line">
+              <td className="py-2">{humanizeEnum(row.mode)}</td>
+              <td className="py-2">{row.product_name ?? "—"}</td>
+              <td className="py-2 tabular-nums">
+                {row.buyer_utility != null
+                  ? formatUtilityShort(row.buyer_utility)
+                  : "—"}
+              </td>
+              <td className="py-2 tabular-nums">
+                {row.contribution_margin_cents != null
+                  ? formatAudCents(row.contribution_margin_cents)
+                  : "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function CounterfactualStory({
+  rows,
+}: {
+  rows: OptimisationResponse["counterfactuals"];
+}) {
+  const story = counterfactualStory(rows);
+  if (!story) return null;
+  return (
+    <div className="text-sm">
+      <p className="eyebrow">What should the merchant change?</p>
+      <div className="mt-2 grid gap-3 md:grid-cols-3">
+        <div>
+          <p className="text-xs text-muted">Baseline</p>
+          <p>{formatUtility(story.baseline.buyer_utility)}</p>
+          <p>Contribution {formatAudCents(story.baseline.contribution_margin_cents)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted">Discount</p>
+          <p>
+            {formatUtility(story.discount.buyer_utility)}{" "}
+            <span className="text-muted">
+              ({story.discount.delta_utility >= 0 ? "+" : ""}
+              {formatUtilityShort(story.discount.delta_utility)})
+            </span>
+          </p>
+          <p>
+            Contribution {formatAudCents(story.discount.contribution_margin_cents)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted">Same-day</p>
+          <p>
+            {formatUtility(story.delivery.buyer_utility)}{" "}
+            <span className="text-muted">
+              ({story.delivery.delta_utility >= 0 ? "+" : ""}
+              {formatUtilityShort(story.delivery.delta_utility)})
+            </span>
+          </p>
+          <p>
+            Contribution {formatAudCents(story.delivery.contribution_margin_cents)}
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 text-sm">
+        More efficient intervention:{" "}
+        {story.choosesDelivery ? "same-day delivery" : "discount"}.
+      </p>
+    </div>
   );
 }

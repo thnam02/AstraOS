@@ -16,6 +16,7 @@ from app.models.commerce import (
 )
 from app.models.delivery import DeliveryOption, VariantDeliveryOption
 from app.models.embedding import VariantEmbedding
+from app.models.ingestion import MerchantIngestionRun
 from app.models.inventory import InventoryRecord
 from app.models.learning import (
     CommerceInteraction,
@@ -30,6 +31,7 @@ from app.models.negotiation import (
     NegotiationSession,
     NegotiationTurn,
 )
+from app.models.objective import MerchantObjective
 from app.models.offer import OfferCandidateRow, OfferConstructionRun
 from app.models.optimisation import OptimisationRun
 from app.models.policy import MerchantPolicy
@@ -52,11 +54,13 @@ __all__ = [
     "DataSource",
     "DeliveryOption",
     "InventoryRecord",
+    "MerchantIngestionRun",
     "InventoryReservation",
     "LearningDatasetVersion",
     "MatchResult",
     "MatchRun",
     "Merchant",
+    "MerchantObjective",
     "MerchantProposal",
     "ModelTrainingRun",
     "NegotiationSession",

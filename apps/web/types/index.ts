@@ -102,6 +102,7 @@ export type ProductSummary = {
   category: string;
   model_number: string | null;
   is_active: boolean;
+  source_system?: string | null;
   variant_count: number;
   variants: VariantSummary[];
 };
@@ -141,6 +142,8 @@ export type ProductDetail = {
     model_number: string | null;
     manufacturer: string | null;
     is_active: boolean;
+    external_id?: string | null;
+    source_system?: string | null;
   };
   variants: ProductVariantDetail[];
 };
@@ -155,6 +158,86 @@ export type CatalogueStatsResponse = {
   brands: number;
   categories: string[];
   evidence_records: number;
+  data_mode?: string | null;
+  evidence_quality?: {
+    evidence_records: number;
+    product_facts_pct: number;
+    pricing_current_pct: number;
+    inventory_current_pct: number;
+    fulfilment_current_pct: number;
+    warranty_configured_pct: number;
+    synthetic_pct: number;
+    stale_pct: number;
+  } | null;
+};
+
+export type IngestionIssue = {
+  severity: "ERROR" | "WARNING";
+  code: string;
+  message: string;
+  location: string | null;
+  record_id: string | null;
+};
+
+export type IngestionCounts = {
+  received: number;
+  created: number;
+  updated: number;
+  unchanged: number;
+  deactivated: number;
+  rejected: number;
+};
+
+export type IngestionResultResponse = {
+  status: string;
+  schema_version: string;
+  source_type: string;
+  source_name: string;
+  file_hash: string | null;
+  snapshot_mode: string;
+  dry_run: boolean;
+  merchant_data_mode: string | null;
+  run_id: string | null;
+  counts: Record<string, IngestionCounts>;
+  records_received: number;
+  records_created: number;
+  records_updated: number;
+  records_unchanged: number;
+  records_rejected: number;
+  records_deactivated: number;
+  warnings: IngestionIssue[];
+  errors: IngestionIssue[];
+  semantic_documents_changed: number;
+  embeddings_refreshed: number;
+  embeddings_reused: number;
+  timing_ms: Record<string, number>;
+  economics_ready: boolean;
+  economics_reason: string | null;
+};
+
+export type IngestionRunSummary = {
+  id: string;
+  source_type: string;
+  source_name: string;
+  status: string;
+  snapshot_mode: string;
+  file_hash: string | null;
+  records_created: number;
+  records_updated: number;
+  records_unchanged: number;
+  records_deactivated: number;
+  warning_count: number;
+  error_count: number;
+  index_status: string | null;
+  started_at: string;
+  completed_at: string | null;
+};
+
+export type MerchantDataStatusResponse = {
+  data_mode: string;
+  active_products: number;
+  active_variants: number;
+  last_run: IngestionRunSummary | null;
 };
 
 export type MerchantPolicyResponse = {
@@ -168,6 +251,66 @@ export type MerchantPolicyResponse = {
   bundle_enabled: boolean;
   flexible_returns_enabled: boolean;
   loyalty_enabled: boolean;
+};
+
+export type MerchantObjectiveMode = "GROWTH" | "BALANCED" | "MARGIN" | "CUSTOM";
+
+export type MerchantObjectivePreset = {
+  buyer_weight: number;
+  merchant_weight: number;
+  label: string;
+  blurb: string;
+};
+
+export type MerchantObjectiveResponse = {
+  id: string | null;
+  merchant_id: string | null;
+  mode: MerchantObjectiveMode;
+  buyer_weight: number;
+  merchant_weight: number;
+  version: string;
+  label: string;
+  blurb: string;
+  presets: Record<string, MerchantObjectivePreset>;
+  is_active: boolean;
+  updated_at: string | null;
+};
+
+export type MerchantObjectiveUpdate = {
+  mode: MerchantObjectiveMode;
+  buyer_weight?: number;
+  merchant_weight?: number;
+};
+
+export type MerchantObjectiveSnapshot = {
+  mode: MerchantObjectiveMode | string;
+  buyer_weight: number;
+  merchant_weight: number;
+  version: string;
+};
+
+export type ObjectiveComparison = {
+  mode: string;
+  offer_id: string | null;
+  product_name: string | null;
+  sku: string | null;
+  buyer_utility: number | null;
+  contribution_margin_cents: number | null;
+  intervention_cost_cents: number | null;
+  score: number | null;
+};
+
+export type SelectionScore = {
+  offer_id: string;
+  normalized_utility: number;
+  normalized_contribution: number;
+  score: number;
+  alpha: number;
+  rule: string;
+  mode?: string | null;
+  buyer_weight?: number | null;
+  merchant_weight?: number | null;
+  version?: string | null;
 };
 
 export type MerchantPolicyUpdate = {
@@ -190,6 +333,7 @@ export type HardConstraint = {
   source_phrase: string;
   normalized_value: unknown;
   importance: "MANDATORY";
+  applies_to?: "CUSTOMER_TOTAL" | "PRODUCT_BASE" | null;
 };
 
 export type SoftPreference = {
@@ -246,6 +390,21 @@ export type ShoppingIntent = {
   parser_type: string;
   parser_version: string;
   status: "READY" | "NEEDS_CLARIFICATION" | "UNSUPPORTED";
+  parser_metadata?: {
+    parser_requested: string;
+    parser_used: string;
+    fallback_used: boolean;
+    fallback_reason: string | null;
+    provider: string | null;
+    model: string | null;
+    prompt_version: string | null;
+    schema_version: string | null;
+    repair_count: number;
+    latency_ms: number | null;
+    input_tokens: number | null;
+    output_tokens: number | null;
+    total_tokens: number | null;
+  } | null;
 };
 
 export type RankedProductMatch = {
@@ -274,6 +433,13 @@ export type RankedProductMatch = {
       display: string;
       evidence_id: string | null;
       source_name: string | null;
+      source_type?: string | null;
+      source_record_id?: string | null;
+      verification_status?: string | null;
+      freshness?: string | null;
+      derived?: boolean;
+      derivation_rule?: string | null;
+      observed_at?: string | null;
     }[];
   }[];
   evidence: {
@@ -282,7 +448,52 @@ export type RankedProductMatch = {
     display: string;
     evidence_id: string | null;
     source_name: string | null;
+    source_type?: string | null;
+    source_record_id?: string | null;
+    verification_status?: string | null;
+    freshness?: string | null;
+    derived?: boolean;
+    derivation_rule?: string | null;
+    observed_at?: string | null;
   }[];
+  proof?: ProofItem[];
+  proof_coverage?: ProofCoverage;
+};
+
+export type ProofItem = {
+  claim_key: string;
+  display_claim: string;
+  value: unknown;
+  unit?: string | null;
+  evidence_id?: string | null;
+  source_type: string;
+  source_name?: string | null;
+  source_record_id?: string | null;
+  verification_status: string;
+  freshness_status: string;
+  observed_at?: string | null;
+  valid_until?: string | null;
+  derived?: boolean;
+  derivation_rule?: string | null;
+  group?: string;
+  incomplete?: boolean;
+};
+
+export type ProofCoverage = {
+  displayed_claim_count: number;
+  claims_with_evidence: number;
+  verified_count: number;
+  unverified_count: number;
+  stale_count: number;
+  conflicted_count: number;
+  unknown_count: number;
+  synthetic_count: number;
+  example_import_count: number;
+  unsupported_displayed_count: number;
+  unsupported_displayed_claim_rate: number;
+  hard_constraint_proof_rate: number;
+  commercial_term_proof_rate: number;
+  match_rationale_proof_rate: number;
 };
 
 export type MatchResponse = {
@@ -299,6 +510,13 @@ export type MatchResponse = {
     model: string;
     document_version: string;
     matches: RankedProductMatch[];
+    provider_requested?: string | null;
+    provider_used?: string | null;
+    dimension?: number | null;
+    fallback_used?: boolean;
+    fallback_reason?: string | null;
+    retrieval_version?: string | null;
+    rerank_version?: string | null;
   };
   timing: {
     intent_parse_ms: number;
@@ -447,6 +665,7 @@ export type GenerateOffersResponse = {
     total_ms: number;
   };
   offers: PublicOffer[];
+  product_baselines?: PublicOffer[];
   truncated: boolean;
 };
 
@@ -499,6 +718,13 @@ export type PublicScoredOffer = {
   };
   policy_safe: boolean;
   policy_rejection_codes: string[];
+  buyer_constraint_status?: "SATISFIED" | "VIOLATED" | "UNKNOWN";
+  buyer_constraint_codes?: string[];
+  all_mandatory_buyer_constraints_satisfied?: boolean;
+  feasible?: boolean;
+  selectable?: boolean;
+  pareto_eligible?: boolean;
+  proposal_eligible?: boolean;
   is_pareto_efficient: boolean;
   dominated_by_offer_id: string | null;
   is_recommended: boolean;
@@ -506,6 +732,7 @@ export type PublicScoredOffer = {
   product_fit: number;
   learned_synthetic_score?: number | null;
   learned_score_label?: string | null;
+  proof_bundle?: { items: ProofItem[]; issued_at?: string | null } | null;
 };
 
 export type PlotPoint = {
@@ -548,6 +775,8 @@ export type OptimisationResponse = {
   match_run_id: string | null;
   summary: {
     offers_considered: number;
+    feasible?: number;
+    buyer_compliant?: number;
     policy_safe: number;
     policy_rejected: number;
     pareto_efficient: number;
@@ -569,6 +798,9 @@ export type OptimisationResponse = {
     total_optimisation_ms: number;
   };
   recommended_offer: PublicScoredOffer | null;
+  selection?: SelectionScore | null;
+  merchant_objective?: MerchantObjectiveSnapshot | null;
+  objective_comparisons?: ObjectiveComparison[];
   pareto_offers: PublicScoredOffer[];
   alternative_pareto_offers: PublicScoredOffer[];
   plot_points: PlotPoint[];
@@ -587,7 +819,26 @@ export type OptimisationResponse = {
     message: string;
     requested_max_price_cents: number | null;
     lowest_constructed_price_cents: number | null;
+    lowest_policy_safe_price_cents?: number | null;
+    blocked_by?: string | null;
+    buyer_constraint_codes?: string[];
     rejection_distribution: Record<string, number>;
+  } | null;
+  near_miss?: {
+    offer_id: string;
+    product_name: string;
+    sku: string;
+    total_customer_price_cents: number;
+    currency?: string;
+    gap_cents: number | null;
+    requested_max_price_cents: number | null;
+    label: string;
+    relaxation: string;
+    blocked_codes: string[];
+    reason: string;
+    is_pareto_efficient: boolean;
+    is_recommended: boolean;
+    selectable: boolean;
   } | null;
 };
 
@@ -621,6 +872,7 @@ export type NegotiationTurn = {
   structured_action: string;
   structured_payload: Record<string, unknown>;
   related_offer_id: string | null;
+  related_proposal_id?: string | null;
   created_at: string;
 };
 
@@ -646,6 +898,9 @@ export type NegotiationResponse = {
     total_turn_ms: number;
   } | null;
   events: { type: string; at: string; state: string }[];
+  original_intent?: ShoppingIntent | Record<string, unknown> | null;
+  working_intent?: ShoppingIntent | Record<string, unknown> | null;
+  merchant_policy_version?: string | null;
   match?: MatchResponse | null;
   construction?: GenerateOffersResponse | null;
   optimisation?: OptimisationResponse | null;
@@ -752,6 +1007,10 @@ export type ArenaStrategyResponse = {
   used_pareto: boolean;
   used_max_discount: boolean;
   is_cheapest_in_space: boolean;
+  status?: string;
+  selectable?: boolean;
+  strategy_version?: string;
+  commercial_intervention_count?: number;
 };
 
 export type ArenaRunResponse = {
@@ -772,6 +1031,14 @@ export type ArenaRunResponse = {
     profile_label?: string;
     weights?: Record<string, number>;
     reasons?: string[];
+    win_category?: string | null;
+    loss_category?: string | null;
+    component_deltas?: {
+      component: string;
+      winner: number;
+      baseline: number;
+      delta: number;
+    }[];
   };
   disclaimer: string;
   created_at: string;
@@ -790,6 +1057,8 @@ export type ArenaStrategyMetrics = {
   policy_violation_rate: number;
   no_offer_rate: number;
   transaction_completion_rate: number;
+  avg_customer_price_cents?: number | null;
+  avg_commercial_interventions?: number | null;
 };
 
 export type ArenaSegmentMetrics = {
@@ -801,6 +1070,8 @@ export type ArenaSegmentMetrics = {
   selection_rate: number;
   avg_buyer_utility: number | null;
   avg_contribution_cents: number | null;
+  contribution_per_opportunity_cents?: number;
+  avg_intervention_cost_cents?: number | null;
 };
 
 export type ArenaBenchmarkCreated = {
@@ -828,9 +1099,14 @@ export type ArenaBenchmarkResponse = {
       right: string;
       left_wins: number;
       right_wins: number;
+      ties?: number;
       no_purchase_or_other: number;
+      both_valid?: number;
+      denominator?: string;
     }[];
+    ablation?: Record<string, unknown>;
   };
+  ablation?: Record<string, unknown>;
   strategy_metrics: ArenaStrategyMetrics[];
   segment_metrics: ArenaSegmentMetrics[];
   pairwise: {
@@ -947,3 +1223,10 @@ export type DemoStateResponse = {
   minimum_margin_rate: number;
   note: string;
 };
+
+export type {
+  AgentActivityItem,
+  AgentActivityResponse,
+  AgentCapabilities,
+  ReadyResponse,
+} from "./agent";

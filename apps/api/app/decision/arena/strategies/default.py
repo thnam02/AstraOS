@@ -1,4 +1,11 @@
-"""Highest-ranked eligible product with the conceptual default offer."""
+"""Highest-ranked eligible product with the conceptual default offer.
+
+DEFAULT already uses semantic ranking (`top_match_variant`). It does not
+search commercial combinations and does not use Pareto. Because of that,
+Default → Semantic Only does not isolate semantic search; it isolates
+the same product plus the same default terms. Leave the definition
+unchanged so the ablation reports what the code actually does.
+"""
 
 from app.decision.arena.models import ArenaContext, StrategyResponse
 from app.decision.arena.strategies.common import (

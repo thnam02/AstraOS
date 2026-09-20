@@ -420,7 +420,7 @@ export function LiveWorkbench() {
         flags={flags}
         onSelect={setStage}
       />
-      <div className="space-y-5 pt-5">
+      <div className="space-y-4 pt-3">
         {error ? <ErrorState message={error} /> : null}
         {result ? (
           <BuyerContextBar

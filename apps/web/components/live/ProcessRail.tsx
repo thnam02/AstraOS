@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 export type LiveStage =
   | "understand"
   | "qualify"
@@ -84,15 +86,21 @@ function stageLabelClass(state: RailState, preview: boolean): string {
 export function StageNode({
   state,
   preview = false,
+  size = "sm",
 }: {
   state: RailState;
   preview?: boolean;
+  size?: "sm" | "md";
 }) {
+  const dim = size === "md" ? "h-4 w-4 text-[9px]" : "h-3.5 w-3.5 text-[8px]";
   if (preview) {
     return (
       <span
         aria-hidden
-        className="relative z-10 flex h-3.5 w-3.5 shrink-0 rounded-full border border-line bg-canvas"
+        className={cn(
+          "relative z-10 flex shrink-0 rounded-full border border-line bg-canvas",
+          dim,
+        )}
       />
     );
   }
@@ -107,18 +115,16 @@ export function StageNode({
   return (
     <span
       aria-hidden
-      className={[
-        "relative z-10 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border text-[8px] leading-none",
+      className={cn(
+        "relative z-10 flex shrink-0 items-center justify-center rounded-full border leading-none",
+        dim,
         "motion-safe:transition-colors",
-        state === "complete" ? "border-mark bg-canvas text-mark" : "",
-        state === "active" ? "border-mark bg-mark text-surface" : "",
-        state === "failed" || state === "blocked"
-          ? "border-danger bg-canvas text-danger"
-          : "",
-        state === "future" ? "border-line bg-canvas text-muted" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+        state === "complete" && "border-mark bg-canvas text-mark",
+        state === "active" && "border-mark bg-mark text-surface",
+        (state === "failed" || state === "blocked") &&
+          "border-danger bg-canvas text-danger",
+        state === "future" && "border-line bg-canvas text-muted",
+      )}
     >
       {mark}
     </span>
@@ -131,16 +137,24 @@ export function ProcessRail({
   onSelect,
   interactive = true,
   preview = false,
+  spread = false,
 }: {
   active: LiveStage;
   flags: Omit<Parameters<typeof processRailState>[1], never>;
   onSelect?: (stage: LiveStage) => void;
   interactive?: boolean;
   preview?: boolean;
+  /** Span the workbench width with evenly spaced stages (LIVE entry). */
+  spread?: boolean;
 }) {
+  const nodeSize = spread ? "md" : "sm";
+
   return (
     <ol
-      className="flex min-w-max items-center"
+      className={cn(
+        "flex items-center",
+        spread ? "w-full min-w-[40rem]" : "min-w-max",
+      )}
       aria-label={preview ? "How AstraOS works" : "Decision pipeline"}
     >
       {COMMERCE_STAGES.map((id, index) => {
@@ -161,23 +175,44 @@ export function ProcessRail({
         const connectorDone =
           !preview && (state === "complete" || state === "active");
         const body = (
-          <span className="inline-flex items-center gap-1.5">
-            <StageNode state={state} preview={preview} />
-            <span className={`text-[13px] ${stageLabelClass(state, preview)}`}>
+          <span
+            className={cn(
+              "inline-flex items-center",
+              spread ? "gap-2" : "gap-1.5",
+            )}
+          >
+            <StageNode state={state} preview={preview} size={nodeSize} />
+            <span
+              className={cn(
+                spread ? "text-[14px] md:text-[15px]" : "text-[13px]",
+                stageLabelClass(state, preview),
+              )}
+            >
               {label}
             </span>
           </span>
         );
 
         return (
-          <li key={id} className="relative flex items-center pr-5 last:pr-0">
+          <li
+            key={id}
+            className={cn(
+              "relative flex items-center",
+              spread
+                ? "min-w-0 flex-1 justify-center pr-0"
+                : "pr-5 last:pr-0",
+            )}
+          >
             {!isLast ? (
               <span
                 aria-hidden
-                className={[
-                  "pointer-events-none absolute top-1/2 left-[calc(100%-1.15rem)] h-px w-5 -translate-y-1/2",
-                  connectorDone ? "bg-mark/45" : "bg-line",
-                ].join(" ")}
+                className={cn(
+                  "pointer-events-none absolute top-1/2 -translate-y-1/2",
+                  spread
+                    ? "left-[calc(50%+3.25rem)] right-[calc(-50%+3.25rem)] h-[2px]"
+                    : "left-[calc(100%-1.15rem)] h-px w-5",
+                  connectorDone ? "bg-mark/50" : "bg-line",
+                )}
               />
             ) : null}
             {interactive && onSelect && !preview ? (
@@ -186,7 +221,10 @@ export function ProcessRail({
                 onClick={() => onSelect(id)}
                 aria-current={state === "active" ? "step" : undefined}
                 aria-label={spoken}
-                className="cursor-pointer rounded-[4px] px-0.5 py-0.5 motion-safe:transition-colors hover:bg-surface-2/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                className={cn(
+                  "cursor-pointer rounded-[var(--radius-control)] motion-safe:transition-colors hover:bg-surface-2/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+                  spread ? "px-1.5 py-1.5" : "px-0.5 py-0.5",
+                )}
               >
                 {body}
               </button>
@@ -194,6 +232,7 @@ export function ProcessRail({
               <span
                 aria-current={!preview && state === "active" ? "step" : undefined}
                 aria-label={spoken}
+                className={spread ? "px-1.5 py-1.5" : undefined}
               >
                 {body}
               </span>

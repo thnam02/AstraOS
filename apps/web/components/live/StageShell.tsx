@@ -22,10 +22,10 @@ export function StageHeader({ stage }: { stage: LiveStage }) {
       <p className="eyebrow text-mark">
         {meta.number} · {meta.title}
       </p>
-      <h2 className="mt-1.5 text-[1.65rem] font-semibold tracking-tight">
+      <h2 className="mt-1 text-[1.35rem] font-semibold tracking-tight">
         {meta.heading}
       </h2>
-      <p className="mt-1.5 max-w-2xl text-[15px] leading-6 text-muted">
+      <p className="mt-1 max-w-2xl text-sm leading-5 text-muted">
         {meta.description}
       </p>
     </header>
@@ -38,11 +38,11 @@ export function StageMetricStrip({
   items: { label: string; value: ReactNode; hint?: string }[];
 }) {
   return (
-    <dl className="grid gap-4 sm:grid-cols-3">
+    <dl className="grid gap-3 sm:grid-cols-3">
       {items.map((item) => (
         <div key={item.label}>
           <dt className="type-small text-muted">{item.label}</dt>
-          <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+          <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
             {item.value}
           </dd>
           {item.hint ? (
@@ -77,26 +77,26 @@ export function StageResult({
     <section className={cn("stage-result", emphasis && "stage-result-emphasis")}>
       <p className="eyebrow text-mark">{label}</p>
       {title || value ? (
-        <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           {title ? (
-            <h3 className="text-[1.5rem] font-semibold tracking-tight">{title}</h3>
+            <h3 className="text-[1.25rem] font-semibold tracking-tight">{title}</h3>
           ) : null}
           {value ? (
-            <p className="font-mono text-2xl font-semibold tabular-nums">{value}</p>
+            <p className="font-mono text-xl font-semibold tabular-nums">{value}</p>
           ) : null}
         </div>
       ) : null}
       {explanation ? (
-        <div className="mt-3 max-w-2xl text-[15px] leading-6">{explanation}</div>
+        <div className="mt-2 max-w-2xl text-sm leading-5">{explanation}</div>
       ) : null}
       {metrics?.length ? (
-        <div className="mt-6 border-t border-line-muted pt-5">
+        <div className="mt-4 border-t border-line-muted pt-3">
           <StageMetricStrip items={metrics} />
         </div>
       ) : null}
-      {children ? <div className="mt-5">{children}</div> : null}
+      {children ? <div className="mt-3">{children}</div> : null}
       {actions ? (
-        <div className="mt-6 flex flex-wrap items-center gap-3">{actions}</div>
+        <div className="mt-4 flex flex-wrap items-center gap-2.5">{actions}</div>
       ) : null}
     </section>
   );
@@ -129,7 +129,7 @@ export function StageSection({
 }
 
 export function StageSplit({ children }: { children: ReactNode }) {
-  return <div className="grid gap-8 lg:grid-cols-2">{children}</div>;
+  return <div className="grid gap-5 lg:grid-cols-2">{children}</div>;
 }
 
 export function StageDisclosure({
@@ -179,16 +179,12 @@ export function StagePrimaryAction({
 
 export function StageLayout({
   children,
-  wide = false,
+  wide: _wide = false,
 }: {
   children: ReactNode;
   wide?: boolean;
 }) {
-  return (
-    <div className={cn("space-y-10", wide ? "max-w-[1280px]" : "max-w-[1120px]")}>
-      {children}
-    </div>
-  );
+  return <div className="w-full space-y-6">{children}</div>;
 }
 
 export function StageFooter({
@@ -208,7 +204,7 @@ export function StageFooter({
 
   return (
     <nav
-      className="flex max-w-[1120px] flex-wrap items-start justify-between gap-4 border-t border-line pt-6"
+      className="flex w-full flex-wrap items-start justify-between gap-3 border-t border-line pt-4"
       aria-label="Stage"
     >
       {previous && previousEnabled ? (

@@ -25,7 +25,7 @@ export function BuyerContextBar({
   const [open, setOpen] = useState(false);
 
   return (
-    <section className="max-w-[1120px] border-b border-line pb-3">
+    <section className="w-full border-b border-line pb-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
         <p className="text-sm leading-6">
           <span className="eyebrow mr-3 align-middle">Buyer agent</span>

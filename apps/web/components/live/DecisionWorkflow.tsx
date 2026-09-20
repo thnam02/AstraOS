@@ -52,8 +52,8 @@ function FullWorkflow({
   onSelect: (stage: LiveStage) => void;
 }) {
   return (
-    <nav className="overflow-x-auto" aria-label="Decision workflow">
-      <ol className="flex min-h-[56px] min-w-max items-stretch">
+    <nav className="w-full overflow-x-auto" aria-label="Decision workflow">
+      <ol className="flex min-h-[64px] w-full min-w-[40rem] items-stretch">
         {COMMERCE_STAGES.map((id, index) => {
           const meta = STAGE_META[id];
           const state = processRailState(id, flags, active);
@@ -64,14 +64,14 @@ function FullWorkflow({
           return (
             <li
               key={id}
-              className="relative flex min-w-[5.75rem] flex-1 basis-0 justify-center"
+              className="relative flex min-w-0 flex-1 basis-0 justify-center"
             >
               {!isLast ? (
                 <span
                   aria-hidden
                   className={cn(
-                    "pointer-events-none absolute top-[13px] left-[calc(50%+0.55rem)] right-[-50%] h-px",
-                    connectorDone ? "bg-mark/45" : "bg-line",
+                    "pointer-events-none absolute top-[15px] left-[calc(50%+0.65rem)] right-[-50%] h-[2px]",
+                    connectorDone ? "bg-mark/50" : "bg-line",
                   )}
                 />
               ) : null}
@@ -82,20 +82,21 @@ function FullWorkflow({
                 aria-current={state === "active" ? "step" : undefined}
                 aria-label={`${meta.number} ${meta.title}, ${spokenState(state)}`}
                 className={cn(
-                  "group relative flex w-full max-w-[7rem] flex-col items-center px-1 py-1 text-center",
+                  "group relative flex w-full max-w-[8.5rem] flex-col items-center px-1.5 py-1.5 text-center",
+                  "rounded-[var(--radius-control)]",
                   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
                   "motion-safe:transition-colors",
                   disabled
                     ? "cursor-not-allowed opacity-55"
                     : "cursor-pointer hover:bg-surface-2/80",
                   state === "active" &&
-                    "border-b-2 border-mark pb-[calc(0.25rem-2px)]",
+                    "border-b-2 border-mark pb-[calc(0.375rem-2px)]",
                 )}
               >
-                <StageNode state={state} />
+                <StageNode state={state} size="md" />
                 <span
                   className={cn(
-                    "mt-0.5 text-[9px] font-medium leading-none tracking-[0.08em]",
+                    "mt-1 text-[10px] font-medium leading-none tracking-[0.08em]",
                     state === "active"
                       ? "text-mark"
                       : state === "failed" || state === "blocked"
@@ -107,7 +108,7 @@ function FullWorkflow({
                 </span>
                 <span
                   className={cn(
-                    "mt-0.5 text-[12px] leading-none",
+                    "mt-1 text-[14px] leading-none",
                     state === "active" && "font-semibold text-ink",
                     state === "complete" && "font-medium text-ink",
                     (state === "failed" || state === "blocked") &&
@@ -117,7 +118,7 @@ function FullWorkflow({
                 >
                   {meta.title}
                 </span>
-                <span className="mt-0.5 text-[10px] leading-none text-muted">
+                <span className="mt-1 text-[11px] leading-none text-muted">
                   {meta.subtitle}
                 </span>
               </button>
@@ -280,7 +281,7 @@ export function DecisionWorkflow({
     <>
       <div
         ref={fullRef}
-        className="-mx-6 border-b border-line-muted px-6 py-1"
+        className="-mx-4 border-b border-line-muted px-4 py-1.5 md:-mx-7 md:px-7 xl:-mx-8 xl:px-8"
       >
         <FullWorkflow active={active} flags={flags} onSelect={onSelect} />
       </div>

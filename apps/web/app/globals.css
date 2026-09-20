@@ -148,11 +148,11 @@ html {
     border-left: 3px solid var(--color-mark);
     border-radius: var(--radius-control);
     box-shadow: var(--shadow-panel);
-    padding: 1.5rem 1.75rem;
+    padding: 1.1rem 1.25rem;
   }
 
   .stage-result-emphasis {
-    padding: 1.75rem 2rem;
+    padding: 1.25rem 1.4rem;
   }
 
   .eyebrow {
@@ -326,8 +326,48 @@ html {
   .page-shell {
     margin-inline: auto;
     width: 100%;
-    max-width: 1480px;
-    padding-inline: 1.5rem;
+    max-width: 77.5rem; /* 1240px */
+    padding-inline: 1rem; /* 16px mobile */
+  }
+
+  @media (min-width: 768px) {
+    .page-shell {
+      max-width: 77.5rem; /* 1240px */
+      padding-inline: 1.75rem; /* 28px tablet */
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .page-shell {
+      max-width: 82.5rem; /* 1320px large desktop */
+      padding-inline: 2rem;
+    }
+  }
+
+  .live-entry-title {
+    font-size: 1.875rem; /* 30px */
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+  }
+
+  @media (min-width: 1024px) {
+    .live-entry-title {
+      font-size: 2.0625rem; /* 33px */
+    }
+  }
+
+  .live-entry-lede {
+    font-size: 0.9375rem; /* 15px */
+    line-height: 1.55;
+    color: var(--color-muted);
+  }
+
+  @media (min-width: 1024px) {
+    .live-entry-lede {
+      font-size: 1rem; /* 16px */
+      line-height: 1.5;
+    }
   }
 
   .skip-link {

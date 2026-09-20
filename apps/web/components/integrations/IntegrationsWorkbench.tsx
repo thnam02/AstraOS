@@ -11,6 +11,9 @@ import {
   AstraSectionHeader,
   AstraStatusBadge,
 } from "@/components/astra";
+import { SectionTabs } from "@/components/shared/SectionTabs";
+import { Drawer } from "@/components/shared/Drawer";
+
 import { ExchangeInspector } from "@/components/integrations/ExchangeInspector";
 import {
   getAgentActivity,
@@ -41,6 +44,8 @@ export function IntegrationsWorkbench() {
   const [error, setError] = useState<string | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [showReadiness, setShowReadiness] = useState(false);
   const [inspect, setInspect] = useState<AgentActivityItem | null>(null);
 
   const loadCore = useCallback(async () => {
@@ -126,319 +131,422 @@ export function IntegrationsWorkbench() {
     ? operationPresentation(capabilities.operations)
     : [];
 
+  const pageSize = 4;
+  const lastPage = Math.max(
+    0,
+    Math.ceil((activity?.length ?? 0) / pageSize) - 1,
+  );
+  const currentPage = Math.min(page, lastPage);
+  const visibleActivity =
+    activity?.slice(currentPage * pageSize, (currentPage + 1) * pageSize) ?? [];
+
+  const activityPanel = (
+    <AstraPanel className="integration-panel">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="eyebrow">Recent agent activity</p>
+          <p className="mt-1 text-xs text-muted">
+            Latest {activity?.length ?? 0} sessions · agent requests and
+            operator tests
+          </p>
+        </div>
+        <Link href="/" className="btn-ghost">
+          Create test request
+        </Link>
+      </div>
+      {activityError ? (
+        <AstraErrorState
+          title="Activity unavailable"
+          message={activityError}
+          next="Refresh to retry loading agent activity."
+        />
+      ) : activity?.length === 0 ? (
+        <AstraEmptyState
+          title="No agent activity yet"
+          body="Create a test request or connect a buyer agent to see exchanges here."
+        />
+      ) : (
+        <ul className="divide-y divide-line border-y border-line">
+          {visibleActivity.map((item) => {
+            const ref =
+              item.order_number ??
+              item.request_id ??
+              item.proposal_id ??
+              item.negotiation_session_id;
+            const shortRef =
+              item.order_number ?? ref.replace(/-/g, "").slice(0, 8);
+            const when = new Date(item.occurred_at);
+            return (
+              <li
+                key={item.negotiation_session_id}
+                className="integration-activity-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-5 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="integration-event-title text-base font-semibold">
+                    {activityKindLabel(item.kind)}
+                  </p>
+                  <p
+                    className="line-clamp-2 text-sm leading-5 text-muted"
+                    title={item.intent_summary}
+                  >
+                    {item.intent_summary}
+                  </p>
+                  <p className="mt-2 flex flex-wrap gap-x-3 text-xs text-muted">
+                    <time
+                      dateTime={item.occurred_at}
+                      title={when.toLocaleString()}
+                    >
+                      {when.toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      {when.toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </time>
+                    <span>{channelLabel(item.channel)}</span>
+                    <span className="font-mono" title={ref}>
+                      {shortRef}
+                    </span>
+                    <span>{humanizeEnum(item.status)}</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-base font-medium tabular-nums">
+                    {item.total_amount_cents != null
+                      ? formatAudCents(item.total_amount_cents)
+                      : "—"}
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-quiet"
+                    aria-label={`Inspect exchange ${shortRef}`}
+                    onClick={() => setInspect(item)}
+                  >
+                    Inspect
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {!activityError && (activity?.length ?? 0) > 0 ? (
+        <nav
+          className="mt-3 flex items-center justify-between text-xs"
+          aria-label="Activity pages"
+        >
+          <button
+            type="button"
+            className="btn-quiet disabled:opacity-40"
+            disabled={currentPage === 0}
+            onClick={() => setPage(currentPage - 1)}
+          >
+            Previous
+          </button>
+          <span className="text-muted">
+            {currentPage * pageSize + 1}–
+            {Math.min((currentPage + 1) * pageSize, activity!.length)} of{" "}
+            {activity!.length}
+          </span>
+          <button
+            type="button"
+            className="btn-quiet disabled:opacity-40"
+            disabled={currentPage === lastPage}
+            onClick={() => setPage(currentPage + 1)}
+          >
+            Next
+          </button>
+        </nav>
+      ) : null}
+    </AstraPanel>
+  );
+
+  const capabilitiesPanel = (
+    <AstraPanel className="integration-panel flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">Agent capabilities</h2>
+          <p className="mt-1 text-sm text-muted">
+            Operations advertised by the connected API.
+          </p>
+        </div>
+        <span className="shrink-0 font-mono text-sm text-muted">
+          {operations.length} operations
+        </span>
+      </div>
+      {operations.length ? (
+        <ul className="grid flex-1 auto-rows-fr gap-x-6 sm:grid-cols-2">
+          {operations.map((row, index) => (
+            <li
+              key={row.operation}
+              className="flex items-center gap-3 border-t border-line py-3"
+            >
+              <span className="self-start pt-0.5 font-mono text-xs tabular-nums text-muted">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div>
+                <p className="text-xs text-muted">{row.group}</p>
+                <p className="mt-1 text-base font-medium leading-5">
+                  {row.label}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted">No capabilities loaded.</p>
+      )}
+      <div className="grid gap-4 border-t border-line pt-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        {capabilities?.supported?.length ? (
+          <section aria-label="Supported capabilities">
+            <p className="eyebrow text-mark">Supported</p>
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {capabilities.supported.map((item) => (
+                <li
+                  key={item}
+                  className="rounded-[var(--radius-control)] bg-canvas px-2 py-1 text-xs leading-4"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        {capabilities?.not_supported?.length ? (
+          <section aria-label="Capability limits">
+            <p className="eyebrow">Not supported</p>
+            <ul className="mt-2 space-y-1 text-xs leading-5 text-muted">
+              {capabilities.not_supported.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
+    </AstraPanel>
+  );
+
+  const referencePanel = (
+    <AstraPanel className="integration-panel flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">Public REST contract</h2>
+          <p className="mt-1 text-sm text-muted">
+            Endpoints, methods, and their role in the exchange.
+          </p>
+        </div>
+        <span className="shrink-0 font-mono text-sm text-muted">
+          {AGENT_API_REFERENCE.length} endpoints
+        </span>
+      </div>
+      <ul className="grid flex-1 auto-rows-fr divide-y divide-line border-y border-line">
+        {AGENT_API_REFERENCE.map((row) => (
+          <li
+            key={`${row.method}-${row.path}`}
+            className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 py-3 xl:grid-cols-[3.5rem_minmax(0,1.2fr)_minmax(0,1fr)]"
+          >
+            <span className="self-center rounded-[var(--radius-control)] bg-canvas px-2 py-1.5 text-center font-mono text-xs font-semibold">
+              {row.method}
+            </span>
+            <code className="min-w-0 font-mono text-sm leading-5 [overflow-wrap:anywhere]">
+              {row.path}
+            </code>
+            <p className="col-start-2 text-sm leading-5 text-muted xl:col-start-auto">
+              {row.purpose}
+            </p>
+          </li>
+        ))}
+      </ul>
+      <a
+        href={openApiDocsUrl()}
+        target="_blank"
+        rel="noreferrer"
+        className="btn-quiet self-start"
+      >
+        View full request and response schemas →
+      </a>
+    </AstraPanel>
+  );
+
   return (
-    <div className="space-y-8">
+    <div className="integrations-workbench space-y-4">
       <AstraSectionHeader
         eyebrow="Integrations"
-        title="Connect autonomous buyer agents to AstraOS"
-        description="Machine access to the merchant decision system. AstraOS answers through the public Agent API; MCP is an optional adapter over the same REST contract."
+        title="Connect buyer agents"
+        description="One public Agent API for discovery, negotiation, and order execution."
+        action={
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={loading}
+              onClick={load}
+            >
+              {loading ? "Refreshing…" : "Refresh"}
+            </button>
+            <a
+              href={openApiDocsUrl()}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-primary"
+            >
+              Open API docs
+            </a>
+          </div>
+        }
       />
 
       {error ? (
         <AstraErrorState
           title="Unable to load agent API status"
           message={error}
-          next="Confirm the API is running, then retry."
+          next="Confirm the API is running, then use Refresh to retry."
         />
       ) : null}
-      {error ? (
-        <button type="button" className="btn-primary" onClick={load}>
-          Retry
-        </button>
-      ) : null}
 
-      <AstraPanel>
-        <p className="eyebrow">Architecture</p>
-        <p className="mt-2 font-mono text-sm leading-7 text-ink">
-          BUYER AGENT
-          <br />
-          &nbsp;&nbsp;↓
-          <br />
-          AGENT API
-          <br />
-          &nbsp;&nbsp;↓
-          <br />
-          ASTRAOS
-          <br />
-          &nbsp;&nbsp;↓
-          <br />
-          Merchant Data + Merchant Rules
-        </p>
-        <p className="mt-3 type-small text-muted">
-          Machine responses are grounded in merchant truth and policy authority.
-        </p>
-      </AstraPanel>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <AstraPanel tone="primary">
-          <p className="eyebrow">Agent API</p>
-          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-            <div>
-              <dt className="text-muted">Status</dt>
-              <dd className="mt-1">
-                {ready ? (
-                  <AstraStatusBadge
-                    tone={
-                      ready.status === "ready"
-                        ? "positive"
-                        : ready.status === "degraded"
-                          ? "warning"
-                          : "negative"
-                    }
-                  >
-                    {humanizeEnum(ready.status)}
-                  </AstraStatusBadge>
-                ) : (
-                  "—"
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted">Protocol</dt>
-              <dd className="mt-1 font-medium">
-                {capabilities?.protocol?.join(" · ") ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted">API version</dt>
-              <dd className="mt-1 font-mono">{capabilities?.version ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted">Service</dt>
-              <dd className="mt-1 font-mono text-xs">
-                {capabilities?.service ?? "—"}
-              </dd>
-            </div>
-          </dl>
-          {capabilities?.disclaimer ? (
-            <p className="mt-3 type-small text-muted">{capabilities.disclaimer}</p>
-          ) : null}
-          {!apiOnline && ready ? (
-            <p className="mt-2 text-sm text-danger">
-              Readiness reports {ready.status}. Agent traffic may be unreliable.
-            </p>
-          ) : null}
-        </AstraPanel>
-
-        <AstraPanel>
-          <p className="eyebrow">MCP adapter</p>
-          <div className="mt-3">
-            <AstraStatusBadge tone={mcpAvailable ? "positive" : "warning"}>
-              {mcpAvailable ? "Available" : "Not advertised"}
-            </AstraStatusBadge>
-          </div>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            Allows compatible agent clients to access AstraOS through MCP while
-            the adapter continues to use the public AstraOS REST interface. MCP
-            is not the core backend.
-          </p>
-        </AstraPanel>
+      <div
+        className="integration-architecture flex flex-wrap items-center gap-x-3 gap-y-2 border-y border-line py-3 text-sm text-muted"
+        aria-label="Integration architecture"
+      >
+        <span className="font-medium text-ink">Buyer agent</span>
+        <span className="inline-flex items-center gap-3">
+          <span aria-hidden>→</span>
+          <span>Agent API</span>
+        </span>
+        <span className="inline-flex items-center gap-3">
+          <span aria-hidden>→</span>
+          <span className="font-medium text-ink">AstraOS</span>
+        </span>
+        <span className="inline-flex items-center gap-3">
+          <span aria-hidden>→</span>
+          <span>Merchant data + rules</span>
+        </span>
       </div>
 
-      <AstraPanel>
-        <p className="eyebrow">Capabilities</p>
-        <p className="mt-1 type-small text-muted">
-          From GET /api/v1/agent/capabilities — not a static catalogue.
-        </p>
-        {operations.length ? (
-          <ul className="mt-4 divide-y divide-line border-t border-line">
-            {operations.map((row) => (
-              <li
-                key={row.operation}
-                className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm"
-              >
-                <span className="text-xs tracking-[0.08em] text-muted">
-                  {row.group.toUpperCase()}
-                </span>
-                <span className="font-medium">{row.label}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm text-muted">No capabilities loaded.</p>
-        )}
-        {capabilities?.supported?.length ? (
-          <p className="mt-3 type-small text-muted">
-            Supported: {capabilities.supported.join(" · ")}
-          </p>
-        ) : null}
-        {capabilities?.not_supported?.length ? (
-          <p className="mt-1 type-small text-muted">
-            Not supported: {capabilities.not_supported.join(" · ")}
-          </p>
-        ) : null}
-      </AstraPanel>
-
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="eyebrow">Recent agent activity</p>
-            <p className="mt-1 type-small text-muted">
-              Real negotiation sessions from AstraOS. Empty until traffic or
-              operator tests exist.
-            </p>
-          </div>
-          <button type="button" className="btn-ghost" onClick={load}>
-            Refresh
-          </button>
-        </div>
-
-        {activityError ? (
-          <AstraErrorState
-            title="Activity unavailable"
-            message={activityError}
-            next="Agent API status above may still be valid. Retry after confirming the API includes /agent/activity."
-          />
-        ) : null}
-
-        {!activityError && activity && activity.length === 0 ? (
-          <AstraEmptyState
-            title="No agent activity yet"
-            body="No autonomous buyer requests have been received."
-            action={
-              <div className="flex flex-wrap gap-2">
-                <Link href="/" className="btn-primary">
-                  Create test request
-                </Link>
-                <a
-                  href={openApiDocsUrl()}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-ghost"
+      <div className="integration-columns grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        <aside className="min-w-0 space-y-4" aria-label="Connection status">
+          <AstraPanel tone="primary" className="integration-panel">
+            <div className="flex items-center justify-between gap-3">
+              <p className="eyebrow">Agent API</p>
+              {ready ? (
+                <AstraStatusBadge
+                  tone={
+                    ready.status === "ready"
+                      ? "positive"
+                      : ready.status === "degraded"
+                        ? "warning"
+                        : "negative"
+                  }
                 >
-                  View API reference
-                </a>
+                  {ready.status === "degraded"
+                    ? "Experimental"
+                    : humanizeEnum(ready.status)}
+                </AstraStatusBadge>
+              ) : (
+                <span className="text-xs text-muted">Unavailable</span>
+              )}
+            </div>
+            <dl className="integration-status mt-4 space-y-3 text-base">
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Protocol</dt>
+                <dd>{capabilities?.protocol?.join(" · ") ?? "—"}</dd>
               </div>
-            }
-          />
-        ) : null}
-
-        {!activityError && activity && activity.length > 0 ? (
-          <div className="overflow-x-auto border border-line bg-surface">
-            <table className="w-full min-w-[640px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-line bg-canvas text-left text-[11px] font-medium tracking-[0.06em] text-muted uppercase">
-                  <th className="whitespace-nowrap px-3 py-2">When</th>
-                  <th className="px-3 py-2">Event</th>
-                  <th className="whitespace-nowrap px-3 py-2">Channel</th>
-                  <th className="whitespace-nowrap px-3 py-2">Ref</th>
-                  <th className="whitespace-nowrap px-3 py-2">Status</th>
-                  <th className="whitespace-nowrap px-3 py-2 text-right">Total</th>
-                  <th className="w-px whitespace-nowrap px-3 py-2 text-right">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {activity.map((item) => {
-                  const fullRef =
-                    item.order_number ??
-                    item.request_id ??
-                    item.proposal_id ??
-                    item.negotiation_session_id;
-                  const shortRef = item.order_number
-                    ? item.order_number
-                    : fullRef.replace(/-/g, "").slice(0, 8);
-                  const when = new Date(item.occurred_at);
-                  return (
-                    <tr
-                      key={item.negotiation_session_id}
-                      className="border-b border-line last:border-0 hover:bg-canvas/70"
-                    >
-                      <td className="whitespace-nowrap px-3 py-2 align-middle tabular-nums text-xs text-muted">
-                        <time
-                          dateTime={item.occurred_at}
-                          title={when.toLocaleString()}
-                        >
-                          {when.toLocaleDateString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                          })}{" "}
-                          {when.toLocaleTimeString(undefined, {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </time>
-                      </td>
-                      <td className="max-w-[18rem] px-3 py-2 align-middle">
-                        <p className="truncate font-medium leading-5">
-                          {activityKindLabel(item.kind)}
-                        </p>
-                        <p
-                          className="truncate text-xs leading-4 text-muted"
-                          title={item.intent_summary}
-                        >
-                          {item.intent_summary}
-                        </p>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 align-middle text-xs">
-                        {channelLabel(item.channel)}
-                      </td>
-                      <td
-                        className="whitespace-nowrap px-3 py-2 align-middle font-mono text-xs tabular-nums text-muted"
-                        title={fullRef}
-                      >
-                        {shortRef}
-                      </td>
-                      <td className="max-w-[8.5rem] px-3 py-2 align-middle text-xs">
-                        <span className="line-clamp-1" title={humanizeEnum(item.status)}>
-                          {humanizeEnum(item.status)}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 align-middle text-right font-mono text-xs tabular-nums">
-                        {item.total_amount_cents != null
-                          ? formatAudCents(item.total_amount_cents)
-                          : "—"}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 align-middle text-right">
-                        <button
-                          type="button"
-                          className="btn-quiet"
-                          onClick={() => setInspect(item)}
-                        >
-                          Inspect
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-      </section>
-
-      <AstraPanel>
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
-            <p className="eyebrow">API reference</p>
-            <p className="mt-1 type-small text-muted">
-              Concise public contract. Full schemas live in OpenAPI.
-            </p>
-          </div>
-          <a
-            href={openApiDocsUrl()}
-            target="_blank"
-            rel="noreferrer"
-            className="btn-ghost"
-          >
-            Open API docs
-          </a>
-        </div>
-        <ul className="mt-4 divide-y divide-line border-t border-line">
-          {AGENT_API_REFERENCE.map((row) => (
-            <li
-              key={`${row.method}-${row.path}`}
-              className="grid gap-1 py-2 text-sm md:grid-cols-[5rem_1fr_1fr] md:items-baseline md:gap-4"
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Version</dt>
+                <dd className="font-mono">{capabilities?.version ?? "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Service</dt>
+                <dd className="break-all text-right font-mono text-sm">
+                  {capabilities?.service ?? "—"}
+                </dd>
+              </div>
+            </dl>
+            {!apiOnline && ready ? (
+              <p className="mt-3 text-xs text-danger">
+                Agent traffic may be unreliable until required checks pass.
+              </p>
+            ) : null}
+            <button
+              type="button"
+              className="btn-quiet mt-3"
+              disabled={!ready}
+              onClick={() => setShowReadiness(true)}
             >
-              <span className="font-mono text-xs font-semibold">{row.method}</span>
-              <code className="font-mono text-xs">{row.path}</code>
-              <span className="text-muted">{row.purpose}</span>
+              Inspect readiness
+            </button>
+            {capabilities?.disclaimer ? (
+              <p className="mt-2 text-xs leading-5 text-muted">
+                {capabilities.disclaimer}
+              </p>
+            ) : null}
+          </AstraPanel>
+          <AstraPanel className="integration-panel">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="eyebrow">MCP adapter</p>
+              <AstraStatusBadge tone={mcpAvailable ? "positive" : "warning"}>
+                {mcpAvailable ? "Available" : "Not advertised"}
+              </AstraStatusBadge>
+            </div>
+            <p className="mt-3 text-sm leading-5 text-muted">
+              Optional access for compatible agent clients. Uses the same public
+              REST contract and merchant rules.
+            </p>
+          </AstraPanel>
+        </aside>
+        <SectionTabs
+          equalHeight
+          label="Integration workspace"
+          items={[
+            { label: "Activity", content: activityPanel },
+            { label: "Capabilities", content: capabilitiesPanel },
+            { label: "API reference", content: referencePanel },
+          ]}
+        />
+      </div>
+
+      <Drawer
+        open={showReadiness}
+        title="Agent API readiness"
+        onClose={() => setShowReadiness(false)}
+      >
+        <ul className="divide-y divide-line">
+          {ready?.checks.map((check) => (
+            <li key={check.name} className="py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium">
+                  {humanizeEnum(check.name)}
+                </p>
+                <AstraStatusBadge
+                  tone={
+                    check.ok
+                      ? "positive"
+                      : check.required
+                        ? "negative"
+                        : "warning"
+                  }
+                >
+                  {check.ok
+                    ? "Passed"
+                    : check.required
+                      ? "Failed"
+                      : "Unavailable"}
+                </AstraStatusBadge>
+              </div>
+              <p className="mt-1 break-words text-xs text-muted">
+                {check.detail}
+              </p>
             </li>
           ))}
         </ul>
-      </AstraPanel>
-
+        {ready?.degraded_mode.length ? (
+          <p className="mt-4 text-sm text-warning">
+            Degraded: {ready.degraded_mode.map(humanizeEnum).join(" · ")}
+          </p>
+        ) : null}
+      </Drawer>
       <ExchangeInspector
         item={inspect}
         open={Boolean(inspect)}

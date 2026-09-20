@@ -9,7 +9,11 @@ import {
   StageSection,
 } from "@/components/live/StageShell";
 import { matchScoreDisplay } from "@/lib/decisionNarrative";
-import { groupedRationale, primaryReasons, prettyFactDisplay } from "@/lib/matchDisplay";
+import {
+  groupedRationale,
+  primaryReasons,
+  prettyFactDisplay,
+} from "@/lib/matchDisplay";
 import type { RankedProductMatch } from "@/types";
 
 export function MatchStage({
@@ -31,17 +35,16 @@ export function MatchStage({
   );
   const groups = groupedRationale(top, 2);
   const reasons = primaryReasons(top, 2);
-  const explanation =
-    groups.length
-      ? `Strong fit for ${groups.map((item) => item.label.toLowerCase()).join(" and ")}.`
-      : reasons.length
-        ? reasons
-            .map((fact) => prettyFactDisplay(fact.attribute, fact.display))
-            .join(". ") + "."
-        : null;
+  const explanation = groups.length
+    ? `Strong fit for ${groups.map((item) => item.label.toLowerCase()).join(" and ")}.`
+    : reasons.length
+      ? reasons
+          .map((fact) => prettyFactDisplay(fact.attribute, fact.display))
+          .join(". ") + "."
+      : null;
 
   return (
-    <>
+    <div className="grid gap-3">
       <StageResult
         label="Best product match"
         title={top.product_name}
@@ -57,7 +60,10 @@ export function MatchStage({
         metrics={[
           { label: "Product fit", value: Math.round(top.product_fit * 100) },
           { label: "Context fit", value: Math.round(top.context_fit * 100) },
-          { label: "Preference fit", value: Math.round(top.preference_fit * 100) },
+          {
+            label: "Preference fit",
+            value: Math.round(top.preference_fit * 100),
+          },
         ]}
         actions={
           <>
@@ -93,6 +99,6 @@ export function MatchStage({
           compareNonce={compareNonce}
         />
       </StageSection>
-    </>
+    </div>
   );
 }

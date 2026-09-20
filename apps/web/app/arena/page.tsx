@@ -10,7 +10,7 @@ export default function ArenaPage() {
         title="Strategy evaluation"
         description="Compare AstraOS with simpler merchant decision strategies under identical commercial conditions."
       />
-      <div className="mt-5">
+      <div className="mt-3">
         <ArenaWorkbench />
       </div>
     </PageContainer>

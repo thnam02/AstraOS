@@ -16,12 +16,14 @@ import {
   AstraEmptyState,
   AstraErrorState,
   AstraLoadingState,
-  AstraMetricRow,
   AstraPanel,
   AstraSectionHeader,
   AstraStatusBadge,
   type AstraTone,
 } from "@/components/astra";
+import { SectionTabs } from "@/components/shared/SectionTabs";
+import { Drawer } from "@/components/shared/Drawer";
+
 import {
   generateLearningDataset,
   getLearningOverview,
@@ -69,6 +71,11 @@ function safeMessage(err: unknown, fallback: string): string {
 
 export function LearnWorkbench() {
   const targetId = useId();
+  const [labOpen, setLabOpen] = useState(false);
+  const [technical, setTechnical] = useState(false);
+  const [samplePage, setSamplePage] = useState(0);
+  const [missionPage, setMissionPage] = useState(0);
+  const [modelPage, setModelPage] = useState(0);
   const [overview, setOverview] = useState<LearningOverview | null>(null);
   const [train, setTrain] = useState<LearningTrainResponse | null>(null);
   const [phase, setPhase] = useState<LabPhase>("idle");
@@ -154,8 +161,7 @@ export function LearnWorkbench() {
     }
   }
 
-  const reports =
-    train?.reports ?? overview?.latest_training?.reports ?? {};
+  const reports = train?.reports ?? overview?.latest_training?.reports ?? {};
   const ablations = train?.ablations ?? overview?.latest_training?.ablations;
   const hero = train?.hero_mission ?? overview?.latest_training?.hero_mission;
   const selected =
@@ -207,203 +213,191 @@ export function LearnWorkbench() {
     );
   }
 
+  const modelCount =
+    Object.keys(reports).length || (overview?.models.length ?? 0);
+  const missionCount = hero?.offers?.length ?? 0;
+  const sampleCount = overview?.sample_interactions?.length ?? 0;
+  const modelOffset =
+    Math.min(modelPage, Math.max(0, Math.ceil(modelCount / 5) - 1)) * 5;
+  const missionOffset =
+    Math.min(missionPage, Math.max(0, Math.ceil(missionCount / 5) - 1)) * 5;
+  const sampleOffset =
+    Math.min(samplePage, Math.max(0, Math.ceil(sampleCount / 5) - 1)) * 5;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <AstraSectionHeader
         eyebrow="Learn"
         title="Outcome learning"
-        description="How future merchant decisions can improve from observed outcomes. LIVE currently uses transparent cold-start scoring; learned response models remain experimental until real B2A outcomes exist."
+        description="How buyer intent, merchant offers, and observed outcomes can improve future decisions."
       />
-
-      <AstraPanel>
-        <p className="eyebrow">Outcome learning flow</p>
-        <p className="mt-1 type-small text-muted">
-          How observed outcomes can improve future merchant responses.
-        </p>
-        <ol
-          className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6"
-          aria-label="Outcome learning flow"
-        >
-          {LEARN_STORY.map((item, index) => (
-            <li key={item.id} className="relative min-w-0">
-              <div className="flex items-start gap-2">
-                <span
-                  aria-hidden
-                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-line text-[10px] text-muted"
-                >
-                  {index + 1}
+      <div className="grid items-stretch gap-5 lg:grid-cols-2">
+        <AstraPanel className="flex flex-col">
+          <h2 className="text-xl font-semibold">Outcome learning flow</h2>
+          <p className="mt-2 text-sm text-muted">
+            From a buyer request to future decision support.
+          </p>
+          <ol
+            className="mt-4 grid flex-1 auto-rows-fr"
+            aria-label="Outcome learning flow"
+          >
+            {LEARN_STORY.map((item, index) => (
+              <li
+                key={item.id}
+                className="grid grid-cols-[2rem_minmax(0,1fr)] items-center gap-3 border-t border-line py-2.5"
+              >
+                <span className="font-mono text-sm tabular-nums text-mark">
+                  {String(index + 1).padStart(2, "0")}
                 </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold tracking-[0.06em] uppercase text-ink">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 type-small text-muted">{item.body}</p>
+                <div>
+                  <h3 className="text-sm font-semibold">{item.label}</h3>
+                  <p className="mt-0.5 text-sm text-muted">{item.body}</p>
                 </div>
-              </div>
-              {index < LEARN_STORY.length - 1 ? (
-                <p
-                  className="mt-2 hidden text-muted xl:block xl:pl-7"
-                  aria-hidden
-                >
-                  →
-                </p>
-              ) : null}
-            </li>
-          ))}
-        </ol>
-      </AstraPanel>
-
-      <AstraPanel>
-        <p className="eyebrow">Current capability</p>
-        <p className="mt-1 type-small text-muted">
-          What AstraOS uses in production today versus experimental and future
-          response models.
-        </p>
-        <AstraDataTable className="mt-4">
-          <thead>
-            <tr className="border-b border-line text-muted">
-              <th className="px-3 py-2 font-medium">Capability</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
+              </li>
+            ))}
+          </ol>
+        </AstraPanel>
+        <AstraPanel className="flex flex-col">
+          <h2 className="text-xl font-semibold">Current capability</h2>
+          <p className="mt-2 text-sm text-muted">
+            What is active today, experimental, and still to come.
+          </p>
+          <dl className="mt-4 grid flex-1 auto-rows-fr">
             {LEARN_STATUS.map((item) => (
-              <tr key={item.label} className="border-b border-line">
-                <td className="px-3 py-2">{item.label}</td>
-                <td className="px-3 py-2">
+              <div
+                key={item.label}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line py-3"
+              >
+                <dt className="text-sm font-medium">{item.label}</dt>
+                <dd>
                   <AstraStatusBadge tone={capabilityTone(item.state)}>
                     {learnCapabilityStatusLabel(item.state)}
                   </AstraStatusBadge>
-                </td>
-              </tr>
+                </dd>
+              </div>
             ))}
-          </tbody>
-        </AstraDataTable>
-      </AstraPanel>
-
-      <AstraPanel tone="primary">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <p className="eyebrow">Experimental learning lab</p>
-            <h2 className="type-section text-ink">Synthetic outcome training</h2>
-            <p className="max-w-2xl type-small text-muted">
-              Synthetic buyer-agent outcomes only. These models are not observed
-              production conversion models.
-            </p>
-          </div>
-          {hasDataset ? (
-            <AstraStatusBadge tone="warning">Dataset ready</AstraStatusBadge>
-          ) : (
-            <AstraStatusBadge tone="neutral">No dataset</AstraStatusBadge>
-          )}
+          </dl>
+          <p className="mt-4 border-t border-line pt-3 text-xs leading-5 text-muted">
+            LIVE uses transparent cold-start scoring. Learned models use
+            synthetic outcomes and remain experimental until real B2A outcomes
+            exist.
+          </p>
+        </AstraPanel>
+      </div>
+      <aside
+        className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3"
+        aria-label="Experimental learning lab"
+      >
+        <div>
+          <p className="text-sm font-medium">Experimental learning lab</p>
+          <p className="mt-1 text-xs text-muted">
+            {busy
+              ? phase === "generating"
+                ? "Generating synthetic outcomes…"
+                : "Training experimental models…"
+              : "Generate datasets, train models, and inspect synthetic evaluation results."}
+          </p>
         </div>
-
-        {actionError ? (
-          <div className="mt-4">
-            <AstraErrorState
-              title={
-                actionError.kind === "train"
-                  ? "Training failed"
-                  : "Dataset generation failed"
-              }
-              message={actionError.message}
-              next="Retry the action once the API is available. No production decisioning was changed."
-            />
-          </div>
-        ) : null}
-
-        {phase === "generating" ? (
-          <div className="mt-4" role="status" aria-live="polite">
-            <p className="text-sm font-medium">Generating synthetic outcomes</p>
-            <p className="mt-1 type-small text-muted">
-              Building a controlled synthetic dataset for experimental evaluation.
-            </p>
-          </div>
-        ) : null}
-
-        {phase === "training" ? (
-          <div className="mt-4" role="status" aria-live="polite">
-            <p className="text-sm font-medium">
-              Training experimental response model
-            </p>
-            <p className="mt-1 type-small text-muted">
-              Comparing candidate algorithms on held-out synthetic outcomes.
-            </p>
-          </div>
-        ) : null}
-
-        <div className="mt-5 grid gap-6 lg:grid-cols-2">
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs tracking-[0.08em] text-muted">DATASET</p>
-              {!hasDataset ? (
-                <div className="mt-3">
-                  <AstraEmptyState
-                    title="No synthetic dataset yet"
-                    body="Generate a controlled synthetic dataset to evaluate the experimental response model."
-                    action={
-                      <button
-                        type="button"
-                        className="btn-primary"
-                        disabled={busy}
-                        onClick={() => void onGenerate()}
-                      >
-                        Generate synthetic dataset
-                      </button>
-                    }
-                  />
-                </div>
-              ) : (
-                <div className="mt-3">
-                  <AstraMetricRow
-                    items={[
-                      {
-                        label: "Synthetic interactions",
-                        value: overview?.dataset?.interaction_count ?? 0,
-                      },
-                      {
-                        label: "Selected",
-                        value: overview?.dataset?.positive_count ?? 0,
-                      },
-                      {
-                        label: "Not selected",
-                        value: overview?.dataset?.negative_count ?? 0,
-                      },
-                      {
-                        label: "Missions",
-                        value: overview?.dataset?.metadata.mission_count ?? 0,
-                      },
-                    ]}
-                  />
-                </div>
-              )}
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs text-muted">
+            {hasDataset
+              ? `${formatCount(overview?.dataset?.interaction_count ?? 0)} synthetic rows`
+              : "No dataset"}
+          </span>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => setLabOpen(true)}
+          >
+            Open learning lab →
+          </button>
+        </div>
+      </aside>
+      <Drawer
+        wide
+        open={labOpen}
+        title="Experimental learning lab"
+        onClose={() => setLabOpen(false)}
+      >
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+          <AstraPanel tone="primary">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Learning lab</h2>
+              <AstraStatusBadge tone={hasDataset ? "warning" : "neutral"}>
+                {hasDataset ? "Dataset ready" : "No dataset"}
+              </AstraStatusBadge>
             </div>
-
-            <div className="border-t border-line pt-4">
-              <p className="text-xs tracking-[0.08em] text-muted">
-                DATASET GENERATION
+            {actionError ? (
+              <div className="mt-3">
+                <AstraErrorState
+                  title={
+                    actionError.kind === "train"
+                      ? "Training failed"
+                      : "Dataset generation failed"
+                  }
+                  message={actionError.message}
+                  next="Retry when the API is available."
+                />
+              </div>
+            ) : null}
+            {busy ? (
+              <p
+                className="mt-3 text-sm font-medium"
+                role="status"
+                aria-live="polite"
+              >
+                {phase === "generating"
+                  ? "Generating synthetic outcomes…"
+                  : "Training experimental models…"}
               </p>
-              <div className="mt-3 flex flex-wrap items-end gap-3">
-                <div>
-                  <label
-                    htmlFor={targetId}
-                    className="block text-xs text-muted"
-                  >
-                    Target rows
-                  </label>
-                  <input
-                    id={targetId}
-                    className="control mt-1 block w-28 px-2 py-1.5"
-                    type="number"
-                    min={40}
-                    max={5000}
-                    value={target}
-                    disabled={busy}
-                    onChange={(event) =>
-                      setTarget(Number(event.target.value) || 40)
-                    }
-                  />
-                </div>
+            ) : null}
+            {overview?.dataset ? (
+              <dl className="mt-4 grid grid-cols-2 gap-3">
+                {[
+                  {
+                    label: "Interactions",
+                    value: overview.dataset.interaction_count,
+                  },
+                  {
+                    label: "Missions",
+                    value: overview.dataset.metadata.mission_count ?? 0,
+                  },
+                  { label: "Selected", value: overview.dataset.positive_count },
+                  {
+                    label: "Not selected",
+                    value: overview.dataset.negative_count,
+                  },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <dt className="text-xs text-muted">{item.label}</dt>
+                    <dd className="mt-1 font-mono text-lg tabular-nums">
+                      {formatCount(item.value)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="mt-3 text-sm text-muted">
+                Generate a dataset to start comparing response models.
+              </p>
+            )}
+            <div className="mt-4 border-t border-line pt-4">
+              <label htmlFor={targetId} className="text-xs text-muted">
+                Target synthetic rows
+              </label>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <input
+                  id={targetId}
+                  className="control w-24 px-2 py-2 text-sm"
+                  type="number"
+                  min={40}
+                  max={5000}
+                  value={target}
+                  disabled={busy}
+                  onChange={(event) =>
+                    setTarget(Number(event.target.value) || 40)
+                  }
+                />
                 <button
                   type="button"
                   className={hasDataset ? "btn-ghost" : "btn-primary"}
@@ -413,217 +407,316 @@ export function LearnWorkbench() {
                   {phase === "generating"
                     ? "Generating…"
                     : hasDataset
-                      ? "Generate new dataset"
-                      : "Generate synthetic dataset"}
+                      ? "New dataset"
+                      : "Generate dataset"}
                 </button>
               </div>
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs tracking-[0.08em] text-muted">
-                MODEL TRAINING
+            <div className="mt-4 border-t border-line pt-4">
+              <p className="eyebrow">Model training</p>
+              <p className="mt-2 text-xs leading-5 text-muted">
+                Compare candidate algorithms on held-out synthetic outcomes.
               </p>
-              <p className="mt-2 type-small text-muted">
-                Trains candidate experimental algorithms on the synthetic
-                dataset and selects one for evaluation. Not used by LIVE
-                scoring.
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  className={hasDataset ? "btn-primary" : "btn-ghost"}
-                  disabled={busy || !hasDataset}
-                  aria-describedby={
-                    !hasDataset ? `${targetId}-train-hint` : undefined
-                  }
-                  onClick={() => void onTrain()}
-                >
-                  {phase === "training"
-                    ? "Training…"
-                    : "Train experimental model"}
-                </button>
-              </div>
+              <button
+                type="button"
+                className="btn-primary mt-3"
+                disabled={busy || !hasDataset}
+                aria-describedby={
+                  !hasDataset ? `${targetId}-train-hint` : undefined
+                }
+                onClick={() => void onTrain()}
+              >
+                {phase === "training"
+                  ? "Training…"
+                  : "Train experimental model"}
+              </button>
               {!hasDataset ? (
                 <p
                   id={`${targetId}-train-hint`}
-                  className="mt-2 type-small text-muted"
+                  className="mt-2 text-xs text-muted"
                 >
-                  Generate a synthetic dataset before training.
+                  Generate a dataset before training.
+                </p>
+              ) : null}
+              {hasModelResults ? (
+                <p className="mt-3 text-sm">
+                  <span className="text-muted">Selected algorithm</span>
+                  <br />
+                  <span className="font-medium">
+                    {selected ? humanizeEnum(selected) : "—"}
+                  </span>
                 </p>
               ) : null}
             </div>
-
-            {hasModelResults ? (
-              <div className="border-t border-line pt-4">
-                <p className="text-xs tracking-[0.08em] text-muted">
-                  MODEL STATUS
-                </p>
-                <dl className="mt-2 space-y-1.5 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted">Selected algorithm</dt>
-                    <dd className="font-medium">
-                      {selected ? humanizeEnum(selected) : "—"}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted">Status</dt>
-                    <dd>
-                      <AstraStatusBadge tone="warning">
-                        Experimental · Synthetic
-                      </AstraStatusBadge>
-                    </dd>
-                  </div>
-                  {overview?.dataset ? (
-                    <div className="flex justify-between gap-4">
-                      <dt className="text-muted">Training rows</dt>
-                      <dd className="tabular-nums">
-                        {formatCount(overview.dataset.interaction_count)}
-                      </dd>
-                    </div>
-                  ) : null}
-                </dl>
-              </div>
+            {hasDataset || hasModelResults ? (
+              <button
+                type="button"
+                className="btn-quiet mt-3"
+                onClick={() => setTechnical(true)}
+              >
+                Inspect technical evaluation →
+              </button>
             ) : null}
-          </div>
+          </AstraPanel>
+          <SectionTabs
+            equalHeight
+            label="Learning results"
+            items={[
+              {
+                label: "Model evaluation",
+                content: (
+                  <AstraPanel>
+                    {hasModelResults ? (
+                      <div className="space-y-2">
+                        <p className="text-xs tracking-[0.08em] text-muted">
+                          MODEL EVALUATION
+                        </p>
+                        <p className="mt-1 type-small text-muted">
+                          Held-out synthetic test metrics only. Cold-start
+                          utility may score strongly because it generated the
+                          labels. Not production uplift.
+                        </p>
+                        <AstraDataTable
+                          bordered={false}
+                          className="mt-3 text-xs"
+                        >
+                          <thead>
+                            <tr className="border-b border-line text-muted">
+                              <th className="py-2">Model</th>
+                              <th>Log loss</th>
+                              <th>Brier</th>
+                              <th>ROC AUC</th>
+                              <th>Top-1</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.keys(reports).length
+                              ? Object.entries(reports)
+                                  .slice(modelOffset, modelOffset + 5)
+                                  .map(([name, row]) => (
+                                    <tr
+                                      key={name}
+                                      className="border-b border-line"
+                                    >
+                                      <td className="py-2">
+                                        {humanizeEnum(name)}
+                                      </td>
+                                      <td>
+                                        {metric(row.classification.log_loss)}
+                                      </td>
+                                      <td>
+                                        {metric(row.classification.brier)}
+                                      </td>
+                                      <td>
+                                        {metric(row.classification.roc_auc)}
+                                      </td>
+                                      <td>{metric(row.ranking.top1)}</td>
+                                      <td>
+                                        {selected === name
+                                          ? "Selected · Experimental"
+                                          : name.includes("HEURISTIC") ||
+                                              name.includes("COLD")
+                                            ? "Baseline"
+                                            : "Candidate"}
+                                      </td>
+                                    </tr>
+                                  ))
+                              : overview?.models
+                                  .slice(modelOffset, modelOffset + 5)
+                                  .map((model) => (
+                                    <tr
+                                      key={model.model_id}
+                                      className="border-b border-line"
+                                    >
+                                      <td className="py-2">
+                                        {humanizeEnum(model.algorithm)}
+                                      </td>
+                                      <td>
+                                        {metric(
+                                          model.metrics.classification
+                                            ?.log_loss,
+                                        )}
+                                      </td>
+                                      <td>
+                                        {metric(
+                                          model.metrics.classification?.brier,
+                                        )}
+                                      </td>
+                                      <td>
+                                        {metric(
+                                          model.metrics.classification?.roc_auc,
+                                        )}
+                                      </td>
+                                      <td>
+                                        {metric(model.metrics.ranking?.top1)}
+                                      </td>
+                                      <td>{humanizeEnum(model.status)}</td>
+                                    </tr>
+                                  ))}
+                          </tbody>
+                        </AstraDataTable>
+                      </div>
+                    ) : null}
+
+                    {!hasModelResults ? (
+                      <AstraEmptyState
+                        title="No trained model yet"
+                        body="Generate a dataset and train a model to compare held-out metrics here."
+                      />
+                    ) : null}
+                    <LearningPages
+                      label="Models"
+                      count={modelCount}
+                      offset={modelOffset}
+                      onPage={setModelPage}
+                    />
+                  </AstraPanel>
+                ),
+              },
+              {
+                label: "Held-out mission",
+                content: (
+                  <AstraPanel>
+                    {hero?.offers?.length ? (
+                      <div className="space-y-2">
+                        <p className="text-xs tracking-[0.08em] text-muted">
+                          HELD-OUT MISSION
+                        </p>
+                        {hero.note ? (
+                          <p className="mt-1 type-small text-muted">
+                            {hero.note}
+                          </p>
+                        ) : null}
+                        <AstraDataTable
+                          bordered={false}
+                          className="mt-3 text-xs"
+                        >
+                          <thead>
+                            <tr className="border-b border-line text-muted">
+                              <th className="py-2">Offer</th>
+                              <th>Cold-start utility</th>
+                              <th>Learned score</th>
+                              <th>Outcome</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {hero.offers
+                              .slice(missionOffset, missionOffset + 5)
+                              .map((row, index) => (
+                                <tr
+                                  key={index}
+                                  className="border-b border-line"
+                                >
+                                  <td className="py-2">
+                                    {formatAudCents(row.price_cents)} ·{" "}
+                                    {row.delivery_days}d · {row.warranty_months}
+                                    m
+                                  </td>
+                                  <td>{row.cold_start_utility.toFixed(3)}</td>
+                                  <td>{row.learned_score.toFixed(3)}</td>
+                                  <td>
+                                    {row.selected ? "Selected" : "Not selected"}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </AstraDataTable>
+                      </div>
+                    ) : null}
+
+                    {!missionCount ? (
+                      <AstraEmptyState
+                        title="No held-out mission yet"
+                        body="Training produces a comparison of cold-start utility and learned scores."
+                      />
+                    ) : null}
+                    <LearningPages
+                      label="Mission offers"
+                      count={missionCount}
+                      offset={missionOffset}
+                      onPage={setMissionPage}
+                    />
+                  </AstraPanel>
+                ),
+              },
+              {
+                label: "Sample outcomes",
+                content: (
+                  <AstraPanel>
+                    {(overview?.sample_interactions?.length ?? 0) > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs tracking-[0.08em] text-muted">
+                          SAMPLE SYNTHETIC OUTCOMES
+                        </p>
+                        <p className="mt-1 type-small text-muted">
+                          Synthetic Arena rows. Not observed customer purchases.
+                        </p>
+                        <AstraDataTable
+                          bordered={false}
+                          className="mt-3 text-xs"
+                        >
+                          <thead>
+                            <tr className="border-b border-line text-muted">
+                              <th className="py-2">Intent</th>
+                              <th>Offer</th>
+                              <th>Outcome</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(overview?.sample_interactions ?? [])
+                              .slice(sampleOffset, sampleOffset + 5)
+                              .map((row, index) => (
+                                <tr
+                                  key={index}
+                                  className="border-b border-line"
+                                >
+                                  <td className="max-w-xs py-2">
+                                    {row.profile}
+                                  </td>
+                                  <td>
+                                    {formatAudCents(row.price_cents)} ·{" "}
+                                    {row.delivery} · {row.warranty}
+                                  </td>
+                                  <td>
+                                    {row.outcome} / {row.source}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </AstraDataTable>
+                      </div>
+                    ) : null}
+
+                    {!sampleCount ? (
+                      <AstraEmptyState
+                        title="No sample outcomes yet"
+                        body="Generate a dataset to inspect its synthetic interactions."
+                      />
+                    ) : null}
+                    <LearningPages
+                      label="Sample outcomes"
+                      count={sampleCount}
+                      offset={sampleOffset}
+                      onPage={setSamplePage}
+                    />
+                  </AstraPanel>
+                ),
+              },
+            ]}
+          />
         </div>
-
-        {hasModelResults ? (
-          <div className="mt-6 border-t border-line pt-5">
-            <p className="text-xs tracking-[0.08em] text-muted">
-              MODEL EVALUATION
-            </p>
-            <p className="mt-1 type-small text-muted">
-              Held-out synthetic test metrics only. Cold-start utility may score
-              strongly because it generated the labels. Not production uplift.
-            </p>
-            <AstraDataTable bordered={false} className="mt-3 text-xs">
-              <thead>
-                <tr className="border-b border-line text-muted">
-                  <th className="py-2">Model</th>
-                  <th>Log loss</th>
-                  <th>Brier</th>
-                  <th>ROC AUC</th>
-                  <th>Top-1</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.keys(reports).length
-                  ? Object.entries(reports).map(([name, row]) => (
-                      <tr key={name} className="border-b border-line">
-                        <td className="py-2">{humanizeEnum(name)}</td>
-                        <td>{metric(row.classification.log_loss)}</td>
-                        <td>{metric(row.classification.brier)}</td>
-                        <td>{metric(row.classification.roc_auc)}</td>
-                        <td>{metric(row.ranking.top1)}</td>
-                        <td>
-                          {selected === name
-                            ? "Selected · Experimental"
-                            : name.includes("HEURISTIC") ||
-                                name.includes("COLD")
-                              ? "Baseline"
-                              : "Candidate"}
-                        </td>
-                      </tr>
-                    ))
-                  : overview?.models.map((model) => (
-                      <tr key={model.model_id} className="border-b border-line">
-                        <td className="py-2">
-                          {humanizeEnum(model.algorithm)}
-                        </td>
-                        <td>
-                          {metric(model.metrics.classification?.log_loss)}
-                        </td>
-                        <td>{metric(model.metrics.classification?.brier)}</td>
-                        <td>
-                          {metric(model.metrics.classification?.roc_auc)}
-                        </td>
-                        <td>{metric(model.metrics.ranking?.top1)}</td>
-                        <td>{humanizeEnum(model.status)}</td>
-                      </tr>
-                    ))}
-              </tbody>
-            </AstraDataTable>
-          </div>
-        ) : null}
-
-        {hero?.offers?.length ? (
-          <div className="mt-6 border-t border-line pt-5">
-            <p className="text-xs tracking-[0.08em] text-muted">
-              HELD-OUT MISSION
-            </p>
-            {hero.note ? (
-              <p className="mt-1 type-small text-muted">{hero.note}</p>
-            ) : null}
-            <AstraDataTable bordered={false} className="mt-3 text-xs">
-              <thead>
-                <tr className="border-b border-line text-muted">
-                  <th className="py-2">Offer</th>
-                  <th>Cold-start utility</th>
-                  <th>Learned score</th>
-                  <th>Outcome</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hero.offers.map((row, index) => (
-                  <tr key={index} className="border-b border-line">
-                    <td className="py-2">
-                      {formatAudCents(row.price_cents)} · {row.delivery_days}d ·{" "}
-                      {row.warranty_months}m
-                    </td>
-                    <td>{row.cold_start_utility.toFixed(3)}</td>
-                    <td>{row.learned_score.toFixed(3)}</td>
-                    <td>{row.selected ? "Selected" : "Not selected"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </AstraDataTable>
-          </div>
-        ) : null}
-
-        {(overview?.sample_interactions?.length ?? 0) > 0 ? (
-          <div className="mt-6 border-t border-line pt-5">
-            <p className="text-xs tracking-[0.08em] text-muted">
-              SAMPLE SYNTHETIC OUTCOMES
-            </p>
-            <p className="mt-1 type-small text-muted">
-              Synthetic Arena rows. Not observed customer purchases.
-            </p>
-            <AstraDataTable bordered={false} className="mt-3 text-xs">
-              <thead>
-                <tr className="border-b border-line text-muted">
-                  <th className="py-2">Intent</th>
-                  <th>Offer</th>
-                  <th>Outcome</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(overview?.sample_interactions ?? []).map((row, index) => (
-                  <tr key={index} className="border-b border-line">
-                    <td className="max-w-xs py-2">{row.profile}</td>
-                    <td>
-                      {formatAudCents(row.price_cents)} · {row.delivery} ·{" "}
-                      {row.warranty}
-                    </td>
-                    <td>
-                      {row.outcome} / {row.source}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </AstraDataTable>
-          </div>
-        ) : null}
-
+      </Drawer>
+      <Drawer
+        open={technical}
+        title="Technical evaluation"
+        onClose={() => setTechnical(false)}
+      >
         {hasDataset || hasModelResults ? (
-          <details className="mt-6 border-t border-line pt-4">
-            <summary className="cursor-pointer text-sm font-medium">
-              Technical evaluation
-            </summary>
+          <div className="space-y-4">
             <p className="mt-2 type-small text-muted">
-              Internal evaluation detail for the experimental synthetic pipeline.
+              Internal evaluation detail for the experimental synthetic
+              pipeline.
             </p>
 
             {overview?.dataset?.metadata.audit ? (
@@ -640,9 +733,7 @@ export function LearnWorkbench() {
                   />
                   <AuditMap
                     title="Scenarios"
-                    values={
-                      overview.dataset.metadata.audit.scenario_tags ?? {}
-                    }
+                    values={overview.dataset.metadata.audit.scenario_tags ?? {}}
                   />
                   <AuditMap
                     title="Delivery"
@@ -669,12 +760,7 @@ export function LearnWorkbench() {
                     <XAxis dataKey="x" name="Predicted" stroke={CHART_AXIS} />
                     <YAxis dataKey="y" name="Observed" stroke={CHART_AXIS} />
                     <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="y"
-                      stroke={CHART_MARK}
-                      dot
-                    />
+                    <Line type="monotone" dataKey="y" stroke={CHART_MARK} dot />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -730,10 +816,50 @@ export function LearnWorkbench() {
                 </AstraDataTable>
               </div>
             ) : null}
-          </details>
+          </div>
         ) : null}
-      </AstraPanel>
+      </Drawer>
     </div>
+  );
+}
+
+function LearningPages({
+  label,
+  count,
+  offset,
+  onPage,
+}: {
+  label: string;
+  count: number;
+  offset: number;
+  onPage: (page: number) => void;
+}) {
+  if (count <= 5) return null;
+  return (
+    <nav
+      aria-label={`${label} pages`}
+      className="mt-3 flex items-center justify-between gap-3 text-xs"
+    >
+      <button
+        type="button"
+        className="btn-quiet disabled:opacity-40"
+        disabled={offset === 0}
+        onClick={() => onPage(offset / 5 - 1)}
+      >
+        Previous
+      </button>
+      <span className="text-muted">
+        {offset + 1}–{Math.min(offset + 5, count)} of {count}
+      </span>
+      <button
+        type="button"
+        className="btn-quiet disabled:opacity-40"
+        disabled={offset + 5 >= count}
+        onClick={() => onPage(offset / 5 + 1)}
+      >
+        Next
+      </button>
+    </nav>
   );
 }
 

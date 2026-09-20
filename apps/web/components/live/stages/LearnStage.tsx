@@ -1,15 +1,21 @@
 import Link from "next/link";
 
-import { AstraDataTable, AstraStatusBadge, type AstraTone } from "@/components/astra";
-import { LIVE_STAGES } from "@/components/live/ProcessRail";
-import { StageResult, StageSection } from "@/components/live/StageShell";
+import {
+  AstraDataTable,
+  AstraStatusBadge,
+  type AstraTone,
+} from "@/components/astra";
+import {
+  StageResult,
+  StageSection,
+  StageSplit,
+} from "@/components/live/StageShell";
 import {
   LEARN_STATUS,
   learnCapabilityStatusLabel,
   type LearnCapabilityState,
 } from "@/lib/decisionNarrative";
 import { formatUtilityShort, humanizeEnum } from "@/lib/format";
-import { STAGE_META } from "@/lib/liveStages";
 import { formatAudCents } from "@/lib/money";
 import type { AcceptProposalResponse, NegotiationResponse } from "@/types";
 
@@ -57,7 +63,7 @@ export function LearnStage({
   const outcome = outcomeCopy(confirmed, transaction);
 
   return (
-    <>
+    <StageSplit stretch>
       <StageResult
         label="Outcome record"
         title={outcome.title}
@@ -69,35 +75,33 @@ export function LearnStage({
         }
       >
         {offer ? (
-          <dl className="max-w-md space-y-2 text-sm">
-            <div className="flex justify-between gap-3">
+          <dl className="grid gap-4 text-sm sm:grid-cols-2">
+            <div className="space-y-1 border-t border-line-muted pt-3">
               <dt className="text-muted">Product</dt>
-              <dd>{offer.product_name}</dd>
+              <dd className="font-medium">{offer.product_name}</dd>
             </div>
-            <div className="flex justify-between gap-3">
+            <div className="space-y-1 border-t border-line-muted pt-3">
               <dt className="text-muted">Final price</dt>
-              <dd className="font-mono tabular-nums">
+              <dd className="font-mono text-lg tabular-nums">
                 {formatAudCents(offer.pricing.total_price_cents)}
               </dd>
             </div>
-            <div className="flex justify-between gap-3">
+            <div className="space-y-1 border-t border-line-muted pt-3">
               <dt className="text-muted">Final utility</dt>
-              <dd className="font-mono tabular-nums">
+              <dd className="font-mono text-lg tabular-nums">
                 {formatUtilityShort(offer.buyer_utility)}
               </dd>
             </div>
-            <div className="flex justify-between gap-3">
+            <div className="space-y-1 border-t border-line-muted pt-3">
               <dt className="text-muted">Merchant contribution</dt>
-              <dd className="font-mono tabular-nums">
+              <dd className="font-mono text-lg tabular-nums">
                 {formatAudCents(offer.contribution_margin_cents)}
               </dd>
             </div>
-            <div className="flex justify-between gap-3">
+            <div className="space-y-1 border-t border-line-muted pt-3">
               <dt className="text-muted">Negotiation</dt>
               <dd>
-                {negotiation?.state
-                  ? humanizeEnum(negotiation.state)
-                  : "—"}
+                {negotiation?.state ? humanizeEnum(negotiation.state) : "—"}
               </dd>
             </div>
           </dl>
@@ -126,30 +130,10 @@ export function LearnStage({
           </tbody>
         </AstraDataTable>
         <p className="mt-3 text-sm text-muted">
-          LIVE uses transparent cold-start scoring. The learned response model is
-          experimental. A real observed-data model is future work.
+          LIVE uses transparent cold-start scoring. The learned response model
+          is experimental. A real observed-data model is future work.
         </p>
       </StageSection>
-
-      <StageSection
-        title="Model / evaluation"
-        description="Trace of this decision run. No fabricated learning metrics."
-      >
-        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-          {LIVE_STAGES.filter((id) => id !== "learn").map((id, index) => (
-            <li key={id} className="flex items-center gap-2">
-              {index > 0 ? (
-                <span className="text-muted" aria-hidden>
-                  →
-                </span>
-              ) : null}
-              <span>
-                {STAGE_META[id].number} {STAGE_META[id].title}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </StageSection>
-    </>
+    </StageSplit>
   );
 }

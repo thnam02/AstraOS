@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 
 import {
   AstraEmptyState,
@@ -15,6 +9,7 @@ import {
   AstraStatusBadge,
   type AstraTone,
 } from "@/components/astra";
+import { StageDisclosure } from "@/components/live/StageShell";
 import { getOfferRun } from "@/lib/api";
 import {
   bundleLabel,
@@ -57,14 +52,19 @@ function feasibilityTone(status: string): AstraTone {
 export function OfferExplorer({
   construction,
   explorerOnly = false,
+  embedded = false,
+  onConfigurationSelect,
 }: {
   construction: GenerateOffersResponse;
   heroProduct?: string;
   policySafe?: number;
   pareto?: number;
   explorerOnly?: boolean;
+  embedded?: boolean;
+  onConfigurationSelect?: (offer: PublicOffer | null) => void;
 }) {
   const sortId = useId();
+  const [previewPage, setPreviewPage] = useState(0);
   const products = useMemo(
     () => groupOffersByProduct(construction.offers),
     [construction.offers],
@@ -112,10 +112,7 @@ export function OfferExplorer({
   );
   const bundleOptions = useMemo(
     () =>
-      uniqueCodes(
-        construction.offers,
-        (offer) => offer.bundle?.code ?? "NONE",
-      ),
+      uniqueCodes(construction.offers, (offer) => offer.bundle?.code ?? "NONE"),
     [construction.offers],
   );
   const returnsOptions = useMemo(
@@ -225,6 +222,9 @@ export function OfferExplorer({
   );
   const constants = useMemo(() => offerGroupConstants(rows), [rows]);
   const selected = rows.find((offer) => offer.offer_id === selectedId) ?? null;
+  useEffect(() => {
+    onConfigurationSelect?.(selected);
+  }, [selected, onConfigurationSelect]);
   const matchingTotal = run?.total_offers ?? rows.length;
   const activeProduct = products.find(
     (item) => item.productId === resolvedProductId,
@@ -232,11 +232,11 @@ export function OfferExplorer({
 
   const hasExtraFilters = Boolean(
     delivery ||
-      warranty ||
-      bundle ||
-      returns ||
-      maxPrice.trim() ||
-      status !== DEFAULT_STATUS,
+    warranty ||
+    bundle ||
+    returns ||
+    maxPrice.trim() ||
+    status !== DEFAULT_STATUS,
   );
 
   function clearFilters() {
@@ -258,9 +258,7 @@ export function OfferExplorer({
     void load(resolvedProductId, next);
   }
 
-  function applyCurrentFilters(
-    overrides: Partial<typeof filterState> = {},
-  ) {
+  function applyCurrentFilters(overrides: Partial<typeof filterState> = {}) {
     const next = { ...filterState, ...overrides };
     if (overrides.status != null) setStatus(overrides.status);
     if (overrides.delivery != null) setDelivery(overrides.delivery);
@@ -271,43 +269,74 @@ export function OfferExplorer({
     void load(resolvedProductId, next);
   }
 
-  return (
-    <section className="space-y-4">
-      <div className="border border-line bg-canvas px-4 py-3">
-        <p className="eyebrow">Offer space</p>
-        <dl className="mt-2 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <dt className="text-muted">Matched products</dt>
-            <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
-              {formatCount(story.products)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted">Generated offers</dt>
-            <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
-              {formatCount(story.generated)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted">Feasible</dt>
-            <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
-              {formatCount(construction.summary.feasible_candidates)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted">Rejected</dt>
-            <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
-              {formatCount(construction.summary.rejected_candidates)}
-            </dd>
-          </div>
-        </dl>
-        <p className="mt-2 type-small text-muted">
-          Construct enumerates commercial configurations. It does not select a
-          winning offer — Optimise does that later.
-        </p>
-      </div>
+  const lastPreviewPage = Math.max(0, Math.ceil(rows.length / 3) - 1);
+  const activePreviewPage = Math.min(previewPage, lastPreviewPage);
+  const displayedRows = embedded
+    ? rows.slice(activePreviewPage * 3, (activePreviewPage + 1) * 3)
+    : rows;
 
-      {products.length > 1 ? (
+  return (
+    <section
+      className={embedded ? "embedded-offer-explorer space-y-2" : "space-y-4"}
+    >
+      {!embedded ? (
+        <div className="border border-line bg-canvas px-4 py-3">
+          <p className="eyebrow">Offer space</p>
+          <dl className="mt-2 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <dt className="text-muted">Matched products</dt>
+              <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
+                {formatCount(story.products)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted">Generated offers</dt>
+              <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
+                {formatCount(story.generated)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted">Feasible</dt>
+              <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
+                {formatCount(construction.summary.feasible_candidates)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted">Rejected</dt>
+              <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
+                {formatCount(construction.summary.rejected_candidates)}
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-2 type-small text-muted">
+            Construct enumerates commercial configurations. It does not select a
+            winning offer — Optimise does that later.
+          </p>
+        </div>
+      ) : null}
+
+      {embedded ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-xs text-muted" htmlFor={`${sortId}-product`}>
+            Product
+          </label>
+          <select
+            id={`${sortId}-product`}
+            className="control min-w-0 max-w-full px-2 py-1 text-sm"
+            value={resolvedProductId}
+            onChange={(event) => {
+              setProductId(event.target.value);
+              setPreviewPage(0);
+            }}
+          >
+            {products.map((product) => (
+              <option key={product.productId} value={product.productId}>
+                {product.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : products.length > 1 ? (
         <div
           className="flex gap-1 overflow-x-auto border-b border-line pb-2"
           role="tablist"
@@ -315,8 +344,7 @@ export function OfferExplorer({
         >
           {products.map((product) => {
             const active = product.productId === resolvedProductId;
-            const count =
-              active && run ? matchingTotal : product.count;
+            const count = active && run ? matchingTotal : product.count;
             return (
               <button
                 key={product.productId}
@@ -347,187 +375,195 @@ export function OfferExplorer({
         </div>
       ) : null}
 
-      <form
-        className="border border-line bg-surface px-3 py-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void load(resolvedProductId, filterState);
-        }}
-      >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <FilterField label="Status">
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              className="control w-full px-2 py-1.5"
-            >
-              <option value="FEASIBLE">Feasible</option>
-              <option value="REJECTED">Rejected</option>
-              <option value="ALL">All</option>
-            </select>
-          </FilterField>
-          <FilterField label="Warranty">
-            <select
-              value={warranty}
-              onChange={(event) => setWarranty(event.target.value)}
-              className="control w-full px-2 py-1.5"
-            >
-              <option value="">All</option>
-              {warrantyOptions.map((code) => (
-                <option key={code} value={code}>
-                  {warrantyLabel(code)}
-                </option>
-              ))}
-            </select>
-          </FilterField>
-          <FilterField label="Bundle">
-            <select
-              value={bundle}
-              onChange={(event) => setBundle(event.target.value)}
-              className="control w-full px-2 py-1.5"
-            >
-              <option value="">All</option>
-              {bundleOptions.map((code) => (
-                <option key={code} value={code}>
-                  {bundleLabel(code)}
-                </option>
-              ))}
-            </select>
-          </FilterField>
-          <FilterField label="Returns">
-            <select
-              value={returns}
-              onChange={(event) => setReturns(event.target.value)}
-              className="control w-full px-2 py-1.5"
-            >
-              <option value="">All</option>
-              {returnsOptions.map((code) => (
-                <option key={code} value={code}>
-                  {returnsLabel(code)}
-                </option>
-              ))}
-            </select>
-          </FilterField>
-          {deliveryOptions.length > 1 ? (
-            <FilterField label="Delivery">
+      <StageDisclosure title="Filters and sorting">
+        <form
+          className="border border-line bg-surface px-3 py-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void load(resolvedProductId, filterState);
+          }}
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <FilterField label="Status">
               <select
-                value={delivery}
-                onChange={(event) => setDelivery(event.target.value)}
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                className="control w-full px-2 py-1.5"
+              >
+                <option value="FEASIBLE">Feasible</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="ALL">All</option>
+              </select>
+            </FilterField>
+            <FilterField label="Warranty">
+              <select
+                value={warranty}
+                onChange={(event) => setWarranty(event.target.value)}
                 className="control w-full px-2 py-1.5"
               >
                 <option value="">All</option>
-                {deliveryOptions.map((code) => (
+                {warrantyOptions.map((code) => (
                   <option key={code} value={code}>
-                    {deliveryLabel(code)}
+                    {warrantyLabel(code)}
                   </option>
                 ))}
               </select>
             </FilterField>
-          ) : null}
-          <FilterField label="Max price (A$)">
-            <input
-              value={maxPrice}
-              onChange={(event) => setMaxPrice(event.target.value)}
-              inputMode="decimal"
-              placeholder={
-                priceCeiling != null ? centsToPlainDollars(priceCeiling) : "Any"
-              }
-              className="control w-full px-2 py-1.5"
-            />
-          </FilterField>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {status === DEFAULT_STATUS ? (
-              <span className="filter-chip">
-                {filterChipLabel("status", status)}
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="filter-chip"
-                onClick={() =>
-                  applyCurrentFilters({ status: DEFAULT_STATUS })
-                }
-              >
-                {filterChipLabel("status", status)} ×
-              </button>
-            )}
-            {delivery ? (
-              <button
-                type="button"
-                className="filter-chip"
-                onClick={() => applyCurrentFilters({ delivery: "" })}
-              >
-                {filterChipLabel("delivery", delivery)} ×
-              </button>
-            ) : null}
-            {warranty ? (
-              <button
-                type="button"
-                className="filter-chip"
-                onClick={() => applyCurrentFilters({ warranty: "" })}
-              >
-                {filterChipLabel("warranty", warranty)} ×
-              </button>
-            ) : null}
-            {bundle ? (
-              <button
-                type="button"
-                className="filter-chip"
-                onClick={() => applyCurrentFilters({ bundle: "" })}
-              >
-                {filterChipLabel("bundle", bundle)} ×
-              </button>
-            ) : null}
-            {returns ? (
-              <button
-                type="button"
-                className="filter-chip"
-                onClick={() => applyCurrentFilters({ returns: "" })}
-              >
-                {filterChipLabel("returns", returns)} ×
-              </button>
-            ) : null}
-            {maxPrice.trim() ? (
-              <button
-                type="button"
-                className="filter-chip"
-                onClick={() => applyCurrentFilters({ maxPrice: "" })}
-              >
-                {filterChipLabel("maxPrice", maxPrice.trim())} ×
-              </button>
-            ) : null}
-            {hasExtraFilters ? (
-              <button type="button" className="btn-ghost" onClick={clearFilters}>
-                Clear filters
-              </button>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="block text-xs text-muted" htmlFor={sortId}>
-              Sort
+            <FilterField label="Bundle">
               <select
-                id={sortId}
-                value={sortKey}
-                onChange={(event) =>
-                  setSortKey(event.target.value as OfferExplorerSortKey)
-                }
-                className="control mt-1 block min-w-[10rem] px-2 py-1.5"
+                value={bundle}
+                onChange={(event) => setBundle(event.target.value)}
+                className="control w-full px-2 py-1.5"
               >
-                <option value="default">Default order</option>
-                <option value="total">Customer total</option>
-                <option value="intervention">Merchant intervention</option>
-                <option value="warranty">Warranty</option>
-                <option value="returns">Returns</option>
+                <option value="">All</option>
+                {bundleOptions.map((code) => (
+                  <option key={code} value={code}>
+                    {bundleLabel(code)}
+                  </option>
+                ))}
               </select>
-            </label>
-            <button type="submit" className="btn-primary" disabled={busy}>
-              {busy ? "Loading…" : "Apply filters"}
-            </button>
+            </FilterField>
+            <FilterField label="Returns">
+              <select
+                value={returns}
+                onChange={(event) => setReturns(event.target.value)}
+                className="control w-full px-2 py-1.5"
+              >
+                <option value="">All</option>
+                {returnsOptions.map((code) => (
+                  <option key={code} value={code}>
+                    {returnsLabel(code)}
+                  </option>
+                ))}
+              </select>
+            </FilterField>
+            {deliveryOptions.length > 1 ? (
+              <FilterField label="Delivery">
+                <select
+                  value={delivery}
+                  onChange={(event) => setDelivery(event.target.value)}
+                  className="control w-full px-2 py-1.5"
+                >
+                  <option value="">All</option>
+                  {deliveryOptions.map((code) => (
+                    <option key={code} value={code}>
+                      {deliveryLabel(code)}
+                    </option>
+                  ))}
+                </select>
+              </FilterField>
+            ) : null}
+            <FilterField label="Max price (A$)">
+              <input
+                value={maxPrice}
+                onChange={(event) => setMaxPrice(event.target.value)}
+                inputMode="decimal"
+                placeholder={
+                  priceCeiling != null
+                    ? centsToPlainDollars(priceCeiling)
+                    : "Any"
+                }
+                className="control w-full px-2 py-1.5"
+              />
+            </FilterField>
           </div>
-        </div>
-      </form>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {status === DEFAULT_STATUS ? (
+                <span className="filter-chip">
+                  {filterChipLabel("status", status)}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="filter-chip"
+                  onClick={() =>
+                    applyCurrentFilters({ status: DEFAULT_STATUS })
+                  }
+                >
+                  {filterChipLabel("status", status)} ×
+                </button>
+              )}
+              {delivery ? (
+                <button
+                  type="button"
+                  className="filter-chip"
+                  onClick={() => applyCurrentFilters({ delivery: "" })}
+                >
+                  {filterChipLabel("delivery", delivery)} ×
+                </button>
+              ) : null}
+              {warranty ? (
+                <button
+                  type="button"
+                  className="filter-chip"
+                  onClick={() => applyCurrentFilters({ warranty: "" })}
+                >
+                  {filterChipLabel("warranty", warranty)} ×
+                </button>
+              ) : null}
+              {bundle ? (
+                <button
+                  type="button"
+                  className="filter-chip"
+                  onClick={() => applyCurrentFilters({ bundle: "" })}
+                >
+                  {filterChipLabel("bundle", bundle)} ×
+                </button>
+              ) : null}
+              {returns ? (
+                <button
+                  type="button"
+                  className="filter-chip"
+                  onClick={() => applyCurrentFilters({ returns: "" })}
+                >
+                  {filterChipLabel("returns", returns)} ×
+                </button>
+              ) : null}
+              {maxPrice.trim() ? (
+                <button
+                  type="button"
+                  className="filter-chip"
+                  onClick={() => applyCurrentFilters({ maxPrice: "" })}
+                >
+                  {filterChipLabel("maxPrice", maxPrice.trim())} ×
+                </button>
+              ) : null}
+              {hasExtraFilters ? (
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={clearFilters}
+                >
+                  Clear filters
+                </button>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="block text-xs text-muted" htmlFor={sortId}>
+                Sort
+                <select
+                  id={sortId}
+                  value={sortKey}
+                  onChange={(event) =>
+                    setSortKey(event.target.value as OfferExplorerSortKey)
+                  }
+                  className="control mt-1 block min-w-[10rem] px-2 py-1.5"
+                >
+                  <option value="default">Default order</option>
+                  <option value="total">Customer total</option>
+                  <option value="intervention">Merchant intervention</option>
+                  <option value="warranty">Warranty</option>
+                  <option value="returns">Returns</option>
+                </select>
+              </label>
+              <button type="submit" className="btn-primary" disabled={busy}>
+                {busy ? "Loading…" : "Apply filters"}
+              </button>
+            </div>
+          </div>
+        </form>
+      </StageDisclosure>
 
       {error ? (
         <AstraErrorState
@@ -539,35 +575,41 @@ export function OfferExplorer({
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(16rem,32%)]">
         <AstraPanel className="min-w-0">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="eyebrow">Current product</p>
-              <h3 className="mt-1 type-section text-ink">
-                {constants?.name ?? activeProduct?.name ?? "Product"}
-              </h3>
-              <p className="type-small text-muted">
-                {constants?.sku ?? activeProduct?.sku}
+          {!embedded ? (
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="eyebrow">Current product</p>
+                <h3 className="mt-1 type-section text-ink">
+                  {constants?.name ?? activeProduct?.name ?? "Product"}
+                </h3>
+                <p className="type-small text-muted">
+                  {constants?.sku ?? activeProduct?.sku}
+                </p>
+              </div>
+              <p className="text-sm tabular-nums">
+                {busy ? (
+                  <span className="text-muted">Loading configurations…</span>
+                ) : rows.length === matchingTotal ? (
+                  <>
+                    <span className="font-medium">
+                      {formatCount(rows.length)}
+                    </span>{" "}
+                    configurations
+                  </>
+                ) : (
+                  <>
+                    Showing{" "}
+                    <span className="font-medium">
+                      {formatCount(rows.length)}
+                    </span>{" "}
+                    of {formatCount(matchingTotal)} configurations
+                  </>
+                )}
               </p>
             </div>
-            <p className="text-sm tabular-nums">
-              {busy ? (
-                <span className="text-muted">Loading configurations…</span>
-              ) : rows.length === matchingTotal ? (
-                <>
-                  <span className="font-medium">{formatCount(rows.length)}</span>{" "}
-                  configurations
-                </>
-              ) : (
-                <>
-                  Showing{" "}
-                  <span className="font-medium">{formatCount(rows.length)}</span>{" "}
-                  of {formatCount(matchingTotal)} configurations
-                </>
-              )}
-            </p>
-          </div>
+          ) : null}
 
-          {constants ? (
+          {constants && !embedded ? (
             <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-line pt-3 text-sm">
               {constants.productPriceCents != null ? (
                 <div>
@@ -596,7 +638,13 @@ export function OfferExplorer({
             </dl>
           ) : null}
 
-          <div className="mt-4 max-h-[min(64vh,40rem)] overflow-auto border border-line">
+          <div
+            className={
+              embedded
+                ? "mt-3 overflow-x-auto border border-line"
+                : "mt-4 max-h-[min(64vh,40rem)] overflow-auto border border-line"
+            }
+          >
             {busy && !rows.length ? (
               <div className="px-3 py-8" role="status" aria-live="polite">
                 <p className="text-sm font-medium">Loading configurations</p>
@@ -609,15 +657,15 @@ export function OfferExplorer({
                 <AstraEmptyState
                   title="No configurations match filters"
                   body="Adjust warranty, bundle, returns, or status filters, then apply again."
-                    action={
-                      <button
-                        type="button"
-                        className="btn-ghost"
-                        onClick={clearFilters}
-                      >
-                        Clear filters
-                      </button>
-                    }
+                  action={
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={clearFilters}
+                    >
+                      Clear filters
+                    </button>
+                  }
                 />
               </div>
             ) : (
@@ -668,7 +716,7 @@ export function OfferExplorer({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((offer) => {
+                  {displayedRows.map((offer) => {
                     const selectedRow = offer.offer_id === selectedId;
                     return (
                       <tr
@@ -745,12 +793,71 @@ export function OfferExplorer({
           </div>
         </AstraPanel>
 
-        <AstraPanel className="min-w-0 xl:sticky xl:top-4 xl:self-start">
-          <ConfigurationInspector offer={selected} />
-        </AstraPanel>
+        {embedded ? (
+          <AstraPanel className="min-w-0">
+            <p className="eyebrow">Viewed configuration</p>
+            {selected ? (
+              <>
+                <p className="mt-2 font-semibold">{selected.product.name}</p>
+                <p className="mt-1 font-mono text-xl">
+                  {formatAudCents(selected.pricing.total_price_cents)}
+                </p>
+                <p className="mt-2 text-sm text-muted">
+                  {deliveryLabel(
+                    selected.delivery.code,
+                    selected.delivery.days,
+                  )}{" "}
+                  ·{" "}
+                  {warrantyLabel(
+                    selected.warranty.code,
+                    selected.warranty.months,
+                  )}
+                </p>
+                <StageDisclosure title="Configuration details">
+                  <ConfigurationInspector offer={selected} />
+                </StageDisclosure>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-muted">
+                Select a configuration to inspect.
+              </p>
+            )}
+          </AstraPanel>
+        ) : (
+          <AstraPanel className="min-w-0 xl:sticky xl:top-4 xl:self-start">
+            <ConfigurationInspector offer={selected} />
+          </AstraPanel>
+        )}
       </div>
 
-      {explorerOnly ? (
+      {embedded ? (
+        <nav
+          className="flex items-center justify-between text-xs"
+          aria-label="Configuration pages"
+        >
+          <button
+            type="button"
+            className="btn-quiet disabled:opacity-40"
+            disabled={activePreviewPage === 0}
+            onClick={() => setPreviewPage(activePreviewPage - 1)}
+          >
+            Previous
+          </button>
+          <span>
+            {activePreviewPage + 1} / {lastPreviewPage + 1} · {rows.length}{" "}
+            loaded configurations
+          </span>
+          <button
+            type="button"
+            className="btn-quiet disabled:opacity-40"
+            disabled={activePreviewPage === lastPreviewPage}
+            onClick={() => setPreviewPage(activePreviewPage + 1)}
+          >
+            Next
+          </button>
+        </nav>
+      ) : null}
+      {explorerOnly && !embedded ? (
         <div className="border border-line bg-canvas px-4 py-3 text-sm">
           <p className="eyebrow">Construct → Optimise</p>
           <p className="mt-1 text-muted">
@@ -849,7 +956,9 @@ function ConfigurationInspector({ offer }: { offer: PublicOffer | null }) {
 
       {offer.rejection_reasons.length ? (
         <div className="mt-4 border-t border-line pt-3">
-          <p className="text-xs tracking-[0.08em] text-muted">REJECTION REASONS</p>
+          <p className="text-xs tracking-[0.08em] text-muted">
+            REJECTION REASONS
+          </p>
           <ul className="mt-2 space-y-1 text-sm text-muted">
             {offer.rejection_reasons.map((reason) => (
               <li key={`${reason.code}-${reason.message}`}>

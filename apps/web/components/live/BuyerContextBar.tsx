@@ -5,6 +5,8 @@ import { useState } from "react";
 import { buyerRequestHighlights } from "@/lib/intent";
 import type { ShoppingIntent } from "@/types";
 
+import { Drawer } from "@/components/shared/Drawer";
+
 import { IntentPanel } from "./IntentPanel";
 import { SystemHealth } from "./SystemHealth";
 
@@ -25,7 +27,7 @@ export function BuyerContextBar({
   const [open, setOpen] = useState(false);
 
   return (
-    <section className="max-w-[1120px] border-b border-line pb-3">
+    <section className="border-b border-line pb-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
         <p className="text-sm leading-6">
           <span className="eyebrow mr-3 align-middle">Buyer agent</span>
@@ -45,21 +47,21 @@ export function BuyerContextBar({
           </button>
           <SystemHealth />
         </div>
+        <button
+          type="button"
+          className="btn-quiet"
+          aria-expanded={open}
+          onClick={() => setOpen((current) => !current)}
+        >
+          {open ? "Hide interpreted intent" : "View interpreted intent"}
+        </button>
       </div>
-      <button
-        type="button"
-        className="btn-quiet mt-1"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-      >
-        {open ? "Hide interpreted intent" : "View interpreted intent"}
-      </button>
-      {open ? (
-        <div className="mt-3 max-w-3xl space-y-4">
+      <Drawer open={open} title="Buyer request" onClose={() => setOpen(false)}>
+        <div className="space-y-4">
           <p className="text-sm leading-6 text-muted">“{rawText}”</p>
           <IntentPanel intent={intent} compact />
         </div>
-      ) : null}
+      </Drawer>
     </section>
   );
 }

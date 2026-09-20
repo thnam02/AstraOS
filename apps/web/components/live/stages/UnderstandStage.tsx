@@ -3,10 +3,10 @@
 import type { ReactNode } from "react";
 
 import {
-  StageDisclosure,
   StagePrimaryAction,
   StageResult,
   StageSection,
+  StageSplit,
 } from "@/components/live/StageShell";
 import {
   constraintLabel,
@@ -34,11 +34,7 @@ export function UnderstandStage({
     intent.unsupported_semantic_needs.length > 0;
 
   return (
-    <>
-      <StageSection title="Buyer request">
-        <p className="max-w-2xl text-[15px] leading-6">“{rawText}”</p>
-      </StageSection>
-
+    <StageSplit stretch>
       <StageResult
         label="Interpreted intent"
         explanation={<p>{intentNarrative(intent)}</p>}
@@ -83,7 +79,9 @@ export function UnderstandStage({
                 {intent.soft_preferences.map((item) => (
                   <div key={item.id} className="flex justify-between gap-4">
                     <dt>{fieldLabel(item.field)}</dt>
-                    <dd className="text-muted">{importanceLabel(item.importance)}</dd>
+                    <dd className="text-muted">
+                      {importanceLabel(item.importance)}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -105,67 +103,74 @@ export function UnderstandStage({
         </div>
       </StageResult>
 
-      {hasNotes ? (
-        <StageSection title="Interpretation notes">
-          <div className="grid gap-6 sm:grid-cols-3">
-            {intent.tradeoffs.length ? (
-              <IntentCluster title="Trade-offs">
-                <ul className="space-y-1.5 text-sm">
-                  {intent.tradeoffs.map((item) => (
-                    <li key={`${item.preferred_dimension}-${item.over_dimension}`}>
-                      {fieldLabel(item.preferred_dimension)}
-                      <span className="mx-2 text-muted">{">"}</span>
-                      {item.over_dimension === "price"
-                        ? "lowest possible price"
-                        : fieldLabel(item.over_dimension)}
-                    </li>
-                  ))}
-                </ul>
-              </IntentCluster>
-            ) : null}
-            {intent.ambiguities.length ? (
-              <IntentCluster title="Ambiguities">
-                <ul className="space-y-1.5 text-sm text-uncertain">
-                  {intent.ambiguities.map((item) => (
-                    <li key={`${item.reason}-${item.source_phrase}`}>
-                      {item.source_phrase}
-                    </li>
-                  ))}
-                </ul>
-              </IntentCluster>
-            ) : null}
-            {intent.unsupported_semantic_needs.length ? (
-              <IntentCluster title="Unsupported needs">
-                <ul className="space-y-1.5 text-sm text-uncertain">
-                  {intent.unsupported_semantic_needs.map((item) => (
-                    <li key={item.label}>{item.source_phrase}</li>
-                  ))}
-                </ul>
-              </IntentCluster>
-            ) : null}
-          </div>
+      <div className="grid gap-3 lg:auto-rows-fr" aria-label="Intent details">
+        <StageSection title="Buyer request">
+          <p className="max-w-2xl text-sm leading-5">“{rawText}”</p>
         </StageSection>
-      ) : null}
-
-      <StageDisclosure title="Parsing details">
-        <dl className="grid max-w-md grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          <dt className="text-muted">Parser</dt>
-          <dd>
-            {(intent.parser_metadata?.parser_used ?? intent.parser_type) === "llm"
-              ? "LLM"
-              : "Rule-based"}
-          </dd>
-          <dt className="text-muted">Fallback</dt>
-          <dd>{intent.parser_metadata?.fallback_used ? "Yes" : "No"}</dd>
-          {intent.parser_metadata?.fallback_reason ? (
-            <>
-              <dt className="text-muted">Reason</dt>
-              <dd>{intent.parser_metadata.fallback_reason}</dd>
-            </>
-          ) : null}
-        </dl>
-      </StageDisclosure>
-    </>
+        {hasNotes ? (
+          <StageSection title="Interpretation notes">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {intent.tradeoffs.length ? (
+                <IntentCluster title="Trade-offs">
+                  <ul className="space-y-1.5 text-sm">
+                    {intent.tradeoffs.map((item) => (
+                      <li
+                        key={`${item.preferred_dimension}-${item.over_dimension}`}
+                      >
+                        {fieldLabel(item.preferred_dimension)}
+                        <span className="mx-2 text-muted">{">"}</span>
+                        {item.over_dimension === "price"
+                          ? "lowest possible price"
+                          : fieldLabel(item.over_dimension)}
+                      </li>
+                    ))}
+                  </ul>
+                </IntentCluster>
+              ) : null}
+              {intent.ambiguities.length ? (
+                <IntentCluster title="Ambiguities">
+                  <ul className="space-y-1.5 text-sm text-uncertain">
+                    {intent.ambiguities.map((item) => (
+                      <li key={`${item.reason}-${item.source_phrase}`}>
+                        {item.source_phrase}
+                      </li>
+                    ))}
+                  </ul>
+                </IntentCluster>
+              ) : null}
+              {intent.unsupported_semantic_needs.length ? (
+                <IntentCluster title="Unsupported needs">
+                  <ul className="space-y-1.5 text-sm text-uncertain">
+                    {intent.unsupported_semantic_needs.map((item) => (
+                      <li key={item.label}>{item.source_phrase}</li>
+                    ))}
+                  </ul>
+                </IntentCluster>
+              ) : null}
+            </div>
+          </StageSection>
+        ) : null}
+        <StageSection title="Parsing details">
+          <dl className="grid max-w-md grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <dt className="text-muted">Parser</dt>
+            <dd>
+              {(intent.parser_metadata?.parser_used ?? intent.parser_type) ===
+              "llm"
+                ? "LLM"
+                : "Rule-based"}
+            </dd>
+            <dt className="text-muted">Fallback</dt>
+            <dd>{intent.parser_metadata?.fallback_used ? "Yes" : "No"}</dd>
+            {intent.parser_metadata?.fallback_reason ? (
+              <>
+                <dt className="text-muted">Reason</dt>
+                <dd>{intent.parser_metadata.fallback_reason}</dd>
+              </>
+            ) : null}
+          </dl>
+        </StageSection>
+      </div>
+    </StageSplit>
   );
 }
 

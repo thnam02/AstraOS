@@ -6,11 +6,7 @@ import { BuyerContextBar } from "@/components/live/BuyerContextBar";
 import { DecisionWorkflow } from "@/components/live/DecisionWorkflow";
 import { NegotiationPanel } from "@/components/live/NegotiationPanel";
 import { LIVE_STAGES, type LiveStage } from "@/components/live/ProcessRail";
-import {
-  StageFooter,
-  StageHeader,
-  StageLayout,
-} from "@/components/live/StageShell";
+import { StageHeader, StageLayout } from "@/components/live/StageShell";
 import { ConstructStage } from "@/components/live/stages/ConstructStage";
 import { LearnStage } from "@/components/live/stages/LearnStage";
 import { MatchStage } from "@/components/live/stages/MatchStage";
@@ -35,7 +31,10 @@ import {
   setDemoPolicy,
   simulateNegotiationBuyer,
 } from "@/lib/api";
-import { PIPELINE_LOADING, selectableCompleteOffer } from "@/lib/decisionNarrative";
+import {
+  PIPELINE_LOADING,
+  selectableCompleteOffer,
+} from "@/lib/decisionNarrative";
 import { HERO_INTENT } from "@/lib/intent";
 import type {
   BuyerProfile,
@@ -70,7 +69,9 @@ export function LiveWorkbench() {
   const selectedFromChart = useMemo(() => {
     if (!selectedOfferId || !optimisation) return null;
     return (
-      optimisation.pareto_offers.find((item) => item.offer_id === selectedOfferId) ??
+      optimisation.pareto_offers.find(
+        (item) => item.offer_id === selectedOfferId,
+      ) ??
       (optimisation.recommended_offer?.offer_id === selectedOfferId
         ? optimisation.recommended_offer
         : null)
@@ -91,8 +92,8 @@ export function LiveWorkbench() {
     hasTxn: Boolean(transaction),
     txnFailed: Boolean(
       transaction &&
-        transaction.state !== "CONFIRMED" &&
-        transaction.failure_codes.length > 0,
+      transaction.state !== "CONFIRMED" &&
+      transaction.failure_codes.length > 0,
     ),
     txnComplete: transaction?.state === "CONFIRMED",
   };
@@ -101,8 +102,7 @@ export function LiveWorkbench() {
     if (!session.proposal) return;
     const accepted = await acceptProposal(session.session_id, {
       proposal_id: session.proposal.proposal_id,
-      idempotency_key:
-        globalThis.crypto?.randomUUID?.() ?? `web-${Date.now()}`,
+      idempotency_key: globalThis.crypto?.randomUUID?.() ?? `web-${Date.now()}`,
     });
     setTransaction(accepted);
     setNegotiation(await getNegotiation(session.session_id));
@@ -290,7 +290,10 @@ export function LiveWorkbench() {
             void (async () => {
               setBusy(true);
               try {
-                const next = await postNegotiationTurn(negotiation.session_id, payload);
+                const next = await postNegotiationTurn(
+                  negotiation.session_id,
+                  payload,
+                );
                 setNegotiation(next);
                 if (next.state === "READY_FOR_CHECKOUT" && next.proposal) {
                   await executeAcceptance(next);
@@ -401,9 +404,7 @@ export function LiveWorkbench() {
       );
     }
     if (stage === "learn") {
-      return (
-        <LearnStage negotiation={negotiation} transaction={transaction} />
-      );
+      return <LearnStage negotiation={negotiation} transaction={transaction} />;
     }
     return (
       <EmptyState
@@ -414,13 +415,11 @@ export function LiveWorkbench() {
   })();
 
   return (
-    <div>
-      <DecisionWorkflow
-        active={stage}
-        flags={flags}
-        onSelect={setStage}
-      />
-      <div className="space-y-5 pt-5">
+    <div
+      data-stage={stage}
+      className="live-run flex min-h-[calc(100dvh-6rem)] flex-col gap-4"
+    >
+      <div className="flex-1 space-y-3">
         {error ? <ErrorState message={error} /> : null}
         {result ? (
           <BuyerContextBar
@@ -432,31 +431,32 @@ export function LiveWorkbench() {
           />
         ) : null}
         <StageHeader stage={stage} />
-        <StageLayout
-          wide={
-            stage === "construct" ||
-            stage === "negotiate" ||
-            stage === "optimise"
-          }
-        >
-          {stageMain}
-        </StageLayout>
-        <StageFooter stage={stage} flags={flags} onSelect={setStage} />
+        <StageLayout>{stageMain}</StageLayout>
       </div>
-      <Drawer open={inspect} title="Inspect decision" onClose={() => setInspect(false)}>
+      <DecisionWorkflow active={stage} flags={flags} onSelect={setStage} />
+      <Drawer
+        open={inspect}
+        title="Inspect decision"
+        onClose={() => setInspect(false)}
+      >
         <div className="space-y-4 text-sm">
           <section>
             <p className="eyebrow">Parser</p>
             <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
               {Object.entries({
-                parser_requested: result?.intent.parser_metadata?.parser_requested,
-                parser_used: result?.intent.parser_metadata?.parser_used ?? result?.intent.parser_type,
+                parser_requested:
+                  result?.intent.parser_metadata?.parser_requested,
+                parser_used:
+                  result?.intent.parser_metadata?.parser_used ??
+                  result?.intent.parser_type,
                 provider: result?.intent.parser_metadata?.provider,
                 model: result?.intent.parser_metadata?.model,
                 prompt_version: result?.intent.parser_metadata?.prompt_version,
                 schema_version: result?.intent.parser_metadata?.schema_version,
-                fallback_used: result?.intent.parser_metadata?.fallback_used ?? false,
-                fallback_reason: result?.intent.parser_metadata?.fallback_reason,
+                fallback_used:
+                  result?.intent.parser_metadata?.fallback_used ?? false,
+                fallback_reason:
+                  result?.intent.parser_metadata?.fallback_reason,
                 repair_count: result?.intent.parser_metadata?.repair_count ?? 0,
                 latency_ms: result?.intent.parser_metadata?.latency_ms,
                 input_tokens: result?.intent.parser_metadata?.input_tokens,
@@ -465,7 +465,11 @@ export function LiveWorkbench() {
               }).map(([key, value]) => (
                 <div key={key} className="contents">
                   <dt className="text-muted">{key}</dt>
-                  <dd>{value === null || value === undefined || value === "" ? "—" : String(value)}</dd>
+                  <dd>
+                    {value === null || value === undefined || value === ""
+                      ? "—"
+                      : String(value)}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -474,7 +478,8 @@ export function LiveWorkbench() {
             <p className="eyebrow">Embeddings</p>
             <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
               {Object.entries({
-                provider_requested: result?.semantic_matching.provider_requested,
+                provider_requested:
+                  result?.semantic_matching.provider_requested,
                 provider_used: result?.semantic_matching.provider_used,
                 model: result?.semantic_matching.model,
                 dimension: result?.semantic_matching.dimension,
@@ -486,7 +491,11 @@ export function LiveWorkbench() {
               }).map(([key, value]) => (
                 <div key={key} className="contents">
                   <dt className="text-muted">{key}</dt>
-                  <dd>{value === null || value === undefined || value === "" ? "—" : String(value)}</dd>
+                  <dd>
+                    {value === null || value === undefined || value === ""
+                      ? "—"
+                      : String(value)}
+                  </dd>
                 </div>
               ))}
             </dl>

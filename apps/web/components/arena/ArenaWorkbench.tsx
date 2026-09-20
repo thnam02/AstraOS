@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { BenchmarkView } from "@/components/arena/BenchmarkView";
 import { BuyerDecision } from "@/components/arena/BuyerDecision";
@@ -8,13 +8,12 @@ import { ExperimentInspector } from "@/components/arena/ExperimentInspector";
 import { StrategyCard } from "@/components/arena/StrategyCard";
 import { StrategyComparison } from "@/components/arena/StrategyComparison";
 import {
-  AstraEmptyState,
   AstraErrorState,
   AstraLoadingState,
   AstraPanel,
   AstraSectionHeader,
 } from "@/components/astra";
-import { Disclosure } from "@/components/shared/Disclosure";
+import { Drawer } from "@/components/shared/Drawer";
 import {
   arenaBenchmarkExportUrl,
   createArenaBenchmark,
@@ -28,6 +27,7 @@ import {
   deliveryLabel,
   findStrategy,
   headline,
+  isSelectable,
   moneyDelta,
   qualitativePriorities,
   returnsLabel,
@@ -100,6 +100,12 @@ const STRATEGY_OPTIONS = [
 ] as const;
 
 export function ArenaWorkbench() {
+  const [view, setView] = useState<"setup" | "results">("setup");
+  const [detail, setDetail] = useState<
+    "buyer" | "comparison" | "semantic" | "methodology" | null
+  >(null);
+  const [strategyInspect, setStrategyInspect] = useState<string | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<"duel" | "benchmark">("duel");
   const [scenario, setScenario] = useState<string>("urgent");
   const [intent, setIntent] = useState(ARENA_HERO);
@@ -131,6 +137,11 @@ export function ArenaWorkbench() {
       });
   }, []);
 
+  useEffect(() => {
+    if (view === "results" && !busy)
+      resultsRef.current?.focus({ preventScroll: true });
+  }, [view, busy]);
+
   async function onDuel() {
     setBusy(true);
     setError(null);
@@ -144,7 +155,9 @@ export function ArenaWorkbench() {
             : [...CORE_STRATEGIES],
         }),
       );
+      setView("results");
     } catch (err) {
+      setView("setup");
       setError(err instanceof Error ? err.message : "Arena run failed");
     } finally {
       setBusy(false);
@@ -160,7 +173,9 @@ export function ArenaWorkbench() {
         seed,
       });
       setBenchmark(await getArenaBenchmark(created.benchmark_id));
+      setView("results");
     } catch (err) {
+      setView("setup");
       setError(err instanceof Error ? err.message : "Benchmark failed");
     } finally {
       setBusy(false);
@@ -199,232 +214,242 @@ export function ArenaWorkbench() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="border border-line bg-canvas px-4 py-3 text-sm">
-        <p className="eyebrow">Controlled evaluation</p>
-        <p className="mt-1">
-          <span className="text-muted">Same</span> buyer · catalogue · inventory
-          · merchant policy · buyer model.{" "}
-          <span className="font-medium">Only strategy changes.</span>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-y border-line py-2 text-xs text-muted">
+        <p>
+          Same buyer, catalogue, inventory, policy and buyer model.{" "}
+          <span className="font-medium text-ink">Only strategy changes.</span>
         </p>
-        <p className="mt-2 type-small text-muted">
-          Synthetic buyer response — selection uses the transparent simulated
-          utility model. Results are not observed production sales uplift.
-        </p>
+        <p>Synthetic evaluation · not observed sales uplift</p>
       </div>
 
-      <AstraPanel>
-        <AstraSectionHeader
-          eyebrow="Experiment setup"
-          title={
-            mode === "duel"
-              ? "Configure one buyer mission"
-              : "Configure benchmark run"
-          }
-          description={
-            mode === "duel"
-              ? "Choose a scenario, confirm strategies, then run evaluation."
-              : "Set mission count and seed for a reproducible controlled benchmark."
-          }
-        />
-
-        <div className="mt-4 flex gap-1 border-b border-line pb-3">
-          <ModeTab
-            active={mode === "duel"}
-            label="Live duel"
-            hint="One buyer mission"
-            onClick={() => setMode("duel")}
+      {!busy && view === "setup" ? (
+        <AstraPanel>
+          <AstraSectionHeader
+            eyebrow="Experiment setup"
+            action={
+              (mode === "duel" ? duel : benchmark) ? (
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => setView("results")}
+                >
+                  View last results
+                </button>
+              ) : undefined
+            }
+            title={
+              mode === "duel"
+                ? "Configure one buyer mission"
+                : "Configure benchmark run"
+            }
+            description={
+              mode === "duel"
+                ? "Choose a scenario, confirm strategies, then run evaluation."
+                : "Set mission count and seed for a reproducible controlled benchmark."
+            }
           />
-          <ModeTab
-            active={mode === "benchmark"}
-            label="Benchmark"
-            hint="Mission set"
-            onClick={() => setMode("benchmark")}
-          />
-        </div>
-        <p className="mt-2 type-small text-muted">
-          {mode === "duel"
-            ? "Compare strategies on one selected buyer mission."
-            : "Compare strategies across the controlled mission set."}
-        </p>
 
-        {mode === "duel" ? (
-          <div className="mt-5 grid gap-6 lg:grid-cols-2">
-            <div className="space-y-5">
-              <div>
-                <p className="text-xs tracking-[0.08em] text-muted">
-                  SCENARIO PRESETS
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {PRESETS.map((item) => (
+          <div className="mt-4 flex gap-1 border-b border-line pb-3">
+            <ModeTab
+              active={mode === "duel"}
+              label="Live duel"
+              hint="One buyer mission"
+              onClick={() => setMode("duel")}
+            />
+            <ModeTab
+              active={mode === "benchmark"}
+              label="Benchmark"
+              hint="Mission set"
+              onClick={() => setMode("benchmark")}
+            />
+          </div>
+          <p className="mt-2 type-small text-muted">
+            {mode === "duel"
+              ? "Compare strategies on one selected buyer mission."
+              : "Compare strategies across the controlled mission set."}
+          </p>
+
+          {mode === "duel" ? (
+            <div className="mt-4 grid gap-5 lg:grid-cols-2">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs tracking-[0.08em] text-muted">
+                    SCENARIO PRESETS
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {PRESETS.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        aria-pressed={scenario === item.id}
+                        className={cn(
+                          "border px-3 py-1.5 text-sm",
+                          "rounded-[var(--radius-control)]",
+                          scenario === item.id
+                            ? "border-ink bg-ink text-surface"
+                            : "border-line bg-surface text-ink hover:border-ink",
+                        )}
+                        onClick={() => applyPreset(item.id)}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
                     <button
-                      key={item.id}
                       type="button"
-                      aria-pressed={scenario === item.id}
+                      aria-pressed={custom}
                       className={cn(
                         "border px-3 py-1.5 text-sm",
                         "rounded-[var(--radius-control)]",
-                        scenario === item.id
+                        custom
                           ? "border-ink bg-ink text-surface"
                           : "border-line bg-surface text-ink hover:border-ink",
                       )}
-                      onClick={() => applyPreset(item.id)}
+                      onClick={() => applyPreset("custom")}
                     >
-                      {item.label}
+                      Custom
                     </button>
-                  ))}
-                  <button
-                    type="button"
-                    aria-pressed={custom}
-                    className={cn(
-                      "border px-3 py-1.5 text-sm",
-                      "rounded-[var(--radius-control)]",
-                      custom
-                        ? "border-ink bg-ink text-surface"
-                        : "border-line bg-surface text-ink hover:border-ink",
-                    )}
-                    onClick={() => applyPreset("custom")}
-                  >
-                    Custom
-                  </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-line pt-4">
+                  <p className="text-xs tracking-[0.08em] text-muted">
+                    BUYER MISSION
+                  </p>
+                  {custom || editing ? (
+                    <textarea
+                      aria-label="Buyer mission"
+                      className="control mt-2 h-24 w-full p-3 text-sm"
+                      value={intent}
+                      onChange={(event) => {
+                        setIntent(event.target.value);
+                        setScenario("custom");
+                      }}
+                    />
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      <p className="font-medium">
+                        {preset?.title ?? "Mission"}
+                      </p>
+                      <p className="text-sm leading-6 text-ink">“{intent}”</p>
+                      <button
+                        type="button"
+                        className="btn-quiet"
+                        onClick={() => setEditing(true)}
+                      >
+                        Edit mission
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs tracking-[0.08em] text-muted">
+                    PRIORITIES
+                  </p>
+                  <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {qualitativePriorities(profile).map((item) => (
+                      <div
+                        key={item.label}
+                        className="flex justify-between gap-3 border-b border-line py-1.5 last:border-0"
+                      >
+                        <dt>{item.label}</dt>
+                        <dd className="text-muted">{item.level}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               </div>
 
-              <div className="border-t border-line pt-4">
-                <p className="text-xs tracking-[0.08em] text-muted">
-                  BUYER MISSION
-                </p>
-                {custom || editing ? (
-                  <textarea
-                    className="control mt-2 h-28 w-full p-3 text-sm"
-                    value={intent}
-                    onChange={(event) => {
-                      setIntent(event.target.value);
-                      setScenario("custom");
-                    }}
-                  />
-                ) : (
-                  <div className="mt-2 space-y-2">
-                    <p className="font-medium">
-                      {preset?.title ?? "Mission"}
-                    </p>
-                    <p className="text-sm leading-6 text-ink">“{intent}”</p>
-                    <button
-                      type="button"
-                      className="btn-quiet"
-                      onClick={() => setEditing(true)}
-                    >
-                      Edit mission
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <p className="text-xs tracking-[0.08em] text-muted">
-                  PRIORITIES
-                </p>
-                <dl className="mt-2 space-y-1 text-sm">
-                  {qualitativePriorities(profile).map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex justify-between gap-3 border-b border-line py-1.5 last:border-0"
-                    >
-                      <dt>{item.label}</dt>
-                      <dd className="text-muted">{item.level}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div>
-                <p className="text-xs tracking-[0.08em] text-muted">
-                  STRATEGIES
-                </p>
-                <ul className="mt-2 space-y-2 text-sm">
-                  {STRATEGY_OPTIONS.filter(
-                    (item) => moreStrategies || !("extra" in item && item.extra),
-                  ).map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-center gap-2 border-b border-line py-1.5 last:border-0"
-                    >
-                      <span
-                        aria-hidden
-                        className="inline-flex h-4 w-4 items-center justify-center border border-ink bg-ink text-[10px] text-surface"
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs tracking-[0.08em] text-muted">
+                    STRATEGIES
+                  </p>
+                  <ul className="mt-2 space-y-2 text-sm">
+                    {STRATEGY_OPTIONS.filter(
+                      (item) =>
+                        moreStrategies || !("extra" in item && item.extra),
+                    ).map((item) => (
+                      <li
+                        key={item.id}
+                        className="flex items-center gap-2 border-b border-line py-1.5 last:border-0"
                       >
-                        ✓
-                      </span>
-                      <span>{item.label}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  className="btn-quiet mt-2"
-                  onClick={() => setMoreStrategies((current) => !current)}
-                >
-                  {moreStrategies
-                    ? "Hide optional strategies"
-                    : "+ More strategies"}
-                </button>
-                <p className="mt-2 type-small text-muted">
-                  Same merchant state for every strategy. Methodology details are
-                  in evaluation notes after the run.
-                </p>
-              </div>
+                        <span
+                          aria-hidden
+                          className="inline-flex h-4 w-4 items-center justify-center border border-ink bg-ink text-[10px] text-surface"
+                        >
+                          ✓
+                        </span>
+                        <span>{item.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className="btn-quiet mt-2"
+                    onClick={() => setMoreStrategies((current) => !current)}
+                  >
+                    {moreStrategies
+                      ? "Hide optional strategies"
+                      : "+ More strategies"}
+                  </button>
+                  <p className="mt-2 type-small text-muted">
+                    Same merchant state for every strategy. Methodology details
+                    are in evaluation notes after the run.
+                  </p>
+                </div>
 
-              <div className="flex justify-end border-t border-line pt-4">
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => void onDuel()}
-                  disabled={busy || !intent.trim()}
-                >
-                  {busy ? "Running…" : "Run evaluation"}
-                </button>
+                <div className="flex justify-end border-t border-line pt-4">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => void onDuel()}
+                    disabled={busy || !intent.trim()}
+                  >
+                    {busy ? "Running…" : "Run evaluation"}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
-            <div className="flex flex-wrap gap-3">
-              <label className="text-xs text-muted">
-                Missions
-                <input
-                  className="control mt-1 block w-28 px-2 py-1.5"
-                  type="number"
-                  min={8}
-                  max={2000}
-                  value={missionCount}
-                  onChange={(event) =>
-                    setMissionCount(Number(event.target.value))
-                  }
-                />
-              </label>
-              <label className="text-xs text-muted">
-                Seed
-                <input
-                  className="control mt-1 block w-28 px-2 py-1.5"
-                  type="number"
-                  value={seed}
-                  onChange={(event) => setSeed(Number(event.target.value))}
-                />
-              </label>
+          ) : (
+            <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+              <div className="flex flex-wrap gap-3">
+                <label className="text-xs text-muted">
+                  Missions
+                  <input
+                    className="control mt-1 block w-28 px-2 py-1.5"
+                    type="number"
+                    min={8}
+                    max={2000}
+                    value={missionCount}
+                    onChange={(event) =>
+                      setMissionCount(Number(event.target.value))
+                    }
+                  />
+                </label>
+                <label className="text-xs text-muted">
+                  Seed
+                  <input
+                    className="control mt-1 block w-28 px-2 py-1.5"
+                    type="number"
+                    value={seed}
+                    onChange={(event) => setSeed(Number(event.target.value))}
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => void onBenchmark()}
+                disabled={busy}
+              >
+                {busy ? "Running…" : "Run benchmark"}
+              </button>
             </div>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => void onBenchmark()}
-              disabled={busy}
-            >
-              {busy ? "Running…" : "Run benchmark"}
-            </button>
-          </div>
-        )}
-      </AstraPanel>
+          )}
+        </AstraPanel>
+      ) : null}
 
       {error ? (
         <AstraErrorState
@@ -434,96 +459,276 @@ export function ArenaWorkbench() {
         />
       ) : null}
 
-      <AstraPanel tone="primary">
-        <AstraSectionHeader
-          eyebrow="Results"
-          title={
-            mode === "duel" ? "Live duel results" : "Benchmark summary"
-          }
-          description={
-            mode === "duel"
-              ? "Strategy responses under identical commercial conditions."
-              : "Selection rate versus contribution across the mission set."
-          }
-        />
-
-        {busy ? (
-          <div className="mt-4">
-            <AstraLoadingState
+      {busy ? (
+        <AstraPanel>
+          <AstraLoadingState
+            title={
+              mode === "duel"
+                ? "Running strategy comparison"
+                : "Running benchmark"
+            }
+            steps={
+              mode === "duel"
+                ? [
+                    "Applying shared merchant state",
+                    "Evaluating each strategy",
+                    "Scoring simulated buyer selection",
+                  ]
+                : [
+                    "Sampling controlled missions",
+                    "Evaluating strategies",
+                    "Aggregating metrics",
+                  ]
+            }
+          />
+        </AstraPanel>
+      ) : view === "results" ? (
+        <div
+          ref={resultsRef}
+          tabIndex={-1}
+          aria-label="Evaluation results"
+          className="focus:outline-none"
+        >
+          <AstraPanel tone="primary">
+            <AstraSectionHeader
+              eyebrow="Results"
               title={
-                mode === "duel"
-                  ? "Running strategy comparison"
-                  : "Running benchmark"
+                mode === "duel" ? "Strategy comparison" : "Benchmark results"
               }
-              steps={
-                mode === "duel"
-                  ? [
-                      "Applying shared merchant state",
-                      "Evaluating each strategy",
-                      "Scoring simulated buyer selection",
-                    ]
-                  : [
-                      "Sampling controlled missions",
-                      "Evaluating strategies",
-                      "Aggregating metrics",
-                    ]
-              }
-            />
-          </div>
-        ) : null}
-
-        {!busy && mode === "duel" && !duel ? (
-          <div className="mt-4">
-            <AstraEmptyState
-              title="No evaluation yet"
-              body="Run the controlled experiment to compare how each strategy responds to the same buyer mission."
               action={
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => void onDuel()}
-                  disabled={!intent.trim()}
-                >
-                  Run evaluation
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => setView("setup")}
+                  >
+                    Edit experiment
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() =>
+                      void (mode === "duel" ? onDuel() : onBenchmark())
+                    }
+                  >
+                    Run again
+                  </button>
+                </div>
               }
             />
-          </div>
-        ) : null}
-
-        {!busy && mode === "duel" && duel ? (
-          <div className="mt-5 space-y-6">
-            {summary ? (
-              <div className="border-b border-line pb-4">
-                <p className="text-lg font-semibold tracking-tight">
-                  {summary.title}
-                </p>
-                <p className="mt-1 text-sm text-muted">{summary.body}</p>
-                {winner ? (
-                  <dl className="mt-3 flex flex-wrap gap-6 text-sm">
+            {mode === "duel" && duel ? (
+              <div className="mt-4 space-y-4">
+                {summary ? (
+                  <div className="grid items-center gap-4 border-y border-line py-3 lg:grid-cols-[minmax(0,1fr)_auto]">
                     <div>
-                      <dt className="text-muted">Buyer utility</dt>
-                      <dd className="font-mono text-xl font-semibold tabular-nums">
-                        {winner.buyer_utility != null
-                          ? formatUtilityShort(winner.buyer_utility)
-                          : "—"}
-                      </dd>
+                      <h2 className="text-xl font-semibold tracking-tight">
+                        {summary.title}
+                      </h2>
+                      <p className="mt-1 max-w-3xl text-sm text-muted">
+                        {summary.body}
+                      </p>
                     </div>
-                    <div>
-                      <dt className="text-muted">Contribution</dt>
-                      <dd className="font-mono text-xl font-semibold tabular-nums">
-                        {formatAudCents(
-                          winner.merchant_contribution_cents ?? 0,
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
+                    {winner ? (
+                      <dl className="flex gap-6 text-sm">
+                        <div>
+                          <dt className="text-muted">Buyer utility</dt>
+                          <dd className="font-mono text-xl font-semibold tabular-nums">
+                            {winner.buyer_utility != null
+                              ? formatUtilityShort(winner.buyer_utility)
+                              : "—"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted">Contribution</dt>
+                          <dd className="font-mono text-xl font-semibold tabular-nums">
+                            {winner.merchant_contribution_cents != null
+                              ? formatAudCents(
+                                  winner.merchant_contribution_cents,
+                                )
+                              : "—"}
+                          </dd>
+                        </div>
+                      </dl>
+                    ) : null}
+                  </div>
                 ) : null}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <caption className="sr-only">
+                      Strategy results under identical commercial conditions
+                    </caption>
+                    <thead className="border-b border-line text-xs text-muted">
+                      <tr>
+                        <th className="py-2 pr-4">Strategy / product</th>
+                        <th className="px-3 py-2 text-right">Price</th>
+                        <th className="px-3 py-2 text-right">Buyer utility</th>
+                        <th className="px-3 py-2 text-right">Contribution</th>
+                        <th className="px-3 py-2">Outcome</th>
+                        <th className="py-2">
+                          <span className="sr-only">Details</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {duel.strategies.map(({ response }) => {
+                        const selected =
+                          !duel.buyer_selection.no_purchase &&
+                          duel.buyer_selection.selected_strategy ===
+                            response.strategy_name;
+                        const valid = isSelectable(response);
+                        return (
+                          <tr
+                            key={response.strategy_name}
+                            className={cn(
+                              "border-b border-line-muted",
+                              selected && "bg-canvas",
+                            )}
+                          >
+                            <th scope="row" className="py-3 pr-4 font-normal">
+                              <p className="font-semibold">
+                                {strategyTitle(response.strategy_name)}
+                              </p>
+                              <p className="mt-0.5 text-xs text-muted">
+                                {response.product_name ?? "No offer"}
+                              </p>
+                            </th>
+                            <td className="px-3 py-3 text-right font-mono tabular-nums whitespace-nowrap">
+                              {response.total_customer_price_cents != null
+                                ? formatAudCents(
+                                    response.total_customer_price_cents,
+                                  )
+                                : "—"}
+                            </td>
+                            <td className="px-3 py-3 text-right font-mono tabular-nums">
+                              {response.buyer_utility != null
+                                ? formatUtilityShort(response.buyer_utility)
+                                : "—"}
+                            </td>
+                            <td className="px-3 py-3 text-right font-mono tabular-nums whitespace-nowrap">
+                              {response.merchant_contribution_cents != null
+                                ? formatAudCents(
+                                    response.merchant_contribution_cents,
+                                  )
+                                : "—"}
+                            </td>
+                            <td
+                              className={cn(
+                                "px-3 py-3 text-xs",
+                                selected
+                                  ? "font-semibold text-mark"
+                                  : valid
+                                    ? "text-muted"
+                                    : "text-warning",
+                              )}
+                            >
+                              {selected
+                                ? "✓ Buyer selected"
+                                : valid
+                                  ? "Not selected"
+                                  : "No safe offer"}
+                            </td>
+                            <td className="py-3 text-right">
+                              <button
+                                type="button"
+                                className="btn-quiet"
+                                aria-label={`Inspect ${strategyTitle(response.strategy_name)} offer`}
+                                onClick={() =>
+                                  setStrategyInspect(response.strategy_name)
+                                }
+                              >
+                                Inspect
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex flex-wrap gap-x-5 gap-y-2">
+                  <button
+                    type="button"
+                    className="btn-quiet"
+                    onClick={() => setDetail("buyer")}
+                  >
+                    Buyer decision
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-quiet"
+                    onClick={() => setDetail("comparison")}
+                  >
+                    Merchant comparison
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-quiet"
+                    onClick={() => setDetail("semantic")}
+                  >
+                    Semantic Only vs AstraOS
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-quiet"
+                    onClick={() => setDetail("methodology")}
+                  >
+                    Methodology
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-quiet ml-auto"
+                    onClick={() => setInspect(true)}
+                  >
+                    Inspect experiment
+                  </button>
+                </div>
+              </div>
+            ) : mode === "benchmark" && benchmark ? (
+              <div className="mt-4 space-y-3">
+                <BenchmarkView benchmark={benchmark} />
+                <div className="flex gap-4 text-xs">
+                  <a
+                    className="underline"
+                    href={arenaBenchmarkExportUrl(
+                      benchmark.benchmark_id,
+                      "json",
+                    )}
+                  >
+                    Export JSON
+                  </a>
+                  <a
+                    className="underline"
+                    href={arenaBenchmarkExportUrl(
+                      benchmark.benchmark_id,
+                      "csv",
+                    )}
+                  >
+                    Export CSV
+                  </a>
+                </div>
               </div>
             ) : null}
+          </AstraPanel>
+        </div>
+      ) : null}
 
+      <Drawer
+        open={Boolean(detail)}
+        title={
+          detail === "buyer"
+            ? "Buyer decision"
+            : detail === "comparison"
+              ? "Merchant comparison"
+              : detail === "semantic"
+                ? "Semantic Only vs AstraOS"
+                : "Evaluation methodology"
+        }
+        onClose={() => setDetail(null)}
+      >
+        {duel && detail === "buyer" ? (
+          <div className="space-y-5">
             {highlights ? (
-              <dl className="grid gap-3 sm:grid-cols-3">
+              <dl className="grid gap-2">
                 <Highlight
                   label="Best buyer utility"
                   value={strategyTitle(highlights.bestUtility.strategy_name)}
@@ -544,113 +749,63 @@ export function ArenaWorkbench() {
                 />
               </dl>
             ) : null}
-
-            <div>
-              <p className="text-xs tracking-[0.08em] text-muted">
-                STRATEGY COMPARISON
-              </p>
-              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {duel.strategies.map((item) => {
-                  const selected =
-                    !duel.buyer_selection.no_purchase &&
-                    duel.buyer_selection.selected_strategy ===
-                      item.response.strategy_name;
-                  return (
-                    <StrategyCard
-                      key={item.name}
-                      response={item.response}
-                      selected={selected}
-                      reference={defaultOffer ?? null}
-                      fitDelta={
-                        selected && baseline
-                          ? signedDelta(
-                              (item.response.buyer_utility ?? 0) -
-                                (baseline.buyer_utility ?? 0),
-                            )
-                          : undefined
-                      }
-                      contributionDelta={
-                        selected && cheapest
-                          ? moneyDelta(
-                              (item.response.merchant_contribution_cents ??
-                                0) -
-                                (cheapest.merchant_contribution_cents ?? 0),
-                            )
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            <SemanticOfferDelta duel={duel} />
-
-            <div className="grid gap-4 xl:grid-cols-2">
-              <BuyerDecision duel={duel} />
-              <StrategyComparison duel={duel} />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => setInspect(true)}
-              >
-                Inspect experiment
-              </button>
-              <Disclosure title="Evaluation methodology">
-                <p className="text-sm text-muted">
-                  Buyer selection uses a transparent simulated utility model with
-                  declared weights. Results are not observed real-world sales
-                  uplift. Policy-unsafe responses never enter buyer selection.
-                </p>
-              </Disclosure>
-            </div>
+            <BuyerDecision duel={duel} />
           </div>
         ) : null}
-
-        {!busy && mode === "benchmark" && !benchmark ? (
-          <div className="mt-4">
-            <AstraEmptyState
-              title="No benchmark run"
-              body="Run a reproducible controlled benchmark to populate selection and contribution metrics."
-              action={
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => void onBenchmark()}
-                >
-                  Run benchmark
-                </button>
-              }
-            />
-          </div>
+        {duel && detail === "comparison" ? (
+          <StrategyComparison duel={duel} />
         ) : null}
-
-        {!busy && mode === "benchmark" && benchmark ? (
-          <div className="mt-5 space-y-4">
-            <p className="type-small text-muted">
-              Synthetic evaluation — same seed reproduces the same ranking.
-            </p>
-            <BenchmarkView benchmark={benchmark} />
-            <div className="flex gap-3 text-xs">
-              <a
-                className="underline"
-                href={arenaBenchmarkExportUrl(benchmark.benchmark_id, "json")}
-              >
-                Export JSON
-              </a>
-              <a
-                className="underline"
-                href={arenaBenchmarkExportUrl(benchmark.benchmark_id, "csv")}
-              >
-                Export CSV
-              </a>
-            </div>
-          </div>
+        {duel && detail === "semantic" ? (
+          <SemanticOfferDelta duel={duel} />
         ) : null}
-      </AstraPanel>
+        {detail === "methodology" ? (
+          <p className="text-sm leading-6 text-muted">
+            Buyer selection uses a transparent simulated utility model with
+            declared weights. Results are not observed real-world sales uplift.
+            Policy-unsafe responses never enter buyer selection.
+          </p>
+        ) : null}
+      </Drawer>
+      <Drawer
+        open={Boolean(strategyInspect)}
+        title={
+          strategyInspect ? strategyTitle(strategyInspect) : "Strategy offer"
+        }
+        onClose={() => setStrategyInspect(null)}
+      >
+        {duel?.strategies
+          .filter((item) => item.response.strategy_name === strategyInspect)
+          .map((item) => {
+            const selected =
+              !duel.buyer_selection.no_purchase &&
+              duel.buyer_selection.selected_strategy ===
+                item.response.strategy_name;
+            return (
+              <StrategyCard
+                key={item.name}
+                response={item.response}
+                selected={selected}
+                reference={defaultOffer ?? null}
+                fitDelta={
+                  selected && baseline
+                    ? signedDelta(
+                        (item.response.buyer_utility ?? 0) -
+                          (baseline.buyer_utility ?? 0),
+                      )
+                    : undefined
+                }
+                contributionDelta={
+                  selected && cheapest
+                    ? moneyDelta(
+                        (item.response.merchant_contribution_cents ?? 0) -
+                          (cheapest.merchant_contribution_cents ?? 0),
+                      )
+                    : undefined
+                }
+              />
+            );
+          })}
+      </Drawer>
 
       <ExperimentInspector
         open={inspect}
@@ -771,9 +926,7 @@ function SemanticOfferDelta({ duel }: { duel: ArenaRunResponse }) {
                   {row.to}
                 </td>
                 <td className="py-2 font-mono text-xs tabular-nums">
-                  {row.changed
-                    ? (row.delta ?? `${row.from} → ${row.to}`)
-                    : "—"}
+                  {row.changed ? (row.delta ?? `${row.from} → ${row.to}`) : "—"}
                 </td>
               </tr>
             ))}

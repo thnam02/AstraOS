@@ -345,3 +345,162 @@ html {
     top: 0.75rem;
   }
 }
+
+/* LIVE stages share a compact two-column workspace; long evidence opens on demand. */
+.stage-workspace .panel,
+.stage-workspace .stage-result,
+.stage-workspace .stage-result-emphasis {
+  padding: 1rem 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .live-run .stage-heading > p {
+    text-align: right;
+  }
+}
+
+
+/* Scale Integrations with desktop height, preserving compact laptop layouts. */
+.integrations-workbench .integration-panel {
+  padding: 1.25rem;
+}
+
+.integrations-workbench .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.integrations-workbench .integration-architecture {
+  justify-content: center;
+}
+
+@media (min-width: 1024px) and (min-height: 850px) {
+  .integrations-workbench {
+    --integration-spacing: clamp(1.25rem, 2.4vh, 2rem);
+  }
+
+  .integrations-workbench > header .type-page {
+    font-size: clamp(1.75rem, 3.2vh, 2.25rem);
+  }
+
+  .integrations-workbench > header .type-body {
+    font-size: 1rem;
+  }
+
+  .integrations-workbench .integration-panel {
+    padding: var(--integration-spacing);
+  }
+
+  .integrations-workbench .integration-columns {
+    gap: var(--integration-spacing);
+  }
+
+  .integrations-workbench .integration-activity-row {
+    padding-block: clamp(1rem, 1.8vh, 1.5rem);
+  }
+
+  .integrations-workbench .integration-event-title {
+    font-size: 1.125rem;
+  }
+
+  .integrations-workbench .integration-status > div {
+    padding-block: 0.25rem;
+  }
+
+  .integrations-workbench [aria-label="Integration workspace"] button {
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+  }
+}
+
+/* Let eligibility results use the space available above the pipeline footer. */
+@media (min-width: 1024px) {
+  .live-run[data-stage="qualify"] > .flex-1 {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .live-run[data-stage="qualify"] .stage-workspace {
+    display: flex;
+    flex: 1;
+  }
+
+  .qualification-stage {
+    flex: 1;
+    grid-template-rows: auto 1fr;
+  }
+
+  .qualification-columns {
+    min-height: 18rem;
+  }
+}
+
+/* The left negotiation stack defines the height available for exchange history. */
+@media (min-width: 1024px) {
+  .negotiation-right {
+    contain: size;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .negotiation-right > * {
+    flex-shrink: 0;
+  }
+
+  .negotiation-right > section:last-child {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .negotiation-right > section:last-child > div {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .negotiation-right .exchange-preview {
+    height: auto;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .negotiation-right .exchange-preview > li {
+    min-height: 0;
+    align-self: start;
+  }
+
+  .negotiation-right > section:last-child nav,
+  .negotiation-right > section:last-child nav + div {
+    flex-shrink: 0;
+  }
+}
+
+/* Compact Construct's existing summary / radar / explorer composition. */
+.construct-workspace .panel,
+.construct-workspace .stage-result {
+  padding: 0.75rem 1rem;
+}
+
+.construct-workspace .embedded-offer-explorer > .grid {
+  gap: 0.75rem;
+}
+
+.construct-workspace .embedded-offer-explorer table th,
+.construct-workspace .embedded-offer-explorer table td {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.construct-workspace .embedded-offer-explorer .panel > .mt-3 {
+  margin-top: 0;
+}
+
+@media (min-width: 1024px) {
+  .construct-workspace .embedded-offer-explorer > .grid {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+  }
+}

@@ -14,17 +14,19 @@ export function AstraInspector({
   title,
   onClose,
   children,
+  wide = false,
 }: {
   open: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
+  wide?: boolean;
 }) {
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent
         side="right"
-        className="flex h-dvh w-full max-w-lg flex-col gap-0 overflow-hidden border-l border-line bg-surface p-0 sm:max-w-lg"
+        className={`flex h-dvh w-full flex-col gap-0 overflow-hidden border-l border-line bg-surface p-0 ${wide ? "max-w-6xl sm:max-w-6xl" : "max-w-lg sm:max-w-lg"}`}
       >
         <SheetHeader className="shrink-0 border-b border-line px-5 py-4 text-left">
           <SheetTitle className="text-sm font-semibold">{title}</SheetTitle>

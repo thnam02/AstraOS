@@ -32,7 +32,7 @@ export function MatchList({
   const [inspect, setInspect] = useState<RankedProductMatch | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
-  const [showAll, setShowAll] = useState(false);
+  const [page, setPage] = useState(0);
   const [handledInspect, setHandledInspect] = useState(0);
   const [handledCompare, setHandledCompare] = useState(0);
 
@@ -54,9 +54,13 @@ export function MatchList({
     }
   }
 
-  const compareSet = matches.filter((item) => compareIds.includes(item.variant_id));
+  const compareSet = matches.filter((item) =>
+    compareIds.includes(item.variant_id),
+  );
   const others = matches.slice(1);
-  const visible = showAll ? others : others.slice(0, 3);
+  const lastPage = Math.max(0, Math.ceil(others.length / 3) - 1);
+  const currentPage = Math.min(page, lastPage);
+  const visible = others.slice(currentPage * 3, (currentPage + 1) * 3);
 
   function toggleCompare(id: string) {
     setCompareIds((current) => {
@@ -114,17 +118,39 @@ export function MatchList({
         );
       })}
 
-      {others.length > 3 ? (
-        <button
-          type="button"
-          className="btn-quiet mt-2"
-          onClick={() => setShowAll((current) => !current)}
-          aria-expanded={showAll}
+      {lastPage > 0 ? (
+        <nav
+          className="flex items-center justify-between gap-2 text-xs"
+          aria-label="Alternative match pages"
         >
-          {showAll
-            ? "Show top alternatives"
-            : `View all ${others.length} alternatives`}
-        </button>
+          <button
+            type="button"
+            className="btn-quiet disabled:opacity-40"
+            disabled={currentPage === 0}
+            onClick={() => {
+              setPage(currentPage - 1);
+              setExpanded(null);
+            }}
+          >
+            Previous
+          </button>
+          <span className="text-muted">
+            {currentPage * 3 + 1}–
+            {Math.min((currentPage + 1) * 3, others.length)} of {others.length}{" "}
+            alternatives
+          </span>
+          <button
+            type="button"
+            className="btn-quiet disabled:opacity-40"
+            disabled={currentPage === lastPage}
+            onClick={() => {
+              setPage(currentPage + 1);
+              setExpanded(null);
+            }}
+          >
+            Next
+          </button>
+        </nav>
       ) : null}
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-muted">
@@ -241,9 +267,7 @@ function CompactMatch({
       >
         #{match.rank} {match.product_name}
       </button>
-      <p className="font-mono text-sm tabular-nums">
-        {overall.value}
-      </p>
+      <p className="font-mono text-sm tabular-nums">{overall.value}</p>
       <button type="button" className="btn-quiet" onClick={onCompare}>
         {compared ? "Selected" : "Compare"}
       </button>
@@ -287,7 +311,9 @@ function EvidenceDrawer({
                   className="border-b border-line pb-4"
                 >
                   <p className="eyebrow">Claim</p>
-                  <p className="mt-1 text-sm font-medium">{item.display_claim}</p>
+                  <p className="mt-1 text-sm font-medium">
+                    {item.display_claim}
+                  </p>
                   <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
                     <dt className="text-muted">Field</dt>
                     <dd className="font-mono">{item.claim_key}</dd>
@@ -330,7 +356,8 @@ function EvidenceDrawer({
           )}
           {match.unsupported_needs.length ? (
             <p className="text-sm text-uncertain">
-              Limited evidence: {match.unsupported_needs.map(contextLabel).join(", ")}
+              Limited evidence:{" "}
+              {match.unsupported_needs.map(contextLabel).join(", ")}
             </p>
           ) : null}
         </div>
@@ -352,22 +379,33 @@ function CompareDrawer({
 }) {
   const rows = useMemo(
     () => [
-      { label: "Price", values: matches.map((item) => formatAudCents(item.base_price_cents)) },
+      {
+        label: "Price",
+        values: matches.map((item) => formatAudCents(item.base_price_cents)),
+      },
       {
         label: "Overall match",
-        values: matches.map((item) => String(Math.round(item.overall_semantic_fit * 100))),
+        values: matches.map((item) =>
+          String(Math.round(item.overall_semantic_fit * 100)),
+        ),
       },
       {
         label: "Product fit",
-        values: matches.map((item) => String(Math.round(item.product_fit * 100))),
+        values: matches.map((item) =>
+          String(Math.round(item.product_fit * 100)),
+        ),
       },
       {
         label: "Context fit",
-        values: matches.map((item) => String(Math.round(item.context_fit * 100))),
+        values: matches.map((item) =>
+          String(Math.round(item.context_fit * 100)),
+        ),
       },
       {
         label: "Preference fit",
-        values: matches.map((item) => String(Math.round(item.preference_fit * 100))),
+        values: matches.map((item) =>
+          String(Math.round(item.preference_fit * 100)),
+        ),
       },
       {
         label: "Evidence coverage",
@@ -378,11 +416,15 @@ function CompareDrawer({
       },
       {
         label: "Battery",
-        values: matches.map((item) => factValue(item, ["battery_hours", "battery"]) ?? "—"),
+        values: matches.map(
+          (item) => factValue(item, ["battery_hours", "battery"]) ?? "—",
+        ),
       },
       {
         label: "Weight",
-        values: matches.map((item) => factValue(item, ["weight_g", "weight"]) ?? "—"),
+        values: matches.map(
+          (item) => factValue(item, ["weight_g", "weight"]) ?? "—",
+        ),
       },
       {
         label: "ANC",

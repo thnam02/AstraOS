@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Drawer } from "@/components/shared/Drawer";
+
 import { DecisionBridge } from "@/components/live/DecisionBridge";
 import { MetricHint } from "@/components/live/MetricHint";
 import { OptimisationPanel } from "@/components/live/OptimisationPanel";
@@ -9,6 +11,7 @@ import { WhyDifferentDrawer } from "@/components/live/RecommendedOffer";
 import {
   StagePrimaryAction,
   StageResult,
+  StageSplit,
   StageSection,
 } from "@/components/live/StageShell";
 import {
@@ -69,8 +72,8 @@ export function OptimiseStage({
         title={empty.title}
         explanation={
           <p>
-            AstraOS will not select, recommend, or propose a complete offer
-            that violates a mandatory buyer constraint.
+            AstraOS will not select, recommend, or propose a complete offer that
+            violates a mandatory buyer constraint.
           </p>
         }
         actions={
@@ -90,7 +93,9 @@ export function OptimiseStage({
             </dd>
           </div>
           <div>
-            <dt className="type-small text-muted">Closest safe configuration</dt>
+            <dt className="type-small text-muted">
+              Closest safe configuration
+            </dt>
             <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
               {empty.closest ?? "—"}
             </dd>
@@ -111,7 +116,9 @@ export function OptimiseStage({
             {expansionSteps(construction, optimisation).map((step) => (
               <li key={step.label} className="text-sm">
                 <span className="text-muted">{step.label}</span>
-                <span className="ml-2 font-mono tabular-nums">{step.value}</span>
+                <span className="ml-2 font-mono tabular-nums">
+                  {step.value}
+                </span>
               </li>
             ))}
           </ol>
@@ -120,7 +127,9 @@ export function OptimiseStage({
     );
   }
 
-  const items = (selected.proof_bundle?.items ?? []).filter((item) => !item.incomplete);
+  const items = (selected.proof_bundle?.items ?? []).filter(
+    (item) => !item.incomplete,
+  );
   const levers = commercialLevers(selected);
   const mandatoryOk = completeOfferMandatorySatisfied(
     selected,
@@ -129,124 +138,137 @@ export function OptimiseStage({
 
   return (
     <>
-      <StageResult
-        label="Selected complete offer"
-        title={selected.product_name}
-        value={formatAudCents(selected.pricing.total_price_cents)}
-        explanation={
-          <ul className="space-y-1">
-            {levers.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        }
-        emphasis
-        actions={
-          <>
-            <StagePrimaryAction
-              label="Present proposal to buyer"
-              onClick={onContinue}
-            />
-            <button
-              type="button"
-              className="btn-quiet"
-              onClick={() => setCompareOpen(true)}
-            >
-              Compare decisions
-            </button>
-            <button
-              type="button"
-              className="btn-quiet"
-              aria-expanded={detailOpen}
-              onClick={() => setDetailOpen((current) => !current)}
-            >
-              {detailOpen ? "Hide optimisation" : "Inspect optimisation"}
-            </button>
-          </>
-        }
-      >
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div>
-            <p className="eyebrow">Complete offer</p>
-            <dl className="mt-3 space-y-3">
-              <div>
-                <dt className="type-small text-muted">
-                  <MetricHint
-                    label="Simulated buyer utility"
-                    hint={METRIC_HELP.buyerUtility}
-                  />
-                </dt>
-                <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
-                  {formatUtilityShort(selected.buyer_utility)}
-                </dd>
-              </div>
-              <div>
-                <dt className="type-small text-muted">
-                  <MetricHint
-                    label="Merchant contribution"
-                    hint={METRIC_HELP.contribution}
-                  />
-                </dt>
-                <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
-                  {formatAudCents(selected.contribution_margin_cents)}
-                </dd>
-              </div>
-            </dl>
-          </div>
-          <div>
-            <p className="eyebrow">Underlying product</p>
-            <dl className="mt-3 space-y-3">
-              <div>
-                <dt className="type-small text-muted">
-                  <MetricHint
-                    label="Product match"
-                    hint={METRIC_HELP.productMatch}
-                  />
-                </dt>
-                <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
-                  {Math.round(selected.product_fit * 100)}
-                  <span className="ml-1 text-sm font-medium text-muted">/ 100</span>
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-        <ul className="mt-5 space-y-1.5 text-sm">
-          <li className="flex gap-2">
-            <span aria-hidden className={mandatoryOk ? "text-mark" : "text-danger"}>
-              {mandatoryOk ? "✓" : "!"}
-            </span>
-            <span>{mandatoryRequirementsCopy(mandatoryOk)}</span>
-          </li>
-          <li className="flex gap-2">
-            <span
-              aria-hidden
-              className={selected.is_pareto_efficient ? "text-mark" : "text-muted"}
-            >
-              {selected.is_pareto_efficient ? "✓" : "○"}
-            </span>
-            <span>
-              <MetricHint
-                label={
-                  selected.is_pareto_efficient
-                    ? "Pareto-efficient"
-                    : "Not on the efficient frontier"
-                }
-                hint={METRIC_HELP.pareto}
+      <StageSplit stretch>
+        <StageResult
+          label="Selected complete offer"
+          title={selected.product_name}
+          value={formatAudCents(selected.pricing.total_price_cents)}
+          explanation={
+            <ul className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+              {levers.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          }
+          emphasis
+          actions={
+            <>
+              <StagePrimaryAction
+                label="Present proposal to buyer"
+                onClick={onContinue}
               />
-            </span>
-          </li>
-        </ul>
-      </StageResult>
+              <button
+                type="button"
+                className="btn-quiet"
+                onClick={() => setCompareOpen(true)}
+              >
+                Compare decisions
+              </button>
+              <button
+                type="button"
+                className="btn-quiet"
+                aria-expanded={detailOpen}
+                onClick={() => setDetailOpen((current) => !current)}
+              >
+                {detailOpen ? "Hide optimisation" : "Inspect optimisation"}
+              </button>
+            </>
+          }
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="eyebrow">Complete offer</p>
+              <dl className="mt-2 space-y-2">
+                <div>
+                  <dt className="type-small text-muted">
+                    <MetricHint
+                      label="Simulated buyer utility"
+                      hint={METRIC_HELP.buyerUtility}
+                    />
+                  </dt>
+                  <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                    {formatUtilityShort(selected.buyer_utility)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="type-small text-muted">
+                    <MetricHint
+                      label="Merchant contribution"
+                      hint={METRIC_HELP.contribution}
+                    />
+                  </dt>
+                  <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                    {formatAudCents(selected.contribution_margin_cents)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            <div>
+              <p className="eyebrow">Underlying product</p>
+              <dl className="mt-2 space-y-2">
+                <div>
+                  <dt className="type-small text-muted">
+                    <MetricHint
+                      label="Product match"
+                      hint={METRIC_HELP.productMatch}
+                    />
+                  </dt>
+                  <dd className="mt-1 font-mono text-xl font-semibold tabular-nums">
+                    {Math.round(selected.product_fit * 100)}
+                    <span className="ml-1 text-sm font-medium text-muted">
+                      / 100
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+          <ul className="mt-3 space-y-1.5 text-sm">
+            <li className="flex gap-2">
+              <span
+                aria-hidden
+                className={mandatoryOk ? "text-mark" : "text-danger"}
+              >
+                {mandatoryOk ? "✓" : "!"}
+              </span>
+              <span>{mandatoryRequirementsCopy(mandatoryOk)}</span>
+            </li>
+            <li className="flex gap-2">
+              <span
+                aria-hidden
+                className={
+                  selected.is_pareto_efficient ? "text-mark" : "text-muted"
+                }
+              >
+                {selected.is_pareto_efficient ? "✓" : "○"}
+              </span>
+              <span>
+                <MetricHint
+                  label={
+                    selected.is_pareto_efficient
+                      ? "Pareto-efficient"
+                      : "Not on the efficient frontier"
+                  }
+                  hint={METRIC_HELP.pareto}
+                />
+              </span>
+            </li>
+          </ul>
+        </StageResult>
 
-      <DecisionBridge
-        topMatch={topMatch}
-        optimisation={optimisation}
-        offer={selected}
-        construction={construction}
-      />
+        <DecisionBridge
+          topMatch={topMatch}
+          optimisation={optimisation}
+          offer={selected}
+          construction={construction}
+        />
+      </StageSplit>
 
-      {detailOpen ? (
+      <Drawer
+        open={detailOpen}
+        title="Optimisation detail"
+        onClose={() => setDetailOpen(false)}
+      >
         <StageSection
           title="Optimisation detail"
           description="Frontier, objective comparisons, and counterfactuals."
@@ -262,7 +284,7 @@ export function OptimiseStage({
             onSelectOffer={onSelectOffer}
           />
         </StageSection>
-      ) : null}
+      </Drawer>
 
       <WhyDifferentDrawer
         open={compareOpen}
